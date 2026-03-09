@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Bedrock — Projects API</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --aws-orange: #FF9900;
+    --aws-dark: #0a0c10;
+    --aws-panel: #0f1318;
+    --aws-border: #1e2530;
+    --aws-muted: #3a4455;
+    --aws-text: #c8d4e3;
+    --aws-bright: #e8f0fb;
+    --aws-teal: #00d4aa;
+    --aws-blue: #4da8ff;
+    --aws-red: #ff4d6a;
+    --code-bg: #080b10;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--aws-dark);
+    color: var(--aws-text);
+    font-family: 'IBM Plex Mono', monospace;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,153,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,153,0,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb-1 {
+    width: 500px; height: 500px;
+    background: rgba(255,153,0,0.06);
+    top: -100px; right: -100px;
+    animation: drift1 12s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 400px; height: 400px;
+    background: rgba(0,212,170,0.04);
+    bottom: 200px; left: -100px;
+    animation: drift2 15s ease-in-out infinite;
+  }
+  @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-40px,60px)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(50px,-40px)} }
+
+  /* Layout */
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--aws-border);
+    padding: 20px 0;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--aws-orange);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    animation: pulse-hex 3s ease-in-out infinite;
+  }
+  @keyframes pulse-hex {
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:0.7;transform:scale(0.95)}
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--aws-bright);
+  }
+  .logo-sub {
+    font-size: 10px;
+    color: var(--aws-orange);
+    letter-spacing: 3px;
+  }
+  .badge {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--aws-teal);
+    border: 1px solid var(--aws-teal);
+    padding: 4px 10px;
+    text-transform: uppercase;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 60px;
+    position: relative;
+  }
+  .announce-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--aws-orange);
+    margin-bottom: 24px;
+    border-left: 2px solid var(--aws-orange);
+    padding-left: 12px;
+  }
+  .announce-tag::before {
+    content: '●';
+    animation: blink 1.5s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--aws-bright);
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  h1 span { color: var(--aws-orange); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--aws-muted);
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+    max-width: 600px;
+    line-height: 1.8;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--aws-orange);
+  }
+  .stat-label { font-size: 10px; color: var(--aws-muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* Section titles */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--aws-orange);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--aws-border), transparent);
+  }
+
+  /* Code blocks */
+  .code-window {
+    background: var(--code-bg);
+    border: 1px solid var(--aws-border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .code-window::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--aws-orange), transparent);
+  }
+  .code-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #0c0f14;
+    border-bottom: 1px solid var(--aws-border);
+  }
+  .code-dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: var(--aws-red); opacity: 0.7; }
+  .dot-y { background: var(--aws-orange); opacity: 0.7; }
+  .dot-g { background: var(--aws-teal); opacity: 0.7; }
+  .code-filename { font-size: 11px; color: var(--aws-muted); letter-spacing: 1px; }
+  .code-lang { font-size: 10px; color: var(--aws-orange); letter-spacing: 2px; text-transform: uppercase; }
+  pre {
+    padding: 24px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.8;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .c-comment { color: #3a5068; }
+  .c-keyword { color: #ff7c5c; }
+  .c-string { color: #98d982; }
+  .c-var { color: var(--aws-blue); }
+  .c-fn { color: #e5b567; }
+  .c-orange { color: var(--aws-orange); }
+  .c-teal { color: var(--aws-teal); }
+  .c-dim { color: #3a4455; }
+
+  /* Feature cards */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--aws-border);
+    border: 1px solid var(--aws-border);
+    margin-bottom: 48px;
+  }
+  .feature-card {
+    background: var(--aws-panel);
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s;
+  }
+  .feature-card:hover { background: #131820; }
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, var(--aws-orange), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .feature-card:hover::after { opacity: 1; }
+  .feature-icon {
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--aws-bright);
+    margin-bottom: 8px;
+  }
+  .feature-desc {
+    font-size: 11px;
+    color: var(--aws-muted);
+    line-height: 1.7;
+  }
+  .feature-tag {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--aws-teal);
+    border: 1px solid rgba(0,212,170,0.3);
+    padding: 3px 8px;
+  }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 48px; }
+
+  /* Inline highlight panel */
+  .panel {
+    background: var(--aws-panel);
+    border: 1px solid var(--aws-border);
+    border-left: 3px solid var(--aws-orange);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--aws-bright);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .panel p { font-size: 11px; color: var(--aws-muted); line-height: 1.8; }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--code-bg);
+    border: 1px solid var(--aws-border);
+    padding: 32px;
+    margin-bottom: 48px;
+    font-size: 11px;
+    line-height: 2;
+    position: relative;
+  }
+  .arch::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--aws-teal), transparent);
+  }
+  .arch-box {
+    display: inline-block;
+    border: 1px solid;
+    padding: 4px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+  .arch-box-orange { border-color: var(--aws-orange); color: var(--aws-orange); }
+  .arch-box-teal { border-color: var(--aws-teal); color: var(--aws-teal); }
+  .arch-box-blue { border-color: var(--aws-blue); color: var(--aws-blue); }
+  .arch-box-dim { border-color: var(--aws-muted); color: var(--aws-muted); }
+  .arch-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+  .arch-arrow { color: var(--aws-muted); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--aws-border);
+    padding: 32px 0;
+    margin-top: 60px;
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-left { font-size: 10px; color: var(--aws-muted); line-height: 2; }
+  .footer-right { font-size: 10px; color: var(--aws-muted); text-align: right; }
+  .footer-right a { color: var(--aws-orange); text-decoration: none; }
+
+  /* Sections */
+  section { padding: 48px 0; border-top: 1px solid var(--aws-border); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--aws-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--aws-orange); }
+
+  /* Fade in animations */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.6s ease forwards;
+  }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 0.1s; }
+  .d2 { animation-delay: 0.2s; }
+  .d3 { animation-delay: 0.3s; }
+  .d4 { animation-delay: 0.4s; }
+  .d5 { animation-delay: 0.5s; }
+
+  @media (max-width: 768px) {
+    .features-grid { grid-template-columns: 1fr; }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .hero-stats { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon"></div>
+        <div>
+          <div class="logo-text">Amazon Bedrock</div>
+          <div class="logo-sub">Mantle · Projects API</div>
+        </div>
+      </div>
+      <div class="badge">Feb 26, 2026 · GA</div>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="container">
+  <div class="hero">
+    <div class="announce-tag fade-up d1">New Feature · Generally Available</div>
+    <h1 class="fade-up d2">Projects<br><span>API</span> Adoption</h1>
+    <p class="hero-sub fade-up d3">OpenAI-compatible Projects API on Amazon Bedrock's Mantle inference engine — multi-team isolation, IAM-based access control, and per-project cost visibility with zero additional charge.</p>
+    <div class="hero-stats fade-up d4">
+      <div class="stat">
+        <div class="stat-val">$0</div>
+        <div class="stat-label">Additional Cost</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">100%</div>
+        <div class="stat-label">OpenAI Compatible</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">IAM</div>
+        <div class="stat-label">Access Control</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">∞</div>
+        <div class="stat-label">Projects per Account</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURE CARDS -->
+<div class="container">
+  <div class="section-title">Core Capabilities</div>
+  <div class="features-grid fade-up d1">
+    <div class="feature-card">
+      <div class="feature-icon">⬡</div>
+      <div class="feature-title">Project Isolation</div>
+      <div class="feature-desc">Create independent projects per application, environment, or team. Full workload separation with dedicated namespaces.</div>
+      <div class="feature-tag">Multi-tenant</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◈</div>
+      <div class="feature-title">IAM Access Control</div>
+      <div class="feature-desc">Assign fine-grained IAM policies per project. Control who can invoke models within each project boundary.</div>
+      <div class="feature-tag">Security</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◎</div>
+      <div class="feature-title">Cost Tagging</div>
+      <div class="feature-desc">Tag each project for clear cost attribution. Track model inference spend per team, app, or environment in AWS Cost Explorer.</div>
+      <div class="feature-tag">FinOps</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⟁</div>
+      <div class="feature-title">Responses API</div>
+      <div class="feature-desc">Projects are available via the OpenAI-compatible Responses API — drop-in replacement for existing OpenAI SDK code.</div>
+      <div class="feature-tag">OpenAI SDK</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◇</div>
+      <div class="feature-title">Chat Completions API</div>
+      <div class="feature-desc">Full Chat Completions API support scoped to projects — point your existing clients at Bedrock with one config change.</div>
+      <div class="feature-tag">OpenAI SDK</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⊞</div>
+      <div class="feature-title">Mantle Engine</div>
+      <div class="feature-desc">Powered by Bedrock's distributed Mantle inference engine — built for large-scale model serving with high throughput.</div>
+      <div class="feature-tag">Infrastructure</div>
+    </div>
+  </div>
+</div>
+
+<!-- CODE: Create a Project -->
+<section>
+  <div class="container">
+    <div class="section-title">1 — Create a Project</div>
+    <div class="code-window fade-up d1">
+      <div class="code-titlebar">
+        <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="code-filename">create_project.py</div>
+        <div class="code-lang">Python · boto3</div>
+      </div>
+      <pre><span class="c-comment"># create_project.py
+# Create a new isolated project in Amazon Bedrock</span>
+
+<span class="c-keyword">import</span> <span class="c-var">boto3</span>
+<span class="c-keyword">import</span> <span class="c-var">json</span>
+
+<span class="c-var">bedrock</span> = <span class="c-var">boto3</span>.<span class="c-fn">client</span>(
+    <span class="c-string">"bedrock"</span>,
+    region_name=<span class="c-string">"us-east-1"</span>
+)
+
+<span class="c-comment"># Create a project for your production ML team</span>
+<span class="c-var">response</span> = <span class="c-var">bedrock</span>.<span class="c-fn">create_project</span>(
+    name=<span class="c-string">"prod-ml-team"</span>,
+    description=<span class="c-string">"Production inference for ML Platform team"</span>,
+    tags={
+        <span class="c-string">"team"</span>:        <span class="c-string">"ml-platform"</span>,
+        <span class="c-string">"env"</span>:         <span class="c-string">"production"</span>,
+        <span class="c-string">"cost-center"</span>: <span class="c-string">"CC-1042"</span>,
+        <span class="c-string">"owner"</span>:       <span class="c-string">"platform-eng@company.com"</span>
+    }
+)
+
+<span class="c-var">project_id</span> = <span class="c-var">response</span>[<span class="c-string">"project"</span>][<span class="c-string">"projectId"</span>]
+<span class="c-var">project_arn</span> = <span class="c-var">response</span>[<span class="c-string">"project"</span>][<span class="c-string">"projectArn"</span>]
+
+<span class="c-fn">print</span>(<span class="c-string">f"Created project: </span><span class="c-orange">{project_id}</span><span class="c-string">"</span>)
+<span class="c-fn">print</span>(<span class="c-string">f"ARN: </span><span class="c-orange">{project_arn}</span><span class="c-string">"</span>)</pre>
+    </div>
+
+    <!-- IAM Policy -->
+    <div class="code-window fade-up d2">
+      <div class="code-titlebar">
+        <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="code-filename">iam_policy.json</div>
+        <div class="code-lang">JSON · IAM</div>
+      </div>
+      <pre><span class="c-comment">// IAM policy: allow only the ML Platform role to invoke models in this project</span>
+{
+  <span class="c-string">"Version"</span>: <span class="c-string">"2012-10-17"</span>,
+  <span class="c-string">"Statement"</span>: [
+    {
+      <span class="c-string">"Sid"</span>: <span class="c-string">"AllowProjectInference"</span>,
+      <span class="c-string">"Effect"</span>: <span class="c-string">"Allow"</span>,
+      <span class="c-string">"Action"</span>: [
+        <span class="c-string">"bedrock:InvokeModel"</span>,
+        <span class="c-string">"bedrock:InvokeModelWithResponseStream"</span>
+      ],
+      <span class="c-string">"Resource"</span>: <span class="c-string">"arn:aws:bedrock:us-east-1::project/<span class="c-orange">prod-ml-team</span>"</span>,
+      <span class="c-string">"Condition"</span>: {
+        <span class="c-string">"StringEquals"</span>: {
+          <span class="c-string">"aws:ResourceTag/env"</span>: <span class="c-string">"production"</span>
+        }
+      }
+    }
+  ]
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- CODE: Chat Completions with project scope -->
+<section>
+  <div class="container">
+    <div class="section-title">2 — Scoped Chat Completions</div>
+    <div class="two-col">
+      <div>
+        <div class="code-window fade-up d1">
+          <div class="code-titlebar">
+            <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+            <div class="code-filename">chat_completions.py</div>
+            <div class="code-lang">Python · OpenAI SDK</div>
+          </div>
+          <pre><span class="c-comment"># Drop-in: use OpenAI SDK pointing at Bedrock
+# Just swap the base_url + add project header</span>
+
+<span class="c-keyword">from</span> <span class="c-var">openai</span> <span class="c-keyword">import</span> <span class="c-var">OpenAI</span>
+<span class="c-keyword">import</span> <span class="c-var">boto3</span>, <span class="c-var">os</span>
+
+<span class="c-var">session</span> = <span class="c-var">boto3</span>.<span class="c-fn">Session</span>()
+<span class="c-var">creds</span>   = <span class="c-var">session</span>.<span class="c-fn">get_credentials</span>().<span class="c-fn">get_frozen_credentials</span>()
+
+<span class="c-var">client</span> = <span class="c-var">OpenAI</span>(
+    base_url=<span class="c-string">"https://bedrock-mantle.us-east-1.amazonaws.com/v1"</span>,
+    api_key=<span class="c-var">creds</span>.token,
+    default_headers={
+        <span class="c-comment"># ← Scope every request to this project</span>
+        <span class="c-string">"X-Bedrock-Project-Id"</span>: <span class="c-string">"<span class="c-orange">prod-ml-team</span>"</span>
+    }
+)
+
+<span class="c-var">resp</span> = <span class="c-var">client</span>.chat.completions.<span class="c-fn">create</span>(
+    model=<span class="c-string">"anthropic.claude-3-5-sonnet-20241022-v2:0"</span>,
+    messages=[
+        {<span class="c-string">"role"</span>: <span class="c-string">"system"</span>,  <span class="c-string">"content"</span>: <span class="c-string">"You are a helpful assistant."</span>},
+        {<span class="c-string">"role"</span>: <span class="c-string">"user"</span>,    <span class="c-string">"content"</span>: <span class="c-string">"Summarize Q4 earnings."</span>}
+    ],
+    max_tokens=<span class="c-orange">512</span>
+)
+
+<span class="c-fn">print</span>(<span class="c-var">resp</span>.choices[<span class="c-orange">0</span>].message.content)</pre>
+        </div>
+      </div>
+      <div>
+        <div class="code-window fade-up d2">
+          <div class="code-titlebar">
+            <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+            <div class="code-filename">responses_api.py</div>
+            <div class="code-lang">Python · Responses API</div>
+          </div>
+          <pre><span class="c-comment"># Using the Responses API with project isolation</span>
+
+<span class="c-keyword">from</span> <span class="c-var">openai</span> <span class="c-keyword">import</span> <span class="c-var">OpenAI</span>
+
+<span class="c-var">client</span> = <span class="c-var">OpenAI</span>(
+    base_url=<span class="c-string">"https://bedrock-mantle.us-east-1.amazonaws.com/v1"</span>,
+    api_key=<span class="c-string">"&lt;aws-sig-v4-token&gt;"</span>,
+    default_headers={
+        <span class="c-string">"X-Bedrock-Project-Id"</span>: <span class="c-string">"<span class="c-orange">staging-nlp</span>"</span>
+    }
+)
+
+<span class="c-comment"># Responses API — stateful, agentic patterns</span>
+<span class="c-var">response</span> = <span class="c-var">client</span>.responses.<span class="c-fn">create</span>(
+    model=<span class="c-string">"meta.llama3-3-70b-instruct-v1:0"</span>,
+    input=<span class="c-string">"Classify the following support tickets by urgency."</span>,
+    instructions=<span class="c-string">"You are a triage specialist. Output JSON."</span>,
+    tools=[{
+        <span class="c-string">"type"</span>: <span class="c-string">"function"</span>,
+        <span class="c-string">"name"</span>: <span class="c-string">"classify_ticket"</span>,
+        <span class="c-string">"parameters"</span>: {
+            <span class="c-string">"urgency"</span>: {<span class="c-string">"type"</span>: <span class="c-string">"string"</span>, <span class="c-string">"enum"</span>: [<span class="c-string">"low"</span>,<span class="c-string">"med"</span>,<span class="c-string">"high"</span>]},
+            <span class="c-string">"reason"</span>:  {<span class="c-string">"type"</span>: <span class="c-string">"string"</span>}
+        }
+    }]
+)
+
+<span class="c-fn">print</span>(<span class="c-var">response</span>.output_text)</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE: Multi-project management -->
+<section>
+  <div class="container">
+    <div class="section-title">3 — Multi-Project Management</div>
+    <div class="code-window fade-up d1">
+      <div class="code-titlebar">
+        <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="code-filename">multi_project_manager.py</div>
+        <div class="code-lang">Python · boto3</div>
+      </div>
+      <pre><span class="c-comment"># Provision and manage projects across teams/environments</span>
+<span class="c-keyword">import</span> <span class="c-var">boto3</span>
+<span class="c-keyword">from</span> <span class="c-var">dataclasses</span> <span class="c-keyword">import</span> <span class="c-var">dataclass</span>
+<span class="c-keyword">from</span> <span class="c-var">typing</span> <span class="c-keyword">import</span> <span class="c-var">List</span>
+
+<span class="c-keyword">@dataclass</span>
+<span class="c-keyword">class</span> <span class="c-teal">ProjectSpec</span>:
+    name:        <span class="c-var">str</span>
+    env:         <span class="c-var">str</span>          <span class="c-comment"># production | staging | dev</span>
+    team:        <span class="c-var">str</span>
+    cost_center: <span class="c-var">str</span>
+    iam_role:    <span class="c-var">str</span>
+
+<span class="c-keyword">class</span> <span class="c-teal">BedrockProjectManager</span>:
+    <span class="c-keyword">def</span> <span class="c-fn">__init__</span>(<span class="c-keyword">self</span>, region: <span class="c-var">str</span> = <span class="c-string">"us-east-1"</span>):
+        <span class="c-keyword">self</span>.<span class="c-var">client</span> = <span class="c-var">boto3</span>.<span class="c-fn">client</span>(<span class="c-string">"bedrock"</span>, region_name=region)
+
+    <span class="c-keyword">def</span> <span class="c-fn">provision_projects</span>(<span class="c-keyword">self</span>, specs: <span class="c-var">List</span>[<span class="c-teal">ProjectSpec</span>]) -> <span class="c-var">dict</span>:
+        created = {}
+        <span class="c-keyword">for</span> spec <span class="c-keyword">in</span> specs:
+            resp = <span class="c-keyword">self</span>.<span class="c-var">client</span>.<span class="c-fn">create_project</span>(
+                name=spec.name,
+                tags={
+                    <span class="c-string">"env"</span>:         spec.env,
+                    <span class="c-string">"team"</span>:        spec.team,
+                    <span class="c-string">"cost-center"</span>: spec.cost_center,
+                    <span class="c-string">"iam-role"</span>:    spec.iam_role
+                }
+            )
+            created[spec.name] = resp[<span class="c-string">"project"</span>][<span class="c-string">"projectId"</span>]
+            <span class="c-fn">print</span>(<span class="c-string">f"  ✓ </span><span class="c-orange">{spec.name}</span><span class="c-string"> [{spec.env}] → </span><span class="c-teal">{created[spec.name]}</span><span class="c-string">"</span>)
+        <span class="c-keyword">return</span> created
+
+    <span class="c-keyword">def</span> <span class="c-fn">list_projects</span>(<span class="c-keyword">self</span>, env_filter: <span class="c-var">str</span> = <span class="c-keyword">None</span>):
+        projects = <span class="c-keyword">self</span>.<span class="c-var">client</span>.<span class="c-fn">list_projects</span>()[<span class="c-string">"projects"</span>]
+        <span class="c-keyword">if</span> env_filter:
+            projects = [p <span class="c-keyword">for</span> p <span class="c-keyword">in</span> projects
+                        <span class="c-keyword">if</span> p.get(<span class="c-string">"tags"</span>, {}).get(<span class="c-string">"env"</span>) == env_filter]
+        <span class="c-keyword">return</span> projects
+
+<span class="c-comment"># ── Bootstrap all environments ──────────────────────────────────────</span>
+<span class="c-var">mgr</span> = <span class="c-teal">BedrockProjectManager</span>()
+<span class="c-var">mgr</span>.<span class="c-fn">provision_projects</span>([
+    <span class="c-teal">ProjectSpec</span>(<span class="c-string">"prod-ml-team"</span>,    <span class="c-string">"production"</span>, <span class="c-string">"ml-platform"</span>, <span class="c-string">"CC-1042"</span>, <span class="c-string">"arn:aws:iam::123:role/ProdMLRole"</span>),
+    <span class="c-teal">ProjectSpec</span>(<span class="c-string">"staging-nlp"</span>,     <span class="c-string">"staging"</span>,    <span class="c-string">"nlp-research"</span>, <span class="c-string">"CC-2011"</span>, <span class="c-string">"arn:aws:iam::123:role/StagingNLPRole"</span>),
+    <span class="c-teal">ProjectSpec</span>(<span class="c-string">"dev-experiments"</span>, <span class="c-string">"dev"</span>,        <span class="c-string">"all-engineers"</span>,<span class="c-string">"CC-9001"</span>, <span class="c-string">"arn:aws:iam::123:role/DevRole"</span>),
+])</pre>
+    </div>
+  </div>
+</section>
+
+<!-- CODE: TypeScript / Node -->
+<section>
+  <div class="container">
+    <div class="section-title">4 — TypeScript · Node.js Client</div>
+    <div class="two-col">
+      <div>
+        <div class="code-window fade-up d1">
+          <div class="code-titlebar">
+            <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+            <div class="code-filename">bedrockClient.ts</div>
+            <div class="code-lang">TypeScript</div>
+          </div>
+          <pre><span class="c-comment">// bedrockClient.ts — project-scoped OpenAI client</span>
+<span class="c-keyword">import</span> <span class="c-var">OpenAI</span> <span class="c-keyword">from</span> <span class="c-string">"openai"</span>
+<span class="c-keyword">import</span> { <span class="c-var">fromNodeProviderChain</span> } <span class="c-keyword">from</span> <span class="c-string">"@aws-sdk/credential-providers"</span>
+
+<span class="c-keyword">const</span> <span class="c-fn">createProjectClient</span> = <span class="c-keyword">async</span> (
+  projectId: <span class="c-var">string</span>
+): <span class="c-keyword">Promise</span>&lt;<span class="c-var">OpenAI</span>&gt; =&gt; {
+  <span class="c-keyword">const</span> creds = <span class="c-keyword">await</span> <span class="c-fn">fromNodeProviderChain</span>()()
+
+  <span class="c-keyword">return new</span> <span class="c-fn">OpenAI</span>({
+    baseURL: <span class="c-string">"https://bedrock-mantle.us-east-1.amazonaws.com/v1"</span>,
+    apiKey:  creds.sessionToken ?? <span class="c-string">""</span>,
+    defaultHeaders: {
+      <span class="c-string">"X-Bedrock-Project-Id"</span>: <span class="c-orange">projectId</span>,
+      <span class="c-string">"X-Amz-Security-Token"</span>: creds.sessionToken ?? <span class="c-string">""</span>,
+    }
+  })
+}
+
+<span class="c-keyword">export</span> { <span class="c-fn">createProjectClient</span> }</pre>
+        </div>
+      </div>
+      <div>
+        <div class="code-window fade-up d2">
+          <div class="code-titlebar">
+            <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+            <div class="code-filename">inference.ts</div>
+            <div class="code-lang">TypeScript</div>
+          </div>
+          <pre><span class="c-comment">// inference.ts — use the scoped client</span>
+<span class="c-keyword">import</span> { <span class="c-fn">createProjectClient</span> } <span class="c-keyword">from</span> <span class="c-string">"./bedrockClient"</span>
+
+<span class="c-keyword">async function</span> <span class="c-fn">run</span>() {
+  <span class="c-keyword">const</span> client = <span class="c-keyword">await</span> <span class="c-fn">createProjectClient</span>(<span class="c-string">"<span class="c-orange">prod-ml-team</span>"</span>)
+
+  <span class="c-keyword">const</span> stream = <span class="c-keyword">await</span> client.chat.completions.<span class="c-fn">create</span>({
+    model:    <span class="c-string">"anthropic.claude-3-5-sonnet-20241022-v2:0"</span>,
+    stream:   <span class="c-keyword">true</span>,
+    messages: [
+      { role: <span class="c-string">"system"</span>, content: <span class="c-string">"You are a code reviewer."</span> },
+      { role: <span class="c-string">"user"</span>,   content: <span class="c-string">"Review this PR diff: ..."</span>  }
+    ]
+  })
+
+  <span class="c-keyword">for await</span> (<span class="c-keyword">const</span> chunk <span class="c-keyword">of</span> stream) {
+    process.stdout.<span class="c-fn">write</span>(
+      chunk.choices[<span class="c-orange">0</span>]?.delta?.content ?? <span class="c-string">""</span>
+    )
+  }
+}
+
+<span class="c-fn">run</span>()</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section>
+  <div class="container">
+    <div class="section-title">Architecture — Project Isolation Flow</div>
+    <div class="arch fade-up d1">
+      <div class="arch-row">
+        <span class="arch-box arch-box-dim">Team A · OpenAI SDK</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-orange">Project: prod-ml-team</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-teal">IAM Role: ProdMLRole</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-blue">Claude 3.5 Sonnet</span>
+      </div>
+      <div style="margin: 6px 0 6px 16px; color: var(--aws-border); font-size: 11px;">│ isolated namespace · separate cost tag · independent IAM</div>
+      <div class="arch-row">
+        <span class="arch-box arch-box-dim">Team B · OpenAI SDK</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-orange">Project: staging-nlp</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-teal">IAM Role: StagingNLPRole</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-blue">Llama 3 70B</span>
+      </div>
+      <div style="margin: 6px 0 6px 16px; color: var(--aws-border); font-size: 11px;">│</div>
+      <div class="arch-row">
+        <span class="arch-box arch-box-dim">Team C · OpenAI SDK</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-orange">Project: dev-experiments</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-teal">IAM Role: DevRole</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="arch-box arch-box-blue">Any Bedrock Model</span>
+      </div>
+      <div style="margin: 16px 0 4px; border-top: 1px dashed var(--aws-border); padding-top: 16px;">
+        <div class="arch-row">
+          <span style="color: var(--aws-muted); font-size: 11px;">All routes via ──▶</span>
+          <span class="arch-box arch-box-orange">Mantle Inference Engine</span>
+          <span class="arch-arrow">──▶</span>
+          <span class="arch-box arch-box-teal">AWS Cost Explorer · per-project tags</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INFO PANELS -->
+<section>
+  <div class="container">
+    <div class="section-title">Key Points</div>
+    <div class="three-col fade-up d1">
+      <div class="panel">
+        <div class="panel-title">No Extra Charge</div>
+        <p>Projects API is available at no additional cost. You pay only for the underlying model inference tokens consumed — identical to non-project usage.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-title">OpenAI Migration</div>
+        <p>The Projects API is fully OpenAI-compatible. Existing apps using the OpenAI SDK require only a base_url swap and a project header to migrate to Bedrock.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Available APIs</div>
+        <p>Projects scope is supported across both the Responses API and the Chat Completions API, both served through the Mantle distributed inference engine.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div style="color: var(--aws-orange); font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 4px;">Amazon Bedrock · Projects API</div>
+        <div>Generally Available · Feb 26, 2026</div>
+        <div>Mantle Inference Engine · OpenAI-compatible</div>
+      </div>
+      <div class="footer-right">
+        <div><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/projects.html" target="_blank">docs.aws.amazon.com/bedrock/projects →</a></div>
+        <div><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html" target="_blank">Mantle OpenAI-compatible APIs →</a></div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
