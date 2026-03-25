@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Trainium — Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #ffffff;
+  --bg-subtle:   #f8f9fa;
+  --bg-muted:    #f0f2f5;
+  --surface:     #ffffff;
+  --border:      #e2e6ea;
+  --border-med:  #cdd1d8;
+  --aws-orange:  #FF9900;
+  --aws-orange-h:#e68900;
+  --aws-orange-l:#fff4e0;
+  --aws-navy:    #232f3e;
+  --aws-blue:    #0073bb;
+  --aws-blue-l:  #e8f4fb;
+  --aws-teal:    #00897b;
+  --aws-teal-l:  #e0f2f1;
+  --aws-purple:  #6b46c1;
+  --aws-purple-l:#f3f0ff;
+  --text:        #0d1117;
+  --text-sec:    #3d4a5c;
+  --text-muted:  #6b7785;
+  --text-dim:    #9aa5b4;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg:   0 8px 24px rgba(0,0,0,0.10),0 4px 8px rgba(0,0,0,0.06);
+  --r:8px; --rl:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--aws-blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:1080px;margin:0 auto;padding:0 32px}
+.cw{max-width:1240px;margin:0 auto;padding:0 32px}
+
+/* NAV */
+header{position:sticky;top:0;z-index:100;background:var(--aws-navy);border-bottom:3px solid var(--aws-orange)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1240px;margin:0 auto;padding:0 32px;height:56px}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.nav-brand-icon{width:28px;height:28px;background:var(--aws-orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--aws-navy)}
+.nav-links{display:flex;gap:2px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);padding:6px 12px;border-radius:4px;transition:color .15s,background .15s}
+.nav-links a:hover,.nav-links a.active{color:#fff;background:rgba(255,255,255,.1);text-decoration:none}
+.nav-badge{font-size:11px;font-weight:600;background:var(--aws-orange);color:var(--aws-navy);padding:3px 10px;border-radius:20px}
+
+/* HERO */
+.hero{background:var(--aws-navy);padding:72px 0 64px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 500px at 80% 50%,rgba(255,153,0,.07),transparent);pointer-events:none}
+.hero-inner{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:1fr 420px;gap:64px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--aws-orange);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+.hero-eyebrow::before{content:'';display:block;width:6px;height:6px;background:var(--aws-orange);border-radius:50%}
+.hero h1{font-size:48px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.03em;margin-bottom:20px}
+.hero h1 span{color:var(--aws-orange)}
+.hero-desc{font-size:16px;line-height:1.7;color:rgba(255,255,255,.6);margin-bottom:32px;max-width:520px}
+.hero-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:14px;font-weight:600;padding:10px 22px;border-radius:6px;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-orange{background:var(--aws-orange);color:var(--aws-navy)}
+.btn-orange:hover{background:var(--aws-orange-h);text-decoration:none}
+.btn-outline{background:transparent;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.25)}
+.btn-outline:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+
+/* CHIP DIAGRAM */
+.chip-wrap{background:var(--aws-navy);border-radius:var(--rl);padding:28px;box-shadow:var(--shadow-lg);position:relative;z-index:1}
+.chip-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.chip-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+.nc-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:12px}
+.nc-cell{aspect-ratio:1;background:rgba(255,153,0,.14);border:1px solid rgba(255,153,0,.28);border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,153,0,.6);cursor:pointer;transition:background .15s,border-color .15s}
+.nc-cell:hover{background:rgba(255,153,0,.32);border-color:var(--aws-orange)}
+.hbm-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px}
+.hbm-cell{background:rgba(0,137,123,.14);border:1px solid rgba(0,200,180,.3);border-radius:3px;padding:5px 6px;font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(0,212,180,.85);text-align:center;line-height:1.4}
+.chip-legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.4)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+
+/* TOOLTIP */
+#tooltip{position:fixed;pointer-events:none;z-index:300;background:var(--aws-navy);color:#fff;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:6px;box-shadow:var(--shadow-md);display:none;white-space:nowrap}
+
+/* STAT STRIP */
+.stat-strip{background:#fff;border-bottom:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.stat-strip-inner{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:repeat(4,1fr)}
+.stat-item{padding:22px 28px;border-right:1px solid var(--border)}
+.stat-item:last-child{border-right:none}
+.stat-num{font-size:30px;font-weight:800;color:var(--aws-navy);letter-spacing:-.03em;line-height:1}
+.stat-num span{color:var(--aws-orange)}
+.stat-label{font-size:13px;color:var(--text-muted);margin-top:3px}
+
+/* SECTIONS */
+section{padding:72px 0}
+section:nth-child(even){background:var(--bg-subtle)}
+.section-label{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--aws-orange);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.section-label::before{content:'';display:block;width:14px;height:2px;background:var(--aws-orange);border-radius:2px}
+h2{font-size:32px;font-weight:800;color:var(--aws-navy);letter-spacing:-.025em;line-height:1.15;margin-bottom:10px}
+h2 em{font-style:normal;color:var(--aws-orange)}
+.section-desc{font-size:15px;color:var(--text-sec);line-height:1.7;max-width:600px;margin-bottom:36px}
+
+/* CARDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:26px;box-shadow:var(--shadow-sm);transition:box-shadow .2s,border-color .2s,transform .2s;position:relative}
+.card:hover{box-shadow:var(--shadow-md);border-color:var(--border-med);transform:translateY(-1px)}
+.card-to{border-top:3px solid var(--aws-orange)}
+.card-tb{border-top:3px solid var(--aws-blue)}
+.card-tt{border-top:3px solid var(--aws-teal)}
+.card-tp{border-top:3px solid var(--aws-purple)}
+.card-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:14px}
+.ico{background:var(--aws-orange-l)} .icb{background:var(--aws-blue-l)} .ict{background:var(--aws-teal-l)} .icp{background:var(--aws-purple-l)}
+.card h3{font-size:16px;font-weight:700;color:var(--aws-navy);margin-bottom:7px;letter-spacing:-.01em}
+.card p{font-size:14px;color:var(--text-sec);line-height:1.65}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{font-size:11px;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:4px}
+.to{background:var(--aws-orange-l);color:#a06000}
+.tb{background:var(--aws-blue-l);color:#004f84}
+.tt{background:var(--aws-teal-l);color:#00695c}
+.tn{background:#eef0f3;color:var(--aws-navy)}
+
+/* MEMORY */
+.mem-hier{display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;align-items:start}
+.mem-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow-sm)}
+.mem-box-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.mem-box-val{font-size:26px;font-weight:800;color:var(--aws-navy);letter-spacing:-.03em;line-height:1}
+.mem-box-desc{font-size:13px;color:var(--text-sec);line-height:1.55;margin-top:7px}
+.mem-bars{display:flex;flex-direction:column;gap:8px}
+.mem-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.mem-bar-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,153,0,.07),transparent);border-right:2px solid rgba(255,153,0,.25);pointer-events:none}
+.mem-bar-n{font-size:13px;font-weight:600;color:var(--aws-navy);position:relative}
+.mem-bar-s{font-size:11px;color:var(--text-muted);position:relative;margin-top:1px}
+.mem-bar-v{font-size:17px;font-weight:800;color:var(--aws-orange);position:relative;letter-spacing:-.02em}
+
+/* DATA TYPES */
+.dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.dtype-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;text-align:center;transition:all .2s;box-shadow:var(--shadow-sm)}
+.dtype-card:hover{border-color:var(--aws-orange);box-shadow:0 0 0 3px rgba(255,153,0,.08),var(--shadow-sm)}
+.dtype-card.primary{border-top:3px solid var(--aws-orange)}
+.dtype-card.secondary{border-top:3px solid var(--aws-blue)}
+.dtype-badge{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--aws-navy);margin-bottom:3px}
+.dtype-name{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.dtype-desc{font-size:12px;color:var(--text-sec);line-height:1.5}
+
+/* INTERCONNECT */
+.ic-wrap{background:var(--aws-navy);border-radius:var(--rl);padding:32px;box-shadow:var(--shadow-lg)}
+.ic-row{display:grid;grid-template-columns:1fr 110px 1fr;gap:0;align-items:center}
+.ic-chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:18px}
+.ic-chip-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,153,0,.85);margin-bottom:10px}
+.ic-cores-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:6px}
+.ic-sq{height:14px;border-radius:2px;background:rgba(255,153,0,.16);border:1px solid rgba(255,153,0,.28)}
+.ic-sq.teal{background:rgba(0,200,180,.12);border-color:rgba(0,200,180,.28)}
+.ic-chip-sub{font-size:9px;color:rgba(255,255,255,.3);text-align:center;margin-top:4px}
+.ic-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.ic-line{width:100%;height:2px;background:linear-gradient(90deg,rgba(255,153,0,.2),rgba(255,153,0,.8),rgba(255,153,0,.2));animation:flow 2s linear infinite}
+.ic-line.t{background:linear-gradient(90deg,rgba(0,200,180,.2),rgba(0,200,180,.8),rgba(0,200,180,.2));animation-delay:.5s}
+@keyframes flow{0%,100%{opacity:.5}50%{opacity:1}}
+.ic-lbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+.ic-footer{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;border-top:1px solid rgba(255,255,255,.07);padding-top:18px}
+.ic-footer-item-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.ic-footer-item-desc{font-size:12px;color:rgba(255,255,255,.5);line-height:1.55}
+
+/* SDK STACK */
+.sdk-stack{display:flex;flex-direction:column;gap:3px}
+.sdk-layer{padding:12px 18px;border-radius:5px;display:flex;align-items:center;justify-content:space-between;transition:filter .15s}
+.sdk-layer:hover{filter:brightness(1.05)}
+.sdk-0{background:#232f3e} .sdk-1{background:#2d3c4e} .sdk-2{background:#374b60}
+.sdk-3{background:#425970} .sdk-4{background:#4d6880} .sdk-5{background:#58788f}
+.sdk-name{font-size:14px;font-weight:600;color:#fff}
+.sdk-badge{font-size:11px;font-weight:500;color:rgba(255,255,255,.45);background:rgba(255,255,255,.07);padding:2px 9px;border-radius:4px}
+.sdk-arrow{text-align:center;color:var(--aws-orange);font-size:12px;margin:1px 0}
+
+/* CODE */
+.code-wrap{background:#1a2332;border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow-md)}
+.code-hdr{background:#21304a;padding:9px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07)}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.5)}
+.code-dots{display:flex;gap:5px}
+.code-dot{width:10px;height:10px;border-radius:50%}
+.code-body{padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.75;color:#ced8e8;white-space:pre;overflow-x:auto}
+.kw{color:#79b8ff} .fn{color:#b3d9ff} .cm{color:#566573;font-style:italic} .nu{color:#f8c555}
+
+/* CALLOUT */
+.callout{background:var(--aws-orange-l);border-left:4px solid var(--aws-orange);border-radius:0 var(--r) var(--r) 0;padding:12px 16px;margin:16px 0;font-size:13px;color:#704000;line-height:1.6}
+.callout strong{color:#4a2900}
+code{background:var(--bg-muted);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:92%}
+
+/* TABS */
+.tabs-hdr{display:flex;gap:2px;background:var(--bg-muted);border-radius:8px;padding:4px;width:fit-content;margin-bottom:24px}
+.tab-btn{font-family:inherit;font-size:13px;font-weight:500;color:var(--text-muted);background:transparent;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;transition:all .15s}
+.tab-btn:hover{color:var(--text);background:rgba(255,255,255,.6)}
+.tab-btn.active{background:#fff;color:var(--aws-navy);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.tab-panel{display:none}
+.tab-panel.active{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+.tab-txt h3{font-size:19px;font-weight:700;color:var(--aws-navy);margin-bottom:8px;letter-spacing:-.01em}
+.tab-txt p{font-size:14px;color:var(--text-sec);line-height:1.7;margin-bottom:12px}
+.tab-diag{background:var(--aws-navy);border-radius:var(--rl);padding:22px;box-shadow:var(--shadow-md)}
+
+/* INSTANCES */
+.inst-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.inst-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:26px;box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s}
+.inst-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.inst-card.feat{border-color:var(--aws-orange);box-shadow:0 0 0 2px rgba(255,153,0,.15),var(--shadow-sm)}
+.inst-feat-badge{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--aws-orange-l);color:#a06000;padding:2px 7px;border-radius:4px;display:inline-block;margin-bottom:8px}
+.inst-name{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:600;color:var(--aws-navy);margin-bottom:18px}
+.spec-tbl{width:100%;border-collapse:collapse}
+.spec-tbl tr{border-bottom:1px solid var(--border)}
+.spec-tbl tr:last-child{border-bottom:none}
+.spec-tbl td{padding:8px 0;font-size:13px;vertical-align:top}
+.spec-tbl td:first-child{color:var(--text-muted);width:50%}
+.spec-tbl td:last-child{color:var(--aws-navy);font-weight:500;text-align:right}
+.hl{color:var(--aws-orange)!important;font-weight:700!important}
+.hlb{color:var(--aws-blue)!important;font-weight:700!important}
+
+/* BENCHMARKS */
+.bench-grp{margin-bottom:36px}
+.bench-grp-title{font-size:14px;font-weight:700;color:var(--aws-navy);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.bench-grp-title .badge{font-size:11px;font-weight:600;padding:2px 7px;background:var(--bg-muted);border-radius:4px;color:var(--text-muted)}
+.bench-row{display:grid;grid-template-columns:165px 1fr 70px;gap:10px;align-items:center;margin-bottom:8px}
+.bench-lbl{font-size:13px;color:var(--text-sec);text-align:right;font-weight:500}
+.bench-track{height:26px;background:var(--bg-muted);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.bench-fill{height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,var(--aws-orange),#ffb833);transition:width 1.4s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;padding-left:7px}
+.bench-fill.bl{background:linear-gradient(90deg,var(--aws-blue),#0099e6)}
+.bench-fill-lbl{font-size:10px;font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap}
+.bench-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--aws-orange)}
+.bench-val.bl{color:var(--aws-blue)}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:30px}
+.timeline::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--border);border-radius:2px}
+.tl-item{position:relative;margin-bottom:32px}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot{position:absolute;left:-30px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--border-med);box-shadow:0 0 0 3px #fff}
+.tl-dot.active{border-color:var(--aws-orange);background:var(--aws-orange);box-shadow:0 0 0 3px var(--aws-orange-l)}
+.tl-year{font-size:11px;font-weight:700;color:var(--aws-orange);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.tl-title{font-size:16px;font-weight:700;color:var(--aws-navy);margin-bottom:5px}
+.tl-desc{font-size:13px;color:var(--text-sec);line-height:1.65}
+
+/* FOOTER */
+footer{background:var(--aws-navy);padding:36px 0}
+.footer-inner{max-width:1240px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-brand{font-size:14px;font-weight:700;color:rgba(255,255,255,.8)}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:13px;color:rgba(255,255,255,.45);transition:color .15s}
+.footer-links a:hover{color:#fff;text-decoration:none}
+.footer-copy{font-size:12px;color:rgba(255,255,255,.25)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-visual{display:none}
+  .stat-strip-inner{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3,.grid-4,.mem-hier,.inst-grid,.dtype-grid{grid-template-columns:1fr 1fr}
+  .tab-panel.active{grid-template-columns:1fr}
+  h2{font-size:26px} .hero h1{font-size:36px}
+}
+@media(max-width:600px){
+  .container,.cw{padding:0 16px}
+  .nav-links{display:none}
+  .grid-2,.grid-3,.grid-4,.dtype-grid,.mem-hier,.inst-grid{grid-template-columns:1fr}
+  .stat-strip-inner{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="tooltip"></div>
+
+<!-- NAV -->
+<header>
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">TRN</div>
+      AWS Trainium Deep Dive
+    </div>
+    <ul class="nav-links">
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#memory">Memory</a></li>
+      <li><a href="#interconnect">Interconnect</a></li>
+      <li><a href="#software">SDK</a></li>
+      <li><a href="#parallelism">Parallelism</a></li>
+      <li><a href="#instances">Instances</a></li>
+      <li><a href="#performance">Performance</a></li>
+    </ul>
+    <div class="nav-badge">Trn1 / Trn1n</div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">AWS Custom Silicon · ML Training</div>
+      <h1>AWS <span>Trainium</span><br>Deep Dive</h1>
+      <p class="hero-desc">Purpose-built for large-scale deep learning training. Trainium is AWS's second-generation ML accelerator delivering the highest performance-per-dollar for PyTorch, JAX, and TensorFlow workloads — from fine-tuning to frontier model pretraining.</p>
+      <div class="hero-actions">
+        <a href="#architecture" class="btn btn-orange">Explore Architecture</a>
+        <a href="#software" class="btn btn-outline">SDK Stack →</a>
+        <a href="https://awsdocs-neuron.readthedocs-hosted.com" target="_blank" class="btn btn-outline">Neuron Docs ↗</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="chip-wrap">
+        <div class="chip-title">Trainium Chip — NeuronCore v2 × 16</div>
+        <div class="nc-grid" id="hero-grid"></div>
+        <div class="hbm-row">
+          <div class="hbm-cell">HBM 0<br>8 GB</div>
+          <div class="hbm-cell">HBM 1<br>8 GB</div>
+          <div class="hbm-cell">HBM 2<br>8 GB</div>
+          <div class="hbm-cell">HBM 3<br>8 GB</div>
+        </div>
+        <div class="chip-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(255,153,0,.4)"></div>NeuronCore v2</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(0,200,180,.4)"></div>HBM (32 GB)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stat-strip">
+  <div class="stat-strip-inner">
+    <div class="stat-item"><div class="stat-num">16<span>×</span></div><div class="stat-label">NeuronCore v2 per chip</div></div>
+    <div class="stat-item"><div class="stat-num">512<span>GB</span></div><div class="stat-label">HBM — trn1.32xlarge</div></div>
+    <div class="stat-item"><div class="stat-num">800<span>Gb/s</span></div><div class="stat-label">EFA Network bandwidth</div></div>
+    <div class="stat-item"><div class="stat-num">50<span>%</span></div><div class="stat-label">Lower cost vs GPU training</div></div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label">Core Architecture</div>
+    <h2>Built for <em>Training</em> at Scale</h2>
+    <p class="section-desc">Trainium integrates 16 NeuronCore v2 processors per chip, each with dedicated compute engines and a high-bandwidth scratchpad, all connected via a custom intra-chip fabric.</p>
+
+    <div class="grid-2 reveal">
+      <div class="card card-to">
+        <div class="card-icon ico">⬡</div>
+        <h3>NeuronCore v2</h3>
+        <p>Each chip integrates 16 NeuronCore v2 units. Every core contains a high-throughput Tensor engine (matrix multiply), a Vector engine (element-wise ops), a Scalar engine (control logic), and a dedicated SRAM scratchpad for near-zero latency data access.</p>
+        <div class="tags"><span class="tag to">Tensor Engine</span><span class="tag to">Vector Engine</span><span class="tag tn">Scalar Engine</span><span class="tag tn">SRAM Scratchpad</span></div>
+      </div>
+      <div class="card card-tb">
+        <div class="card-icon icb">▪</div>
+        <h3>HBM Memory</h3>
+        <p>High Bandwidth Memory is stacked directly on the Trainium die. Each chip provides 32 GB of HBM across four stacks. The trn1.32xlarge pairs 16 chips for 512 GB total — enabling very large model training without offloading to host memory.</p>
+        <div class="tags"><span class="tag tb">32 GB per chip</span><span class="tag tb">512 GB on trn1.32xlarge</span><span class="tag tn">High bandwidth</span></div>
+      </div>
+      <div class="card card-tt">
+        <div class="card-icon ict">⇄</div>
+        <h3>NeuronLink</h3>
+        <p>NeuronLink is AWS's custom intra-node interconnect between Trainium chips. It delivers significantly higher bandwidth than PCIe for AllReduce operations, enabling efficient data-parallel and model-parallel training within a single instance.</p>
+        <div class="tags"><span class="tag tt">Intra-node</span><span class="tag tt">AllReduce</span><span class="tag tn">Low latency</span></div>
+      </div>
+      <div class="card card-tp">
+        <div class="card-icon icp">⌬</div>
+        <h3>Elastic Fabric Adapter</h3>
+        <p>The trn1.32xlarge provides 8 × 100 Gbps EFA interfaces (800 Gbps total) for inter-node communication. trn1n.32xlarge doubles this to 1,600 Gbps. EFA supports NCCL and MPI collectives for distributed training across hundreds of nodes.</p>
+        <div class="tags"><span class="tag tn">8 × 100 Gbps</span><span class="tag tn">800 Gbps total</span><span class="tag tb">NCCL / MPI</span></div>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:28px">
+      <div class="chip-wrap">
+        <div class="chip-title">Interactive NeuronCore Layout — hover a core to inspect</div>
+        <div class="nc-grid" id="main-grid"></div>
+        <div class="hbm-row">
+          <div class="hbm-cell">HBM Stack 0 · 8 GB</div>
+          <div class="hbm-cell">HBM Stack 1 · 8 GB</div>
+          <div class="hbm-cell">HBM Stack 2 · 8 GB</div>
+          <div class="hbm-cell">HBM Stack 3 · 8 GB</div>
+        </div>
+        <div class="chip-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(255,153,0,.35)"></div>NeuronCore v2 (×16)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(0,200,180,.35)"></div>HBM Stack (×4, 8 GB each)</div>
+          <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.3)">Hover to inspect →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MEMORY -->
+<section id="memory">
+  <div class="container">
+    <div class="section-label">Memory Subsystem</div>
+    <h2>Three-Level <em>Memory</em> Hierarchy</h2>
+    <p class="section-desc">SRAM scratchpad, HBM device memory, and host DRAM form a latency-optimized hierarchy. The Neuron compiler manages data placement across all three levels automatically.</p>
+
+    <div class="mem-hier reveal">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="mem-box" style="border-top:3px solid var(--aws-orange)">
+          <div class="mem-box-label">On-Chip SRAM</div>
+          <div class="mem-box-val">32 MB</div>
+          <div class="mem-box-desc">Per NeuronCore scratchpad. Sub-cycle access. Managed entirely by neuronx-cc compiler — no manual control needed.</div>
+        </div>
+        <div style="text-align:center;padding:4px 0;font-size:18px;color:var(--border-med)">↓</div>
+        <div class="mem-box">
+          <div class="mem-box-label">Spill to HBM</div>
+          <div class="mem-box-val">Auto</div>
+          <div class="mem-box-desc">Compiler tiles large tensors and spills overflow to HBM transparently. Zero programmer effort.</div>
+        </div>
+      </div>
+
+      <div class="mem-bars">
+        <div class="mem-bar"><div class="mem-bar-fill" style="width:20%"></div><div><div class="mem-bar-n">HBM per chip</div><div class="mem-bar-s">All instance types</div></div><div class="mem-bar-v">32 GB</div></div>
+        <div class="mem-bar"><div class="mem-bar-fill" style="width:12%"></div><div><div class="mem-bar-n">trn1.2xlarge</div><div class="mem-bar-s">1 chip</div></div><div class="mem-bar-v">32 GB</div></div>
+        <div class="mem-bar"><div class="mem-bar-fill" style="width:100%"></div><div><div class="mem-bar-n">trn1.32xlarge</div><div class="mem-bar-s">16 chips</div></div><div class="mem-bar-v">512 GB</div></div>
+        <div class="mem-bar"><div class="mem-bar-fill" style="width:100%"></div><div><div class="mem-bar-n">trn1n.32xlarge</div><div class="mem-bar-s">16 chips + 2× EFA</div></div><div class="mem-bar-v">512 GB</div></div>
+        <div class="mem-bar" style="border-color:var(--aws-blue)"><div class="mem-bar-fill" style="width:100%;background:linear-gradient(90deg,rgba(0,115,187,.06),transparent);border-right-color:rgba(0,115,187,.3)"></div><div><div class="mem-bar-n">Host DRAM</div><div class="mem-bar-s">trn1.32xlarge</div></div><div class="mem-bar-v" style="color:var(--aws-blue)">512 GB</div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="mem-box" style="border-top:3px solid var(--aws-blue)">
+          <div class="mem-box-label">Host DRAM</div>
+          <div class="mem-box-val">512 GB</div>
+          <div class="mem-box-desc">CPU-side memory for dataset streaming, checkpoint staging, and CPU preprocessing. Transfers to HBM via PCIe.</div>
+        </div>
+        <div style="text-align:center;padding:4px 0;font-size:18px;color:var(--border-med)">↑</div>
+        <div class="mem-box">
+          <div class="mem-box-label">EFA RDMA</div>
+          <div class="mem-box-val">800 Gb/s</div>
+          <div class="mem-box-desc">Remote memory access for inter-node gradient aggregation and parameter synchronization.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px">
+      <div class="section-label">Supported Precisions</div>
+      <h2>Data <em>Types</em></h2>
+      <p class="section-desc">NeuronCore v2 natively accelerates a full range of numeric formats for training and inference.</p>
+      <div class="dtype-grid reveal">
+        <div class="dtype-card primary"><div class="dtype-badge">BF16</div><div class="dtype-name">BFloat16 ★</div><div class="dtype-desc">Primary training format. FP32 exponent range. Natively accelerated by matrix engines.</div></div>
+        <div class="dtype-card secondary"><div class="dtype-badge">FP16</div><div class="dtype-name">Float16</div><div class="dtype-desc">Mixed-precision training with loss scaling. Common in LLM workflows using PyTorch AMP.</div></div>
+        <div class="dtype-card"><div class="dtype-badge">FP32</div><div class="dtype-name">Float32</div><div class="dtype-desc">Full precision for optimizer states and master weights in mixed-precision training.</div></div>
+        <div class="dtype-card"><div class="dtype-badge">TF32</div><div class="dtype-name">TFloat32</div><div class="dtype-desc">Accelerated matmul with FP32 accumulation. Higher throughput with minimal accuracy loss.</div></div>
+        <div class="dtype-card primary"><div class="dtype-badge">FP8</div><div class="dtype-name">Float8 E4M3 ★</div><div class="dtype-desc">Ultra-low precision for 100B+ parameter training. Halves memory vs BF16 for activations.</div></div>
+        <div class="dtype-card"><div class="dtype-badge">INT8</div><div class="dtype-name">Integer 8</div><div class="dtype-desc">Quantized inference. 2× throughput with post-training quantization calibration.</div></div>
+        <div class="dtype-card"><div class="dtype-badge">UINT8</div><div class="dtype-name">Unsigned Int 8</div><div class="dtype-desc">Quantized activation caching and memory-optimized inference patterns.</div></div>
+        <div class="dtype-card"><div class="dtype-badge">INT32</div><div class="dtype-name">Integer 32</div><div class="dtype-desc">Accumulation for integer dot products. Index tensors, masks, and token IDs.</div></div>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px">★ Recommended formats for LLM training workloads</p>
+    </div>
+  </div>
+</section>
+
+<!-- INTERCONNECT -->
+<section id="interconnect">
+  <div class="container">
+    <div class="section-label">Interconnect Fabric</div>
+    <h2>NeuronLink & <em>EFA</em></h2>
+    <p class="section-desc">Two-tier interconnect: NeuronLink for sub-microsecond chip-to-chip communication within a node, and Elastic Fabric Adapter for scale-out across thousands of nodes.</p>
+
+    <div class="reveal">
+      <div class="ic-wrap">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:22px">Trainium Node Topology — trn1.32xlarge</div>
+        <div class="ic-row">
+          <div class="ic-chip">
+            <div class="ic-chip-title">Trainium Chips [0–7]</div>
+            <div class="ic-cores-mini">
+              <div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div>
+              <div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div>
+            </div>
+            <div class="ic-chip-sub">32 GB HBM each · NeuronLink mesh</div>
+          </div>
+          <div class="ic-mid">
+            <div class="ic-lbl">NeuronLink</div>
+            <div class="ic-line"></div>
+            <div class="ic-lbl" style="color:rgba(255,153,0,.5)">Intra-node</div>
+            <div style="height:12px"></div>
+            <div class="ic-lbl">EFA · 800 Gbps</div>
+            <div class="ic-line t"></div>
+            <div class="ic-lbl" style="color:rgba(0,200,180,.5)">Inter-node</div>
+          </div>
+          <div class="ic-chip">
+            <div class="ic-chip-title" style="color:rgba(0,200,180,.8)">Trainium Chips [8–15]</div>
+            <div class="ic-cores-mini">
+              <div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div>
+              <div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div>
+            </div>
+            <div class="ic-chip-sub">32 GB HBM each · same topology</div>
+          </div>
+        </div>
+        <div class="ic-footer">
+          <div><div class="ic-footer-item-title" style="color:rgba(255,153,0,.75)">NeuronLink</div><div class="ic-footer-item-desc">Custom AWS interconnect. Higher BW than PCIe. Supports AllReduce across all 16 chips.</div></div>
+          <div><div class="ic-footer-item-title" style="color:rgba(0,200,180,.75)">EFA (trn1.32xlarge)</div><div class="ic-footer-item-desc">8 × 100 Gbps = 800 Gbps total. RDMA-capable. NCCL, MPI. Single-digit µs latency.</div></div>
+          <div><div class="ic-footer-item-title" style="color:rgba(100,160,255,.75)">EFA (trn1n.32xlarge)</div><div class="ic-footer-item-desc">16 × 100 Gbps = 1,600 Gbps. Doubled NIC count for maximal multi-node bandwidth.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOFTWARE STACK -->
+<section id="software">
+  <div class="container">
+    <div class="section-label">AWS Neuron SDK</div>
+    <h2>The <em>Software</em> Stack</h2>
+    <p class="section-desc">A complete ML SDK that abstracts Trainium hardware. Write standard PyTorch or JAX, and the Neuron compiler lowers your model to hardware-optimized NEFF executables.</p>
+
+    <div class="grid-2 reveal">
+      <div>
+        <div class="sdk-stack">
+          <div class="sdk-layer sdk-0"><span class="sdk-name">PyTorch · JAX · TensorFlow</span><span class="sdk-badge">ML Frameworks</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-1"><span class="sdk-name">torch-neuronx / jax-neuronx</span><span class="sdk-badge">Framework Plugins</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-2"><span class="sdk-name">NxD Training / NxD Inference</span><span class="sdk-badge">Distributed Libs</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-3"><span class="sdk-name">neuronx-cc  (Graph Compiler)</span><span class="sdk-badge">XLA → NEFF</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-4"><span class="sdk-name">Neuron Runtime (NRT)</span><span class="sdk-badge">HW Abstraction</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-5"><span class="sdk-name">Neuron Driver + Trainium</span><span class="sdk-badge">Silicon</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="code-wrap">
+          <div class="code-hdr"><div class="code-dots"><div class="code-dot" style="background:#ff5f57"></div><div class="code-dot" style="background:#febc2e"></div><div class="code-dot" style="background:#28c840"></div></div><div class="code-fname">train.py</div></div>
+          <div class="code-body"><span class="cm"># Minimal change to existing PyTorch code</span>
+<span class="kw">import</span> torch
+<span class="kw">import</span> torch_xla.core.xla_model <span class="kw">as</span> xm
+
+<span class="cm"># Get Trainium device (replaces "cuda")</span>
+device = xm.<span class="fn">xla_device</span>()
+
+model = <span class="fn">MyTransformerModel</span>().<span class="fn">to</span>(device)
+optimizer = torch.optim.<span class="fn">AdamW</span>(model.<span class="fn">parameters</span>())
+
+<span class="kw">for</span> batch <span class="kw">in</span> dataloader:
+    x = batch[<span class="nu">0</span>].<span class="fn">to</span>(device)
+    loss = model(x).loss
+    loss.<span class="fn">backward</span>()
+    xm.<span class="fn">optimizer_step</span>(optimizer)
+    xm.<span class="fn">mark_step</span>()  <span class="cm"># triggers XLA compilation</span></div>
+        </div>
+        <div class="code-wrap" style="margin-top:10px">
+          <div class="code-hdr"><div class="code-dots"><div class="code-dot" style="background:#ff5f57"></div><div class="code-dot" style="background:#febc2e"></div><div class="code-dot" style="background:#28c840"></div></div><div class="code-fname">compile.sh</div></div>
+          <div class="code-body"><span class="cm"># Pre-compile graphs in parallel</span>
+neuron_parallel_compile \
+  --num_parallel <span class="nu">8</span> \
+  python train.py \
+  --batch_size <span class="nu">32</span> --num_steps <span class="nu">10</span></div>
+        </div>
+        <div class="callout">
+          <strong>Key insight:</strong> The only API change from standard PyTorch is replacing <code>torch.device("cuda")</code> with <code>xm.xla_device()</code> and adding <code>xm.mark_step()</code> after the optimizer step.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARALLELISM -->
+<section id="parallelism">
+  <div class="container">
+    <div class="section-label">Distributed Training</div>
+    <h2>Parallelism <em>Strategies</em></h2>
+    <p class="section-desc">NxD Training and NxD Core provide first-class support for all parallelism strategies, enabling efficient training of models with trillions of parameters.</p>
+
+    <div class="reveal">
+      <div class="tabs-hdr">
+        <button class="tab-btn active" onclick="tab(this,'dp')">Data Parallel</button>
+        <button class="tab-btn" onclick="tab(this,'tp')">Tensor Parallel</button>
+        <button class="tab-btn" onclick="tab(this,'pp')">Pipeline Parallel</button>
+        <button class="tab-btn" onclick="tab(this,'zero')">ZeRO Optimizer</button>
+      </div>
+
+      <div class="tab-panel active" id="t-dp">
+        <div class="tab-txt">
+          <h3>Data Parallelism</h3>
+          <p>Each NeuronCore processes a separate data batch. The full model is replicated across all workers. Gradients are synchronized via AllReduce after each backward pass — over NeuronLink intra-node or EFA inter-node.</p>
+          <p>Supported natively via <code>torch.nn.parallel.DistributedDataParallel</code>. Scales linearly with chip count.</p>
+          <div class="tags" style="margin-top:10px"><span class="tag to">AllReduce</span><span class="tag to">ZeRO-1</span><span class="tag tn">NeuronLink</span><span class="tag tn">Linear scaling</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 320 195" style="width:100%">
+            <text x="160" y="17" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,255,255,.35)" text-anchor="middle" letter-spacing="1">DATA PARALLEL — 4 WORKERS</text>
+            <rect x="10" y="28" width="62" height="44" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="41" y="50" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">Batch 0</text>
+            <text x="41" y="64" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">data shard</text>
+            <rect x="86" y="28" width="62" height="44" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="117" y="50" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">Batch 1</text>
+            <text x="117" y="64" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">data shard</text>
+            <rect x="162" y="28" width="62" height="44" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="193" y="50" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">Batch 2</text>
+            <text x="193" y="64" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">data shard</text>
+            <rect x="238" y="28" width="72" height="44" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="274" y="50" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">Batch 3</text>
+            <text x="274" y="64" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">data shard</text>
+            <line x1="41" y1="72" x2="41" y2="94" stroke="rgba(255,255,255,.15)" stroke-dasharray="3,3"/>
+            <line x1="117" y1="72" x2="117" y2="94" stroke="rgba(255,255,255,.15)" stroke-dasharray="3,3"/>
+            <line x1="193" y1="72" x2="193" y2="94" stroke="rgba(255,255,255,.15)" stroke-dasharray="3,3"/>
+            <line x1="274" y1="72" x2="274" y2="94" stroke="rgba(255,255,255,.15)" stroke-dasharray="3,3"/>
+            <rect x="10" y="94" width="62" height="36" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="41" y="116" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 0</text>
+            <rect x="86" y="94" width="62" height="36" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="117" y="116" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 1</text>
+            <rect x="162" y="94" width="62" height="36" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="193" y="116" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 2</text>
+            <rect x="238" y="94" width="72" height="36" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="274" y="116" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 3</text>
+            <rect x="10" y="148" width="300" height="24" rx="4" fill="rgba(255,153,0,.07)" stroke="rgba(255,153,0,.28)" stroke-dasharray="5,3"/>
+            <text x="160" y="164" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,153,0,.65)" text-anchor="middle">AllReduce — NeuronLink / EFA</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="t-tp">
+        <div class="tab-txt">
+          <h3>Tensor Parallelism</h3>
+          <p>Large weight matrices are sharded across multiple NeuronCores. Each core computes its partition of the matrix multiply; results are assembled with AllGather.</p>
+          <p>Provided by NxD Core's <code>ColumnParallelLinear</code> / <code>RowParallelLinear</code> APIs. Ideal for attention heads in transformer models.</p>
+          <div class="tags" style="margin-top:10px"><span class="tag tb">Weight sharding</span><span class="tag tb">AllGather</span><span class="tag tn">ColumnParallel</span><span class="tag tn">RowParallel</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 320 190" style="width:100%">
+            <text x="160" y="17" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,255,255,.35)" text-anchor="middle" letter-spacing="1">TENSOR PARALLEL — WEIGHT SHARDING</text>
+            <rect x="90" y="28" width="140" height="34" rx="4" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.18)"/>
+            <text x="160" y="50" font-family="Inter" font-size="11" font-weight="600" fill="rgba(255,255,255,.65)" text-anchor="middle">Full Weight Matrix W</text>
+            <line x1="110" y1="62" x2="60" y2="88" stroke="rgba(255,153,0,.35)"/>
+            <line x1="160" y1="62" x2="160" y2="88" stroke="rgba(255,153,0,.35)"/>
+            <line x1="210" y1="62" x2="258" y2="88" stroke="rgba(255,153,0,.35)"/>
+            <rect x="20" y="88" width="80" height="34" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="60" y="110" font-family="Inter" font-size="9" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">W[0 : H/3]</text>
+            <rect x="120" y="88" width="80" height="34" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="160" y="110" font-family="Inter" font-size="9" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">W[H/3 : 2H/3]</text>
+            <rect x="220" y="88" width="80" height="34" rx="4" fill="rgba(255,153,0,.14)" stroke="rgba(255,153,0,.4)"/>
+            <text x="260" y="110" font-family="Inter" font-size="9" font-weight="600" fill="rgba(255,153,0,.9)" text-anchor="middle">W[2H/3 : H]</text>
+            <line x1="60" y1="122" x2="60" y2="146" stroke="rgba(0,200,180,.35)"/>
+            <line x1="160" y1="122" x2="160" y2="146" stroke="rgba(0,200,180,.35)"/>
+            <line x1="260" y1="122" x2="260" y2="146" stroke="rgba(0,200,180,.35)"/>
+            <rect x="20" y="146" width="80" height="28" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="60" y="164" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 0</text>
+            <rect x="120" y="146" width="80" height="28" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="160" y="164" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 1</text>
+            <rect x="220" y="146" width="80" height="28" rx="4" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.4)"/>
+            <text x="260" y="164" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">NC 2</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="t-pp">
+        <div class="tab-txt">
+          <h3>Pipeline Parallelism</h3>
+          <p>Model layers are partitioned into stages across devices. Uses 1F1B scheduling (one-forward-one-backward) with micro-batches to keep all stages busy.</p>
+          <p>NxD Training supports automatic stage partitioning. Activation recomputation reduces HBM usage by ~60%, enabling much larger models per chip.</p>
+          <div class="tags" style="margin-top:10px"><span class="tag tt">1F1B schedule</span><span class="tag tt">Micro-batching</span><span class="tag tn">Activation recompute</span><span class="tag tn">Auto-partitioning</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 320 190" style="width:100%">
+            <text x="160" y="17" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,255,255,.35)" text-anchor="middle" letter-spacing="1">PIPELINE — 4 STAGES (1F1B)</text>
+            <rect x="8" y="28" width="64" height="38" rx="4" fill="rgba(255,153,0,.18)" stroke="rgba(255,153,0,.5)"/>
+            <text x="40" y="50" font-family="Inter" font-size="10" font-weight="700" fill="rgba(255,153,0,1)" text-anchor="middle">Stage 0</text>
+            <text x="40" y="62" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">L 0–5</text>
+            <line x1="72" y1="47" x2="82" y2="47" stroke="rgba(255,153,0,.45)"/>
+            <rect x="82" y="28" width="64" height="38" rx="4" fill="rgba(255,153,0,.13)" stroke="rgba(255,153,0,.38)"/>
+            <text x="114" y="50" font-family="Inter" font-size="10" font-weight="700" fill="rgba(255,153,0,.9)" text-anchor="middle">Stage 1</text>
+            <text x="114" y="62" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">L 6–11</text>
+            <line x1="146" y1="47" x2="156" y2="47" stroke="rgba(255,153,0,.35)"/>
+            <rect x="156" y="28" width="64" height="38" rx="4" fill="rgba(255,153,0,.09)" stroke="rgba(255,153,0,.28)"/>
+            <text x="188" y="50" font-family="Inter" font-size="10" font-weight="700" fill="rgba(255,153,0,.75)" text-anchor="middle">Stage 2</text>
+            <text x="188" y="62" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">L 12–17</text>
+            <line x1="220" y1="47" x2="230" y2="47" stroke="rgba(255,153,0,.28)"/>
+            <rect x="230" y="28" width="80" height="38" rx="4" fill="rgba(255,153,0,.06)" stroke="rgba(255,153,0,.2)"/>
+            <text x="270" y="50" font-family="Inter" font-size="10" font-weight="700" fill="rgba(255,153,0,.6)" text-anchor="middle">Stage 3</text>
+            <text x="270" y="62" font-family="Inter" font-size="8" fill="rgba(255,255,255,.3)" text-anchor="middle">L 18–23</text>
+            <text x="8" y="92" font-family="Inter" font-size="9" font-weight="600" fill="rgba(255,255,255,.3)" letter-spacing="1">MICRO-BATCH SCHEDULE (1F1B)</text>
+            <rect x="8"   y="102" width="26" height="15" rx="2" fill="rgba(255,153,0,.25)" stroke="rgba(255,153,0,.5)"/>
+            <text x="21" y="114" font-family="Inter" font-size="8" font-weight="700" fill="rgba(255,153,0,1)" text-anchor="middle">F0</text>
+            <rect x="36"  y="102" width="26" height="15" rx="2" fill="rgba(255,153,0,.18)"/>
+            <text x="49" y="114" font-family="Inter" font-size="8" fill="rgba(255,153,0,.85)" text-anchor="middle">F1</text>
+            <rect x="64"  y="102" width="26" height="15" rx="2" fill="rgba(255,153,0,.12)"/>
+            <text x="77" y="114" font-family="Inter" font-size="8" fill="rgba(255,153,0,.7)" text-anchor="middle">F2</text>
+            <rect x="92"  y="102" width="26" height="15" rx="2" fill="rgba(255,153,0,.08)"/>
+            <text x="105" y="114" font-family="Inter" font-size="8" fill="rgba(255,153,0,.55)" text-anchor="middle">F3</text>
+            <rect x="120" y="102" width="26" height="15" rx="2" fill="rgba(0,137,123,.18)" stroke="rgba(0,200,180,.38)"/>
+            <text x="133" y="114" font-family="Inter" font-size="8" font-weight="700" fill="rgba(0,200,180,.9)" text-anchor="middle">B3</text>
+            <rect x="148" y="102" width="26" height="15" rx="2" fill="rgba(0,137,123,.14)"/>
+            <text x="161" y="114" font-family="Inter" font-size="8" fill="rgba(0,200,180,.75)" text-anchor="middle">B2</text>
+            <rect x="176" y="102" width="26" height="15" rx="2" fill="rgba(0,137,123,.1)"/>
+            <text x="189" y="114" font-family="Inter" font-size="8" fill="rgba(0,200,180,.6)" text-anchor="middle">B1</text>
+            <rect x="204" y="102" width="26" height="15" rx="2" fill="rgba(0,137,123,.07)"/>
+            <text x="217" y="114" font-family="Inter" font-size="8" fill="rgba(0,200,180,.5)" text-anchor="middle">B0</text>
+            <text x="8" y="150" font-family="Inter" font-size="9" fill="rgba(255,255,255,.35)">F = Forward pass   B = Backward pass</text>
+            <text x="8" y="166" font-family="Inter" font-size="9" fill="rgba(255,255,255,.35)">Activation checkpointing reduces HBM ~60%</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="t-zero">
+        <div class="tab-txt">
+          <h3>ZeRO Optimizer</h3>
+          <p>Zero Redundancy Optimizer shards optimizer states across workers, achieving near-linear memory reduction with world size. ZeRO-1 is natively supported in NxD Training.</p>
+          <p>Enables 70B+ parameter model training on a single trn1.32xlarge by dramatically reducing per-rank optimizer state memory from N to N/world_size.</p>
+          <div class="tags" style="margin-top:10px"><span class="tag to">ZeRO-1</span><span class="tag to">Optimizer sharding</span><span class="tag tn">Gradient sharding</span><span class="tag tn">4× memory reduction</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 320 190" style="width:100%">
+            <text x="160" y="17" font-family="Inter" font-size="10" font-weight="600" fill="rgba(255,255,255,.35)" text-anchor="middle" letter-spacing="1">ZeRO-1 OPTIMIZER STATE SHARDING</text>
+            <text x="8" y="38" font-family="Inter" font-size="10" fill="rgba(255,255,255,.35)">Without ZeRO (replicated):</text>
+            <rect x="8"   y="46" width="64" height="26" rx="3" fill="rgba(255,153,0,.07)" stroke="rgba(255,153,0,.22)"/>
+            <text x="40" y="63" font-family="Inter" font-size="8.5" fill="rgba(255,153,0,.55)" text-anchor="middle">R0: OPT[all]</text>
+            <rect x="84"  y="46" width="64" height="26" rx="3" fill="rgba(255,153,0,.07)" stroke="rgba(255,153,0,.22)"/>
+            <text x="116" y="63" font-family="Inter" font-size="8.5" fill="rgba(255,153,0,.55)" text-anchor="middle">R1: OPT[all]</text>
+            <rect x="160" y="46" width="64" height="26" rx="3" fill="rgba(255,153,0,.07)" stroke="rgba(255,153,0,.22)"/>
+            <text x="192" y="63" font-family="Inter" font-size="8.5" fill="rgba(255,153,0,.55)" text-anchor="middle">R2: OPT[all]</text>
+            <rect x="236" y="46" width="76" height="26" rx="3" fill="rgba(255,153,0,.07)" stroke="rgba(255,153,0,.22)"/>
+            <text x="274" y="63" font-family="Inter" font-size="8.5" fill="rgba(255,153,0,.55)" text-anchor="middle">R3: OPT[all]</text>
+            <text x="8" y="100" font-family="Inter" font-size="10" font-weight="600" fill="rgba(0,200,180,.75)">With ZeRO-1 (sharded):</text>
+            <rect x="8"   y="108" width="64" height="26" rx="3" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.38)"/>
+            <text x="40" y="125" font-family="Inter" font-size="7.5" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">R0: OPT[0:N/4]</text>
+            <rect x="84"  y="108" width="64" height="26" rx="3" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.38)"/>
+            <text x="116" y="125" font-family="Inter" font-size="7.5" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">R1: OPT[N/4:N/2]</text>
+            <rect x="160" y="108" width="64" height="26" rx="3" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.38)"/>
+            <text x="192" y="125" font-family="Inter" font-size="7.5" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">R2: OPT[N/2:3N/4]</text>
+            <rect x="236" y="108" width="76" height="26" rx="3" fill="rgba(0,137,123,.14)" stroke="rgba(0,200,180,.38)"/>
+            <text x="274" y="125" font-family="Inter" font-size="7.5" font-weight="600" fill="rgba(0,200,180,.9)" text-anchor="middle">R3: OPT[3N/4:N]</text>
+            <text x="8" y="158" font-family="Inter" font-size="10" fill="rgba(255,255,255,.35)">Per-rank memory: 4× reduction</text>
+            <text x="8" y="175" font-family="Inter" font-size="10" fill="rgba(255,255,255,.35)">Communication: AllGather at optimizer step</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTANCES -->
+<section id="instances">
+  <div class="container">
+    <div class="section-label">EC2 Instance Types</div>
+    <h2>Trn1 <em>Instance</em> Family</h2>
+    <p class="section-desc">From single-chip development to 16-chip production training nodes with maximum EFA bandwidth.</p>
+
+    <div class="inst-grid reveal">
+      <div class="inst-card">
+        <div class="inst-name">trn1.2xlarge</div>
+        <table class="spec-tbl">
+          <tr><td>Trainium chips</td><td>1</td></tr>
+          <tr><td>NeuronCores v2</td><td>2 (logical)</td></tr>
+          <tr><td>HBM memory</td><td>32 GB</td></tr>
+          <tr><td>vCPUs</td><td>8</td></tr>
+          <tr><td>Instance memory</td><td>32 GB</td></tr>
+          <tr><td>Network</td><td>Up to 12.5 Gbps</td></tr>
+          <tr><td>EFA</td><td>—</td></tr>
+          <tr><td>Best for</td><td>Dev &amp; testing</td></tr>
+        </table>
+      </div>
+      <div class="inst-card feat">
+        <div class="inst-feat-badge">Most Popular</div>
+        <div class="inst-name">trn1.32xlarge</div>
+        <table class="spec-tbl">
+          <tr><td>Trainium chips</td><td>16</td></tr>
+          <tr><td>NeuronCores v2</td><td>32 (logical)</td></tr>
+          <tr><td>HBM memory</td><td class="hl">512 GB</td></tr>
+          <tr><td>vCPUs</td><td>128</td></tr>
+          <tr><td>Instance memory</td><td>512 GB</td></tr>
+          <tr><td>Network</td><td class="hl">800 Gbps EFA</td></tr>
+          <tr><td>EFA interfaces</td><td>8 × 100 Gbps</td></tr>
+          <tr><td>Best for</td><td>LLM pretraining</td></tr>
+        </table>
+      </div>
+      <div class="inst-card">
+        <div class="inst-name">trn1n.32xlarge</div>
+        <table class="spec-tbl">
+          <tr><td>Trainium chips</td><td>16</td></tr>
+          <tr><td>NeuronCores v2</td><td>32 (logical)</td></tr>
+          <tr><td>HBM memory</td><td>512 GB</td></tr>
+          <tr><td>vCPUs</td><td>128</td></tr>
+          <tr><td>Instance memory</td><td>512 GB</td></tr>
+          <tr><td>Network</td><td class="hlb">1,600 Gbps EFA</td></tr>
+          <tr><td>EFA interfaces</td><td>16 × 100 Gbps</td></tr>
+          <tr><td>Best for</td><td>Multi-node cluster</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PERFORMANCE -->
+<section id="performance">
+  <div class="container">
+    <div class="section-label">Benchmarks</div>
+    <h2>Training <em>Performance</em></h2>
+    <p class="section-desc">Representative throughput and efficiency metrics on Trainium instances.</p>
+
+    <div class="grid-2 reveal">
+      <div>
+        <div class="bench-grp">
+          <div class="bench-grp-title">BERT Large Pretraining <span class="badge">Relative throughput</span></div>
+          <div class="bench-row"><div class="bench-lbl">trn1.2xlarge</div><div class="bench-track"><div class="bench-fill" data-w="18"><span class="bench-fill-lbl">1×</span></div></div><div class="bench-val">1×</div></div>
+          <div class="bench-row"><div class="bench-lbl">trn1.32xlarge</div><div class="bench-track"><div class="bench-fill" data-w="88"><span class="bench-fill-lbl">16×</span></div></div><div class="bench-val">16×</div></div>
+          <div class="bench-row"><div class="bench-lbl">trn1n.32xlarge</div><div class="bench-track"><div class="bench-fill" data-w="100"><span class="bench-fill-lbl">17×+</span></div></div><div class="bench-val">17×+</div></div>
+        </div>
+        <div class="bench-grp">
+          <div class="bench-grp-title">Llama 3 8B — MFU % <span class="badge">Model FLOP Utilization</span></div>
+          <div class="bench-row"><div class="bench-lbl">BF16 baseline</div><div class="bench-track"><div class="bench-fill bl" data-w="62"><span class="bench-fill-lbl">~62%</span></div></div><div class="bench-val bl">62%</div></div>
+          <div class="bench-row"><div class="bench-lbl">BF16 + ZeRO-1</div><div class="bench-track"><div class="bench-fill bl" data-w="75"><span class="bench-fill-lbl">~75%</span></div></div><div class="bench-val bl">75%</div></div>
+          <div class="bench-row"><div class="bench-lbl">BF16 + TP + PP</div><div class="bench-track"><div class="bench-fill bl" data-w="85"><span class="bench-fill-lbl">~85%</span></div></div><div class="bench-val bl">85%</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Generation Roadmap</div>
+        <h2 style="font-size:22px;margin-bottom:22px">The <em>Trainium</em> Arc</h2>
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-year">2021</div><div class="tl-title">Trainium 1 (Trn1)</div><div class="tl-desc">First AWS ML training chip. 16 × NeuronCore v2, 32 GB HBM per chip. trn1.32xlarge: 16 chips, 512 GB HBM, 800 Gbps EFA.</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-year">2022</div><div class="tl-title">trn1n.32xlarge</div><div class="tl-desc">High-bandwidth variant with doubled EFA (1,600 Gbps) for demanding multi-node distributed training.</div></div>
+          <div class="tl-item"><div class="tl-dot active"></div><div class="tl-year">2023–2024</div><div class="tl-title">Trainium 2 (Trn2) ← Current</div><div class="tl-desc">NeuronCore v3. Higher throughput per chip, native FP8 training, Trn2.48xlarge for frontier models.</div></div>
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-year">2025+</div><div class="tl-title">Trainium 3 (Trn3)</div><div class="tl-desc">Announced at re:Invent 2024. NeuronCore v4, massive HBM, next-gen NeuronLink. GPT-4 class training and beyond.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">AWS Trainium Deep Dive</div>
+    <div class="footer-links">
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com" target="_blank">Neuron SDK Docs</a>
+      <a href="https://aws.amazon.com/ec2/instance-types/trn1/" target="_blank">EC2 Trn1</a>
+      <a href="https://github.com/aws-neuron/aws-neuron-samples" target="_blank">Code Samples</a>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trainium.html" target="_blank">Architecture Docs</a>
+    </div>
+    <div class="footer-copy">Based on AWS Neuron Documentation</div>
+  </div>
+</footer>
+
+<script>
+/* NeuronCore grids */
+function buildGrid(id) {
+  const g = document.getElementById(id);
+  if (!g) return;
+  const tt = document.getElementById('tooltip');
+  for (let i = 0; i < 16; i++) {
+    const c = document.createElement('div');
+    c.className = 'nc-cell';
+    c.textContent = i.toString().padStart(2,'0');
+    c.addEventListener('mouseenter', () => {
+      tt.style.display = 'block';
+      tt.innerHTML = '<strong>NeuronCore ' + i.toString().padStart(2,'0') + '</strong><br>Tensor · Vector · Scalar Engines<br>32 MB SRAM Scratchpad';
+    });
+    c.addEventListener('mousemove', e => {
+      tt.style.left = (e.clientX + 14) + 'px';
+      tt.style.top  = (e.clientY - 52) + 'px';
+    });
+    c.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+    g.appendChild(c);
+  }
+}
+buildGrid('hero-grid');
+buildGrid('main-grid');
+
+/* Scroll reveal */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); }});
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+/* Bench bar animation */
+const bo = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.querySelectorAll('.bench-fill[data-w]').forEach((b, i) => {
+      setTimeout(() => { b.style.width = b.dataset.w + '%'; }, i * 120);
+    });
+    bo.unobserve(e.target);
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.bench-grp').forEach(g => bo.observe(g));
+
+/* Tabs */
+function tab(btn, id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('t-' + id).classList.add('active');
+}
+
+/* Active nav */
+const secs = document.querySelectorAll('section[id]');
+const navAs = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  secs.forEach(s => { if (window.scrollY >= s.offsetTop - 80) cur = s.id; });
+  navAs.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+}, { passive: true });
+</script>
+</body>
+</html>
