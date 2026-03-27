@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Trainium2 — Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── DESIGN SYSTEM ─────────────────────────── */
+:root {
+  --bg:           #0a0e17;
+  --bg-1:         #0d1320;
+  --bg-2:         #111827;
+  --bg-3:         #1a2234;
+  --surface:      #151e2e;
+  --surface-2:    #1c2840;
+  --border:       rgba(255,255,255,0.07);
+  --border-2:     rgba(255,255,255,0.13);
+
+  --aws-orange:   #FF9900;
+  --aws-orange-2: #FFB347;
+  --aws-orange-d: rgba(255,153,0,0.12);
+  --aws-teal:     #00BFA5;
+  --aws-teal-d:   rgba(0,191,165,0.12);
+  --aws-blue:     #4FC3F7;
+  --aws-blue-d:   rgba(79,195,247,0.12);
+  --aws-purple:   #CE93D8;
+  --aws-purple-d: rgba(206,147,216,0.12);
+  --aws-green:    #81C784;
+  --aws-red:      #EF9A9A;
+
+  --text:         #E8EDF5;
+  --text-2:       #9BAABB;
+  --text-3:       #5A7080;
+
+  --r:            10px;
+  --rl:           16px;
+  --shadow:       0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg:    0 8px 48px rgba(0,0,0,0.6);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--aws-orange); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: 'Fira Code', monospace; font-size: 0.85em; }
+
+/* ─── LAYOUT ────────────────────────────────── */
+.wrap  { max-width: 1160px; margin: 0 auto; padding: 0 40px; }
+.wrap-sm { max-width: 860px; margin: 0 auto; padding: 0 40px; }
+
+/* ─── NAV ───────────────────────────────────── */
+.nav {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(10,14,23,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1160px; margin: 0 auto; padding: 0 40px;
+  height: 58px; display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 14px; color: var(--text);
+}
+.nav-chip {
+  background: var(--aws-orange);
+  color: #0a0e17; font-size: 10px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px;
+}
+.nav-links {
+  display: flex; list-style: none; gap: 2px;
+}
+.nav-links a {
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  padding: 6px 12px; border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: var(--text); background: var(--bg-3);
+  text-decoration: none;
+}
+.nav-badge {
+  font-size: 11px; font-weight: 700;
+  background: var(--aws-orange-d);
+  color: var(--aws-orange);
+  border: 1px solid rgba(255,153,0,0.25);
+  padding: 4px 12px; border-radius: 20px;
+}
+
+/* ─── HERO ──────────────────────────────────── */
+.hero {
+  padding: 80px 0 72px;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 900px 500px at 70% -10%, rgba(255,153,0,0.06), transparent),
+    radial-gradient(ellipse 600px 400px at -5% 80%, rgba(0,191,165,0.04), transparent);
+  pointer-events: none;
+}
+.hero-grid {
+  display: grid; grid-template-columns: 1fr 420px;
+  gap: 60px; align-items: center; position: relative;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--aws-orange);
+  margin-bottom: 18px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 24px; height: 2px;
+  background: var(--aws-orange); border-radius: 1px;
+}
+.hero h1 {
+  font-size: 54px; font-weight: 800; line-height: 1.08;
+  letter-spacing: -0.03em; margin-bottom: 22px;
+  color: var(--text);
+}
+.hero h1 .accent { color: var(--aws-orange); }
+.hero-sub {
+  font-size: 16px; color: var(--text-2); line-height: 1.75;
+  margin-bottom: 34px; max-width: 520px;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 11px 24px; border-radius: 8px;
+  cursor: pointer; border: none; transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-orange { background: var(--aws-orange); color: #0a0e17; }
+.btn-orange:hover { background: var(--aws-orange-2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,153,0,0.3); text-decoration: none; }
+.btn-ghost { background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border-2); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border); text-decoration: none; }
+
+/* ─── HERO CHIP VISUAL ─────────────────────── */
+.hero-visual { position: relative; }
+.chip-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--rl); padding: 24px;
+  box-shadow: var(--shadow);
+}
+.chip-card-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+}
+.chip-card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.nc-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 4px; margin-bottom: 10px; }
+.nc-core {
+  aspect-ratio: 1;
+  background: var(--aws-orange-d);
+  border: 1px solid rgba(255,153,0,0.2);
+  border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; font-family: 'Fira Code', monospace;
+  color: rgba(255,153,0,0.5);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.nc-core:hover { background: rgba(255,153,0,0.28); border-color: var(--aws-orange); transform: scale(1.12); z-index: 2; }
+.hbm-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-bottom: 12px; }
+.hbm-cell {
+  background: var(--aws-teal-d);
+  border: 1px solid rgba(0,191,165,0.2);
+  border-radius: 4px; padding: 6px 4px;
+  font-size: 8px; font-family: 'Fira Code', monospace;
+  color: rgba(0,191,165,0.8); text-align: center; line-height: 1.4;
+}
+.chip-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+.chip-legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-3); }
+.chip-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* ─── STAT BANNER ───────────────────────────── */
+.stats-banner {
+  background: var(--bg-1);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stats-grid {
+  max-width: 1160px; margin: 0 auto; padding: 0 40px;
+  display: grid; grid-template-columns: repeat(5,1fr);
+}
+.stat-cell {
+  padding: 22px 20px;
+  border-right: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell::after {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 2px;
+  background: var(--aws-orange);
+  transform: scaleX(0); transition: transform 0.3s;
+}
+.stat-cell:hover::after { transform: scaleX(1); }
+.stat-num {
+  font-size: 28px; font-weight: 800; letter-spacing: -0.04em;
+  line-height: 1; color: var(--aws-orange); margin-bottom: 4px;
+}
+.stat-unit { font-size: 16px; font-weight: 600; }
+.stat-lbl { font-size: 11px; color: var(--text-3); font-weight: 500; }
+
+/* ─── SECTIONS ──────────────────────────────── */
+section { padding: 80px 0; }
+section:nth-child(even) { background: var(--bg-1); }
+
+.section-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.eyebrow-orange { color: var(--aws-orange); }
+.eyebrow-teal   { color: var(--aws-teal); }
+.eyebrow-blue   { color: var(--aws-blue); }
+.eyebrow-purple { color: var(--aws-purple); }
+.section-eyebrow::before { content: ''; width: 16px; height: 2px; border-radius: 1px; }
+.eyebrow-orange::before { background: var(--aws-orange); }
+.eyebrow-teal::before   { background: var(--aws-teal); }
+.eyebrow-blue::before   { background: var(--aws-blue); }
+.eyebrow-purple::before { background: var(--aws-purple); }
+
+h2 {
+  font-size: 38px; font-weight: 800; letter-spacing: -0.03em;
+  line-height: 1.12; color: var(--text); margin-bottom: 12px;
+}
+h2 em { font-style: normal; color: var(--aws-orange); }
+.section-lead {
+  font-size: 16px; color: var(--text-2); line-height: 1.75;
+  max-width: 600px; margin-bottom: 44px;
+}
+
+/* ─── CARDS ─────────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 28px; transition: border-color 0.2s, background 0.2s;
+  position: relative; overflow: hidden;
+}
+.card:hover { border-color: var(--border-2); background: var(--surface-2); }
+.card-o::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--aws-orange); }
+.card-t::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--aws-teal); }
+.card-b::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--aws-blue); }
+.card-p::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--aws-purple); }
+
+.card-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 16px;
+}
+.icon-o { background: var(--aws-orange-d); }
+.icon-t { background: var(--aws-teal-d); }
+.icon-b { background: var(--aws-blue-d); }
+.icon-p { background: var(--aws-purple-d); }
+
+.card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.card p { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 4px;
+}
+.tag-o { background: var(--aws-orange-d); color: var(--aws-orange); border: 1px solid rgba(255,153,0,0.2); }
+.tag-t { background: var(--aws-teal-d);   color: var(--aws-teal);   border: 1px solid rgba(0,191,165,0.2); }
+.tag-b { background: var(--aws-blue-d);   color: var(--aws-blue);   border: 1px solid rgba(79,195,247,0.2); }
+.tag-p { background: var(--aws-purple-d); color: var(--aws-purple); border: 1px solid rgba(206,147,216,0.2); }
+
+/* ─── MOSAIC ARCH SECTION ────────────────────── */
+.arch-mosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px;
+}
+.arch-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 28px; position: relative; overflow: hidden;
+  transition: border-color 0.2s, background 0.2s;
+}
+.arch-tile:hover { border-color: var(--border-2); background: var(--surface-2); }
+.arch-tile.wide { grid-column: span 2; }
+.arch-tile.tall { grid-row: span 2; }
+.arch-tile-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.arch-tile h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.arch-tile p  { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+
+/* big number display */
+.big-num {
+  font-size: 52px; font-weight: 800; letter-spacing: -0.04em;
+  line-height: 1; margin: 8px 0;
+}
+.big-unit { font-size: 22px; font-weight: 600; }
+
+/* ─── NEURONCORE DETAIL ──────────────────────── */
+.nc-detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.engine-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r); padding: 22px;
+  transition: border-color 0.2s;
+}
+.engine-card:hover { border-color: var(--border-2); }
+.engine-name {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.engine-perf {
+  font-size: 30px; font-weight: 800; letter-spacing: -0.03em;
+  line-height: 1; margin-bottom: 4px;
+}
+.engine-desc { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+
+/* ─── COMPARE TABLE ──────────────────────────── */
+.compare-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rl); overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.compare-table { width: 100%; border-collapse: collapse; }
+.compare-table th, .compare-table td {
+  padding: 14px 20px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.compare-table th {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+  background: var(--bg-2);
+}
+.compare-table td:first-child { color: var(--text-2); font-weight: 500; }
+.compare-table .trn1-col { color: var(--text-3); }
+.compare-table .trn2-col { color: var(--aws-orange); font-weight: 700; }
+.compare-table .delta-col {
+  color: var(--aws-teal); font-size: 12px; font-weight: 700;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--bg-3); }
+
+/* ─── MEMORY BARS ────────────────────────────── */
+.mem-bars { display: flex; flex-direction: column; gap: 10px; }
+.mem-bar {
+  display: grid; grid-template-columns: 180px 1fr 90px;
+  gap: 14px; align-items: center;
+}
+.mem-bar-label { font-size: 13px; color: var(--text-2); text-align: right; font-weight: 500; }
+.mem-bar-track {
+  height: 28px; background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden;
+}
+.mem-bar-fill {
+  height: 100%; width: 0; border-radius: 5px;
+  transition: width 1.5s cubic-bezier(0.34,1.2,0.64,1);
+  display: flex; align-items: center; padding-left: 10px;
+}
+.fill-o { background: linear-gradient(90deg, #FF9900, #FFB347); }
+.fill-t { background: linear-gradient(90deg, #00BFA5, #26D9C5); }
+.fill-b { background: linear-gradient(90deg, #4FC3F7, #81D4FA); }
+.mem-bar-val {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px; font-weight: 600; color: var(--aws-orange);
+}
+.fill-lbl { font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.8); white-space: nowrap; }
+
+/* ─── INTERCONNECT DIAGRAM ───────────────────── */
+.ic-box {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--rl); padding: 32px;
+  box-shadow: var(--shadow);
+}
+.ic-layout { display: grid; grid-template-columns: 1fr 100px 1fr; gap: 0; align-items: center; }
+.ic-chip {
+  background: var(--bg-3);
+  border: 1px solid rgba(255,153,0,0.2);
+  border-radius: 10px; padding: 18px;
+}
+.ic-chip-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--aws-orange); margin-bottom: 10px; }
+.ic-cores-mini { display: grid; grid-template-columns: repeat(4,1fr); gap: 3px; margin-bottom: 8px; }
+.ic-sq {
+  height: 14px; border-radius: 3px;
+  background: var(--aws-orange-d); border: 1px solid rgba(255,153,0,0.25);
+}
+.ic-sq.teal { background: var(--aws-teal-d); border-color: rgba(0,191,165,0.25); }
+.ic-sub { font-size: 9px; color: var(--text-3); text-align: center; margin-top: 4px; }
+.ic-mid { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ic-line {
+  width: 100%; height: 2px;
+  animation: pulse 2s ease-in-out infinite;
+}
+.ic-line-o { background: linear-gradient(90deg, transparent, var(--aws-orange), transparent); }
+.ic-line-t { background: linear-gradient(90deg, transparent, var(--aws-teal), transparent); animation-delay: 0.8s; }
+@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+.ic-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.ic-footer {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
+}
+.ic-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+.ic-stat-val { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+.ic-stat-desc { font-size: 11px; color: var(--text-3); line-height: 1.5; margin-top: 2px; }
+
+/* ─── ULTRASERVER SCALE ──────────────────────── */
+.scale-pyramid {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 32px; background: var(--bg-2);
+  border: 1px solid var(--border-2); border-radius: var(--rl);
+}
+.scale-level {
+  border-radius: 8px; padding: 16px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: filter 0.2s;
+}
+.scale-level:hover { filter: brightness(1.1); }
+.level-0 { background: rgba(255,153,0,0.18); border: 1px solid rgba(255,153,0,0.3); }
+.level-1 { background: rgba(255,153,0,0.12); border: 1px solid rgba(255,153,0,0.22); }
+.level-2 { background: rgba(255,153,0,0.08); border: 1px solid rgba(255,153,0,0.15); }
+.level-3 { background: rgba(255,153,0,0.05); border: 1px solid rgba(255,153,0,0.1); }
+.level-name { font-size: 15px; font-weight: 700; }
+.level-spec { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.level-badge {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px; font-weight: 600; color: var(--aws-orange);
+  text-align: right; white-space: nowrap;
+}
+.level-badge small { display: block; font-size: 10px; color: var(--text-3); margin-top: 1px; }
+.scale-arrow { text-align: center; color: var(--text-3); font-size: 12px; padding: 2px 0; }
+
+/* ─── DTYPE CARDS ────────────────────────────── */
+.dtype-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.dtype-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 16px;
+  text-align: center; transition: all 0.2s;
+}
+.dtype-card:hover { border-color: rgba(255,153,0,0.3); background: var(--surface-2); box-shadow: 0 0 0 1px rgba(255,153,0,0.1); }
+.dtype-card.new { border-top: 2px solid var(--aws-orange); }
+.dtype-badge { font-family: 'Fira Code', monospace; font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.dtype-name  { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.dtype-desc  { font-size: 11px; color: var(--text-2); line-height: 1.5; }
+.dtype-new   { font-size: 9px; font-weight: 700; color: var(--aws-orange); background: var(--aws-orange-d); border: 1px solid rgba(255,153,0,0.2); padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 6px; }
+
+/* ─── TABS ───────────────────────────────────── */
+.tabs-wrap { display: flex; gap: 2px; background: var(--bg-2); border-radius: 8px; padding: 3px; width: fit-content; margin-bottom: 28px; }
+.tab-btn {
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  color: var(--text-3); background: transparent; border: none;
+  padding: 8px 18px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); background: var(--bg-3); }
+.tab-btn.active { background: var(--surface-2); color: var(--text); font-weight: 700; }
+.tab-panel { display: none; }
+.tab-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+.tab-txt h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+.tab-txt p  { font-size: 14px; color: var(--text-2); line-height: 1.72; margin-bottom: 14px; }
+.tab-diag { background: var(--bg-2); border: 1px solid var(--border-2); border-radius: var(--rl); padding: 24px; }
+
+/* ─── CODE ───────────────────────────────────── */
+.code-wrap { background: #0d1117; border: 1px solid var(--border-2); border-radius: var(--rl); overflow: hidden; }
+.code-header {
+  background: #161b22; padding: 10px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.code-dots { display: flex; gap: 5px; }
+.code-dot { width: 10px; height: 10px; border-radius: 50%; }
+.code-fname { font-family: 'Fira Code', monospace; font-size: 11px; color: var(--text-3); }
+.code-body {
+  padding: 18px 22px; font-family: 'Fira Code', monospace;
+  font-size: 12.5px; line-height: 1.8; color: #c9d1d9;
+  white-space: pre; overflow-x: auto;
+}
+.kw { color: #ff7b72; } .fn { color: #d2a8ff; } .cm { color: #8b949e; font-style: italic; }
+.st { color: #a5d6ff; } .nu { color: #f8c555; } .at { color: #79c0ff; }
+
+/* ─── CALLOUT ────────────────────────────────── */
+.callout {
+  background: rgba(255,153,0,0.06);
+  border-left: 3px solid var(--aws-orange);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px; margin: 18px 0;
+  font-size: 13px; color: var(--text-2); line-height: 1.65;
+}
+.callout strong { color: var(--aws-orange); }
+
+/* ─── INSTANCE CARDS ─────────────────────────── */
+.inst-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.inst-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rl); padding: 26px; transition: all 0.2s;
+}
+.inst-card:hover { border-color: var(--border-2); background: var(--surface-2); }
+.inst-card.featured { border-color: rgba(255,153,0,0.3); box-shadow: 0 0 0 1px rgba(255,153,0,0.1), var(--shadow); }
+.inst-badge { font-size: 9px; font-weight: 700; background: var(--aws-orange-d); color: var(--aws-orange); border: 1px solid rgba(255,153,0,0.25); padding: 2px 7px; border-radius: 3px; display: inline-block; margin-bottom: 10px; }
+.inst-name { font-family: 'Fira Code', monospace; font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 20px; }
+.spec-tbl { width: 100%; border-collapse: collapse; }
+.spec-tbl tr { border-bottom: 1px solid var(--border); }
+.spec-tbl tr:last-child { border-bottom: none; }
+.spec-tbl td { padding: 8px 0; font-size: 12px; vertical-align: top; }
+.spec-tbl td:first-child { color: var(--text-3); width: 50%; }
+.spec-tbl td:last-child { color: var(--text); font-weight: 600; text-align: right; }
+.spec-tbl .hl  { color: var(--aws-orange) !important; }
+.spec-tbl .hlb { color: var(--aws-blue) !important; }
+
+/* ─── SDK STACK ──────────────────────────────── */
+.sdk-stack { display: flex; flex-direction: column; gap: 3px; }
+.sdk-layer {
+  padding: 12px 18px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: filter 0.15s;
+}
+.sdk-layer:hover { filter: brightness(1.08); }
+.sdk-0 { background: rgba(255,153,0,0.20); border: 1px solid rgba(255,153,0,0.35); }
+.sdk-1 { background: rgba(255,153,0,0.14); border: 1px solid rgba(255,153,0,0.25); }
+.sdk-2 { background: rgba(255,153,0,0.09); border: 1px solid rgba(255,153,0,0.18); }
+.sdk-3 { background: rgba(255,153,0,0.06); border: 1px solid rgba(255,153,0,0.13); }
+.sdk-4 { background: rgba(255,153,0,0.04); border: 1px solid rgba(255,153,0,0.09); }
+.sdk-5 { background: rgba(0,191,165,0.08); border: 1px solid rgba(0,191,165,0.18); }
+.sdk-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.sdk-badge { font-size: 10px; font-weight: 600; color: var(--text-2); background: rgba(255,255,255,0.07); padding: 2px 8px; border-radius: 4px; }
+.sdk-arrow { text-align: center; color: var(--text-3); font-size: 11px; }
+
+/* ─── PERF BENCHMARKS ────────────────────────── */
+.bench-grp { margin-bottom: 36px; }
+.bench-grp-title {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.bench-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; background: var(--bg-3); border-radius: 4px; color: var(--text-3); }
+.bench-row { display: grid; grid-template-columns: 180px 1fr 80px; gap: 12px; align-items: center; margin-bottom: 8px; }
+.bench-lbl { font-size: 12px; color: var(--text-2); text-align: right; font-weight: 500; }
+.bench-track { height: 26px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.bench-fill {
+  height: 100%; width: 0; border-radius: 4px;
+  display: flex; align-items: center; padding-left: 8px;
+  transition: width 1.6s cubic-bezier(0.34,1.2,0.64,1);
+}
+.bench-fill-lbl { font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.8); white-space: nowrap; }
+.bench-val { font-family: 'Fira Code', monospace; font-size: 13px; font-weight: 600; color: var(--aws-orange); }
+.bench-val.t { color: var(--aws-teal); }
+
+/* ─── SCROLL REVEAL ──────────────────────────── */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ─── TOOLTIP ────────────────────────────────── */
+#tip {
+  position: fixed; pointer-events: none; z-index: 500;
+  background: var(--bg-2); border: 1px solid var(--border-2);
+  color: var(--text); font-size: 11px; line-height: 1.5;
+  padding: 8px 12px; border-radius: 6px;
+  box-shadow: var(--shadow); display: none;
+}
+
+/* ─── FOOTER ─────────────────────────────────── */
+footer { background: var(--bg-1); border-top: 1px solid var(--border); padding: 40px 0; }
+.footer-inner { max-width: 1160px; margin: 0 auto; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.footer-brand { font-size: 14px; font-weight: 700; color: var(--text-2); }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { font-size: 12px; color: var(--text-3); transition: color 0.15s; }
+.footer-links a:hover { color: var(--aws-orange); text-decoration: none; }
+.footer-copy { font-size: 11px; color: var(--text-3); }
+
+/* ─── RESPONSIVE ─────────────────────────────── */
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr}.hero-visual{display:none}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .g2,.g3,.g4,.dtype-grid,.inst-grid,.nc-detail-grid,.arch-mosaic{grid-template-columns:1fr}
+  .arch-tile.wide{grid-column:auto}
+  .tab-panel.active{grid-template-columns:1fr}
+  .bench-row{grid-template-columns:120px 1fr 60px}
+  h2{font-size:28px} .hero h1{font-size:36px}
+}
+@media(max-width:600px){
+  .wrap,.wrap-sm{padding:0 20px}
+  .nav-links{display:none}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+
+<!-- ─── NAV ─────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="nav-chip">TRN2</div>
+      AWS Trainium2 Deep Dive
+    </div>
+    <ul class="nav-links">
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#neuroncore">NeuronCore v3</a></li>
+      <li><a href="#memory">Memory</a></li>
+      <li><a href="#interconnect">Interconnect</a></li>
+      <li><a href="#scale">UltraServer</a></li>
+      <li><a href="#sdk">SDK</a></li>
+      <li><a href="#instances">Instances</a></li>
+      <li><a href="#performance">Performance</a></li>
+    </ul>
+    <div class="nav-badge">4× faster than Trn1</div>
+  </div>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-eyebrow">AWS Custom Silicon · Gen AI · 2024</div>
+        <h1>AWS <span class="accent">Trainium2</span><br>Architecture<br>Deep Dive</h1>
+        <p class="hero-sub">
+          Second-generation AWS AI accelerator powered by NeuronCore-v3. 
+          Purpose-built for generative AI training and inference at the 
+          trillion-parameter scale — delivering 4× the performance of Trn1 
+          at 30–40% better price-performance than GPU alternatives.
+        </p>
+        <div class="hero-actions">
+          <a href="#architecture" class="btn btn-orange">Explore Architecture →</a>
+          <a href="#instances" class="btn btn-ghost">Instance Types</a>
+          <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trainium2.html" target="_blank" class="btn btn-ghost">Neuron Docs ↗</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="chip-card">
+          <div class="chip-card-title">Trainium2 Chip — NeuronCore-v3 × 8</div>
+          <div class="nc-grid" id="hero-nc-grid"></div>
+          <div class="hbm-strip">
+            <div class="hbm-cell">HBM3<br>24 GiB</div>
+            <div class="hbm-cell">HBM3<br>24 GiB</div>
+            <div class="hbm-cell">HBM3<br>24 GiB</div>
+            <div class="hbm-cell">HBM3<br>24 GiB</div>
+          </div>
+          <div class="chip-legend">
+            <div class="chip-legend-item"><div class="chip-legend-dot" style="background:rgba(255,153,0,0.4)"></div>NeuronCore-v3</div>
+            <div class="chip-legend-item"><div class="chip-legend-dot" style="background:rgba(0,191,165,0.4)"></div>HBM3 (96 GiB)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS ─────────────────────────────────────────── -->
+<div class="stats-banner">
+  <div class="stats-grid">
+    <div class="stat-cell">
+      <div class="stat-num">1.3<span class="stat-unit">PF</span></div>
+      <div class="stat-lbl">Dense FP8 per chip</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">96<span class="stat-unit">GiB</span></div>
+      <div class="stat-lbl">HBM3 per chip</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">2.9<span class="stat-unit">TB/s</span></div>
+      <div class="stat-lbl">HBM bandwidth/chip</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">3.2<span class="stat-unit">Tb/s</span></div>
+      <div class="stat-lbl">EFAv3 (trn2.48xlarge)</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">4×<span class="stat-unit"></span></div>
+      <div class="stat-lbl">Faster than Trn1</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ARCHITECTURE ─────────────────────────────────── -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-orange">Chip Architecture</div>
+    <h2>Built for <em>Trillion-Parameter</em> Scale</h2>
+    <p class="section-lead">
+      Trainium2 packs 8 NeuronCore-v3 processors per chip alongside 96 GiB of HBM3 memory — 
+      a 4× compute and 3× memory leap over its predecessor, connected by NeuronLink in a 2D torus topology.
+    </p>
+
+    <div class="arch-mosaic reveal">
+      <!-- NeuronCore-v3 — wide top left -->
+      <div class="arch-tile card-o wide">
+        <div class="arch-tile-label" style="color:var(--aws-orange)">NeuronCore-v3</div>
+        <div class="big-num" style="color:var(--aws-orange)">8 <span class="big-unit">cores</span></div>
+        <h3>Fourth-Gen Processing Core</h3>
+        <p>Each NeuronCore-v3 integrates four specialized engines — Tensor, Vector, Scalar, and GpsimdE (SIMD) — operating in lockstep. The Tensor engine presents a 256×128 FP8 systolic array, doubling throughput over v2's 128×128. A 28 MiB SBUF scratchpad and 2 MiB PSUM buffer keep data local to the core.</p>
+        <div class="tags" style="margin-top:16px">
+          <span class="tag tag-o">Tensor Engine</span>
+          <span class="tag tag-o">Vector Engine</span>
+          <span class="tag tag-o">Scalar Engine</span>
+          <span class="tag tag-o">GpsimdE SIMD</span>
+          <span class="tag tag-b">28 MiB SBUF</span>
+        </div>
+      </div>
+
+      <!-- HBM3 — top right -->
+      <div class="arch-tile card-t">
+        <div class="arch-tile-label" style="color:var(--aws-teal)">HBM3 Memory</div>
+        <div class="big-num" style="color:var(--aws-teal)">96 <span class="big-unit">GiB</span></div>
+        <h3>High Bandwidth Memory</h3>
+        <p>Four HBM3 stacks deliver 2.9 TB/s bandwidth per chip. Automated HBM queue reordering achieves 95% bandwidth utilization.</p>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-t">3× Trn1 capacity</span>
+          <span class="tag tag-t">2.9 TB/s BW</span>
+        </div>
+      </div>
+
+      <!-- NeuronLink — tall bottom left -->
+      <div class="arch-tile card-b">
+        <div class="arch-tile-label" style="color:var(--aws-blue)">NeuronLink-v2</div>
+        <div class="big-num" style="color:var(--aws-blue)">1 <span class="big-unit">TB/s</span></div>
+        <h3>2D Torus Interconnect</h3>
+        <p>Chips connect in a 2D torus topology providing 1 TB/s chip-to-chip bandwidth with low latency, enabling efficient model parallelism within an instance.</p>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-b">2D Torus</span>
+          <span class="tag tag-b">Low Latency</span>
+        </div>
+      </div>
+
+      <!-- LNC — bottom center -->
+      <div class="arch-tile card-p">
+        <div class="arch-tile-label" style="color:var(--aws-purple)">LNC — New in Trn2</div>
+        <h3>Logical NeuronCore Config</h3>
+        <p>Pairs of physical NeuronCores can be grouped into a single logical core, doubling available SRAM and compute per logical unit — critical for large attention heads in transformers.</p>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-p">LNC-1 / LNC-2</span>
+          <span class="tag tag-p">Flexible SRAM</span>
+        </div>
+      </div>
+
+      <!-- EFAv3 — bottom right -->
+      <div class="arch-tile card-o">
+        <div class="arch-tile-label" style="color:var(--aws-orange)">EFAv3 Networking</div>
+        <div class="big-num" style="color:var(--aws-orange)">3.2 <span class="big-unit">Tb/s</span></div>
+        <h3>Scale-Out Fabric</h3>
+        <p>EFAv3 delivers 35% lower latency than EFAv2 with encryption in transit at no performance cost. Scales to hundreds of thousands of Trainium2 chips in UltraCluster.</p>
+        <div class="tags" style="margin-top:12px">
+          <span class="tag tag-o">35% lower latency</span>
+          <span class="tag tag-o">Encrypted RDMA</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trn1 vs Trn2 comparison table -->
+    <div class="reveal" style="margin-top:32px">
+      <div class="compare-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Specification</th>
+              <th>Trainium (Trn1)</th>
+              <th>Trainium2 (Trn2)</th>
+              <th>Improvement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>NeuronCore Generation</td><td class="trn1-col">v2</td><td class="trn2-col">v3</td><td class="delta-col">—</td></tr>
+            <tr><td>Cores per chip</td><td class="trn1-col">16</td><td class="trn2-col">8 (larger, denser)</td><td class="delta-col">4× per-core throughput</td></tr>
+            <tr><td>HBM per chip</td><td class="trn1-col">32 GiB HBM2e</td><td class="trn2-col">96 GiB HBM3</td><td class="delta-col">3× capacity</td></tr>
+            <tr><td>HBM bandwidth</td><td class="trn1-col">~0.8 TB/s</td><td class="trn2-col">2.9 TB/s</td><td class="delta-col">4× bandwidth</td></tr>
+            <tr><td>FP8 compute / chip</td><td class="trn1-col">~0.35 PF</td><td class="trn2-col">1.3 PF dense</td><td class="delta-col">~4× compute</td></tr>
+            <tr><td>Sparse FP8 / chip</td><td class="trn1-col">~0.7 PF</td><td class="trn2-col">5.2 PF</td><td class="delta-col">~7× sparse</td></tr>
+            <tr><td>NeuronLink BW</td><td class="trn1-col">~384 GB/s</td><td class="trn2-col">1 TB/s (2D torus)</td><td class="delta-col">2.6× interconnect</td></tr>
+            <tr><td>EFA generation</td><td class="trn1-col">EFAv2 (800 Gbps)</td><td class="trn2-col">EFAv3 (3.2 Tbps)</td><td class="delta-col">4× networking</td></tr>
+            <tr><td>LNC support</td><td class="trn1-col">No</td><td class="trn2-col">Yes (LNC-1, LNC-2)</td><td class="delta-col">New in Trn2</td></tr>
+            <tr><td>Energy efficiency</td><td class="trn1-col">Baseline</td><td class="trn2-col">3× more efficient</td><td class="delta-col">3× vs Trn1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── NEURONCORE v3 ─────────────────────────────────── -->
+<section id="neuroncore">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-orange">Compute Engines</div>
+    <h2><em>NeuronCore-v3</em> Architecture</h2>
+    <p class="section-lead">
+      Four specialized compute engines operate in parallel within each NeuronCore-v3. 
+      The Tensor Engine alone achieves 158 FP8 TFLOPS of dense compute, with native 
+      FP8 double-throughput mode via a 256×128 systolic array.
+    </p>
+
+    <div class="g2 reveal" style="gap:16px;margin-bottom:16px">
+      <div class="engine-card" style="border-left: 3px solid var(--aws-orange)">
+        <div class="engine-name" style="color:var(--aws-orange)">Tensor Engine</div>
+        <div class="engine-perf" style="color:var(--aws-orange)">158 <span style="font-size:16px">FP8 TFLOPS</span></div>
+        <div class="engine-desc">
+          Systolic array for GEMM, CONV, and Transpose. A 256×128 FP8 contraction dimension delivers double the throughput of BF16/FP16. Native FP8_E4 and FP8_E5 support. FP8 sparse mode delivers 316 TFLOPS. New explicit transpose mode correctly handles NaN/Inf values.
+        </div>
+        <div class="tags" style="margin-top:10px">
+          <span class="tag tag-o">256×128 FP8 Array</span>
+          <span class="tag tag-o">158 dense TFLOPS</span>
+          <span class="tag tag-o">316 sparse TFLOPS</span>
+        </div>
+      </div>
+      <div class="engine-card" style="border-left: 3px solid var(--aws-teal)">
+        <div class="engine-name" style="color:var(--aws-teal)">Vector Engine</div>
+        <div class="engine-perf" style="color:var(--aws-teal)">High-BW <span style="font-size:16px">SIMD</span></div>
+        <div class="engine-desc">
+          Processes element-wise operations: activation functions, normalization, reduction, and transcendentals. Updated datapath width and frequency improve throughput over v2. Processes output from the Tensor Engine PSUM buffer directly.
+        </div>
+        <div class="tags" style="margin-top:10px">
+          <span class="tag tag-t">Element-wise ops</span>
+          <span class="tag tag-t">Activations</span>
+          <span class="tag tag-t">Normalization</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="g2 reveal" style="gap:16px;margin-bottom:32px">
+      <div class="engine-card" style="border-left: 3px solid var(--aws-blue)">
+        <div class="engine-name" style="color:var(--aws-blue)">Scalar Engine</div>
+        <div class="engine-perf" style="color:var(--aws-blue)">Control <span style="font-size:16px">Logic</span></div>
+        <div class="engine-desc">
+          Handles scalar (1-to-1) operations including address computation, loop control, and branching. Acts as the orchestration layer that schedules work across the other three engines and coordinates HBM/SBUF data movement.
+        </div>
+        <div class="tags" style="margin-top:10px">
+          <span class="tag tag-b">Scheduling</span>
+          <span class="tag tag-b">Branching</span>
+          <span class="tag tag-b">DMA control</span>
+        </div>
+      </div>
+      <div class="engine-card" style="border-left: 3px solid var(--aws-purple)">
+        <div class="engine-name" style="color:var(--aws-purple)">GpsimdE — New</div>
+        <div class="engine-perf" style="color:var(--aws-purple)">307 <span style="font-size:16px">GB/s DMA</span></div>
+        <div class="engine-desc">
+          General-Purpose SIMD Engine with integrated DMA capabilities. Each GpsimdE processor can read from or write to any SBUF/HBM on-chip or off-chip within the same Trn2 instance. Total integrated DMA bandwidth: 307 GB/s (153 GB/s per direction).
+        </div>
+        <div class="tags" style="margin-top:10px">
+          <span class="tag tag-p">GPSIMD</span>
+          <span class="tag tag-p">Integrated DMA</span>
+          <span class="tag tag-p">307 GB/s total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SBUF -->
+    <div class="callout reveal">
+      <strong>SBUF upgrade:</strong> NeuronCore-v3 increases on-chip SRAM scratchpad (SBUF) to <strong>28 MiB</strong> (128 partitions × 224 KiB), up from 24 MiB in v2. With LNC-2 (paired cores), the effective SBUF doubles to 56 MiB per logical core — critical for fitting large attention head tensors in-cache.
+    </div>
+
+    <!-- Data types section -->
+    <div style="margin-top:48px">
+      <div class="section-eyebrow eyebrow-orange" style="margin-bottom:12px">Numeric Precision</div>
+      <h2 style="font-size:26px; margin-bottom:10px">Supported <em>Data Types</em></h2>
+      <p style="font-size:14px;color:var(--text-2);margin-bottom:24px">NeuronCore-v3 natively accelerates a full precision range, with new FP8 double-throughput mode and MXFP formats for frontier-scale workloads.</p>
+      <div class="dtype-grid reveal">
+        <div class="dtype-card new">
+          <div class="dtype-badge">FP8</div>
+          <div class="dtype-name">Float8 E4M3/E5M2</div>
+          <div class="dtype-desc">Native double-throughput via 256-wide contraction. Primary format for 100B+ model training. 2× throughput vs BF16.</div>
+          <div class="dtype-new">★ Trn2 Native</div>
+        </div>
+        <div class="dtype-card">
+          <div class="dtype-badge">BF16</div>
+          <div class="dtype-name">BFloat16</div>
+          <div class="dtype-desc">Primary mixed-precision training format. Matches FP32 exponent range. 79 TFLOPS per NeuronCore-v3.</div>
+        </div>
+        <div class="dtype-card">
+          <div class="dtype-badge">FP16</div>
+          <div class="dtype-name">Float16</div>
+          <div class="dtype-desc">Mixed-precision with loss scaling. Full support alongside BF16 in PyTorch AMP workflows.</div>
+        </div>
+        <div class="dtype-card">
+          <div class="dtype-badge">TF32</div>
+          <div class="dtype-name">TensorFloat32</div>
+          <div class="dtype-desc">Accelerated matmul with FP32 accumulation. Higher throughput with minimal accuracy impact for training.</div>
+        </div>
+        <div class="dtype-card new">
+          <div class="dtype-badge">MXFP8</div>
+          <div class="dtype-name">Microscaling FP8</div>
+          <div class="dtype-desc">Microscaling format for fine-grained per-group quantization. Enables 4× sparsity (16:4) acceleration.</div>
+          <div class="dtype-new">★ New in Trn2</div>
+        </div>
+        <div class="dtype-card">
+          <div class="dtype-badge">FP32</div>
+          <div class="dtype-name">Float32</div>
+          <div class="dtype-desc">Full precision for master weights and optimizer states. 20 TFLOPS per core. Used in mixed-precision recipes.</div>
+        </div>
+        <div class="dtype-card">
+          <div class="dtype-badge">INT8</div>
+          <div class="dtype-name">Integer 8</div>
+          <div class="dtype-desc">Quantized inference with post-training quantization calibration. 2× throughput vs FP16 inference.</div>
+        </div>
+        <div class="dtype-card">
+          <div class="dtype-badge">INT32</div>
+          <div class="dtype-name">Integer 32</div>
+          <div class="dtype-desc">Accumulation type for integer dot products. Index tensors, attention masks, and token ID operations.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MEMORY ────────────────────────────────────────── -->
+<section id="memory">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-teal">Memory Subsystem</div>
+    <h2>High-Capacity <em>HBM3</em> Hierarchy</h2>
+    <p class="section-lead">
+      Four HBM3 stacks per chip deliver 2.9 TB/s bandwidth at 96 GiB capacity. 
+      A 16-chip Trn2 instance aggregates 1.5 TiB of HBM3 with 46 TB/s total bandwidth — 
+      enough for frontier LLM training without model offloading.
+    </p>
+
+    <div class="g2 reveal" style="gap:32px;align-items:start">
+      <div>
+        <div class="mem-bars">
+          <div class="mem-bar">
+            <div class="mem-bar-label">On-chip SBUF</div>
+            <div class="mem-bar-track"><div class="bench-fill fill-o" data-w="3"><span class="fill-lbl">28 MiB</span></div></div>
+            <div class="mem-bar-val">28 MiB</div>
+          </div>
+          <div class="mem-bar">
+            <div class="mem-bar-label">HBM3 per chip</div>
+            <div class="mem-bar-track"><div class="bench-fill fill-o" data-w="20"><span class="fill-lbl">96 GiB</span></div></div>
+            <div class="mem-bar-val">96 GiB</div>
+          </div>
+          <div class="mem-bar">
+            <div class="mem-bar-label">trn2.48xlarge</div>
+            <div class="mem-bar-track"><div class="bench-fill fill-o" data-w="100"><span class="fill-lbl">1.5 TiB HBM3</span></div></div>
+            <div class="mem-bar-val">1.5 TiB</div>
+          </div>
+          <div class="mem-bar">
+            <div class="mem-bar-label">Trn2 UltraServer</div>
+            <div class="mem-bar-track"><div class="bench-fill fill-t" data-w="100"><span class="fill-lbl">6 TiB HBM3</span></div></div>
+            <div class="mem-bar-val" style="color:var(--aws-teal)">6 TiB</div>
+          </div>
+          <div class="mem-bar">
+            <div class="mem-bar-label">Host DRAM (trn2)</div>
+            <div class="mem-bar-track"><div class="bench-fill fill-b" data-w="90"><span class="fill-lbl">2 TiB DDR5</span></div></div>
+            <div class="mem-bar-val" style="color:var(--aws-blue)">2 TiB</div>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top:20px">
+          <strong>Bandwidth utilization:</strong> Automated HBM queue reordering allows Trainium2 to achieve up to <strong>95% HBM bandwidth utilization</strong> — significantly higher than typical GPU architectures.
+        </div>
+      </div>
+
+      <div>
+        <div class="card card-t">
+          <div class="card-icon icon-t">📊</div>
+          <h3>Bandwidth at Each Level</h3>
+          <p style="margin-bottom:14px">Memory bandwidth scales from on-chip SBUF all the way to EFAv3 networking across the memory hierarchy.</p>
+          <table class="spec-tbl" style="width:100%">
+            <tr><td>SBUF → Tensor Engine</td><td class="hl">Very high BW</td></tr>
+            <tr><td>HBM3 per chip</td><td class="hl">2.9 TB/s</td></tr>
+            <tr><td>NeuronLink (intra-instance)</td><td class="hl">1 TB/s</td></tr>
+            <tr><td>GpsimdE DMA (total)</td><td class="hl">307 GB/s</td></tr>
+            <tr><td>EFAv3 (trn2.48xlarge)</td><td class="hlb">3.2 Tbps</td></tr>
+            <tr><td>EFAv3 (UltraServer)</td><td class="hlb">12.8 Tbps</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-icon icon-p">🧠</div>
+          <h3>Logical NeuronCore (LNC)</h3>
+          <p>With LNC-2, two physical cores merge into one logical unit — doubling SBUF to 56 MiB and combining compute. Essential for models with large embedding dimensions.</p>
+          <div class="tags" style="margin-top:10px">
+            <span class="tag tag-p">LNC-1: 28 MiB SBUF</span>
+            <span class="tag tag-p">LNC-2: 56 MiB SBUF</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INTERCONNECT ──────────────────────────────────── -->
+<section id="interconnect">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-blue">Interconnect Fabric</div>
+    <h2>NeuronLink 2D Torus + <em>EFAv3</em></h2>
+    <p class="section-lead">
+      Two-tier interconnect: NeuronLink in a 2D torus topology for low-latency chip-to-chip 
+      communication within an instance at 1 TB/s, and EFAv3 for cluster-scale distributed 
+      training across hundreds of thousands of chips.
+    </p>
+
+    <div class="reveal">
+      <div class="ic-box">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:20px">
+          Trn2 Instance Topology — trn2.48xlarge (16 chips)
+        </div>
+        <div class="ic-layout">
+          <div>
+            <div class="ic-chip">
+              <div class="ic-chip-title">Trainium2 Chips [0–7]</div>
+              <div class="ic-cores-mini">
+                <div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div>
+                <div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div><div class="ic-sq"></div>
+              </div>
+              <div class="ic-sub">96 GiB HBM3 each · 8× NeuronCore-v3</div>
+            </div>
+          </div>
+          <div class="ic-mid">
+            <div class="ic-lbl">NeuronLink-v2</div>
+            <div class="ic-line ic-line-o"></div>
+            <div class="ic-lbl" style="color:rgba(255,153,0,0.5)">2D torus · 1 TB/s</div>
+            <div style="height:14px"></div>
+            <div class="ic-lbl">EFAv3</div>
+            <div class="ic-line ic-line-t" style="animation-delay:.8s"></div>
+            <div class="ic-lbl" style="color:rgba(0,191,165,0.5)">3.2 Tbps inter-node</div>
+          </div>
+          <div>
+            <div class="ic-chip" style="border-color:rgba(0,191,165,0.25)">
+              <div class="ic-chip-title" style="color:var(--aws-teal)">Trainium2 Chips [8–15]</div>
+              <div class="ic-cores-mini">
+                <div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div>
+                <div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div><div class="ic-sq teal"></div>
+              </div>
+              <div class="ic-sub">Same topology × 8 more chips</div>
+            </div>
+          </div>
+        </div>
+        <div class="ic-footer">
+          <div>
+            <div class="ic-stat-label" style="color:rgba(255,153,0,0.75)">NeuronLink-v2</div>
+            <div class="ic-stat-val" style="color:var(--aws-orange)">1 TB/s</div>
+            <div class="ic-stat-desc">2D torus topology. Direct chip-to-chip communication. Optimized for AllReduce and collective ops during model parallelism.</div>
+          </div>
+          <div>
+            <div class="ic-stat-label" style="color:rgba(0,191,165,0.75)">EFAv3 (trn2.48xlarge)</div>
+            <div class="ic-stat-val" style="color:var(--aws-teal)">3.2 Tbps</div>
+            <div class="ic-stat-desc">35% lower latency than EFAv2. RDMA with encryption in transit at zero performance cost. Scales to UltraCluster.</div>
+          </div>
+          <div>
+            <div class="ic-stat-label" style="color:rgba(79,195,247,0.75)">EFAv3 (UltraServer)</div>
+            <div class="ic-stat-val" style="color:var(--aws-blue)">12.8 Tbps</div>
+            <div class="ic-stat-desc">64 Trainium2 chips × NeuronLink across 4 instances. Up to 185 TB/s total HBM bandwidth across the UltraServer.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── ULTRASERVER SCALE ─────────────────────────────── -->
+<section id="scale">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-purple">Scale-Up & Scale-Out</div>
+    <h2>From NeuronCore to <em>UltraCluster</em></h2>
+    <p class="section-lead">
+      Trainium2's hierarchical scale architecture allows workloads to span from a single chip 
+      to 400,000+ chips (Project Rainier) with minimal code changes via the Neuron SDK.
+    </p>
+
+    <div class="g2 reveal" style="gap:24px;align-items:start">
+      <div class="scale-pyramid">
+        <div class="scale-level level-0">
+          <div>
+            <div class="level-name">🔬 NeuronCore-v3</div>
+            <div class="level-spec">Scalar + Vector + Tensor + GpsimdE Engines</div>
+          </div>
+          <div class="level-badge">1.3 PF FP8 <small>per core × 8 = chip</small></div>
+        </div>
+        <div class="scale-arrow">▼ × 8 cores per chip</div>
+        <div class="scale-level level-1">
+          <div>
+            <div class="level-name">⬡ Trainium2 Chip</div>
+            <div class="level-spec">8 NeuronCores · 96 GiB HBM3 · NeuronLink</div>
+          </div>
+          <div class="level-badge">1.3 PF dense FP8 <small>5.2 PF sparse FP8</small></div>
+        </div>
+        <div class="scale-arrow">▼ × 16 chips per instance</div>
+        <div class="scale-level level-1">
+          <div>
+            <div class="level-name">🖥 trn2.48xlarge Instance</div>
+            <div class="level-spec">16 chips · 1.5 TiB HBM3 · 3.2 Tbps EFAv3</div>
+          </div>
+          <div class="level-badge">20.8 PF FP8 <small>46 TB/s HBM BW</small></div>
+        </div>
+        <div class="scale-arrow">▼ × 4 instances</div>
+        <div class="scale-level level-2">
+          <div>
+            <div class="level-name">🔗 Trn2 UltraServer</div>
+            <div class="level-spec">64 chips via NeuronLink · 6 TiB HBM · 12.8 Tbps EFA</div>
+          </div>
+          <div class="level-badge">83.2 PF FP8 <small>185 TB/s HBM BW</small></div>
+        </div>
+        <div class="scale-arrow">▼ Thousands of UltraServers</div>
+        <div class="scale-level level-3">
+          <div>
+            <div class="level-name">🌐 EC2 UltraCluster</div>
+            <div class="level-spec">Petabit non-blocking network · Project Rainier ~400k chips</div>
+          </div>
+          <div class="level-badge">Exaflop scale <small>Anthropic partnership</small></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card card-p">
+          <div class="card-icon icon-p">🏗</div>
+          <h3>UltraServer Architecture</h3>
+          <p>Four Trn2 instances connected by NeuronLink form a Trn2 UltraServer. Chips at corresponding XY positions in each instance are connected in a ring on top of the 2D torus — enabling collective operations across all 64 chips in a single coherent memory domain.</p>
+          <div class="tags" style="margin-top:12px">
+            <span class="tag tag-p">64 chips unified</span>
+            <span class="tag tag-p">Ring + 2D torus</span>
+            <span class="tag tag-p">6 TiB shared HBM</span>
+          </div>
+        </div>
+
+        <div class="card card-o">
+          <div class="card-icon icon-o">🌧</div>
+          <h3>Project Rainier</h3>
+          <p>AWS is building one of the world's largest AI compute clusters using Trainium2 for Anthropic. Project Rainier targets ~400,000 Trainium2 chips deployed across multiple data centers in Indiana, interconnected by Lumen high-speed fiber.</p>
+          <div class="tags" style="margin-top:12px">
+            <span class="tag tag-o">~400k Trn2 chips</span>
+            <span class="tag tag-o">Multi-datacenter</span>
+            <span class="tag tag-o">Anthropic partnership</span>
+          </div>
+        </div>
+
+        <div class="card card-t">
+          <div class="card-icon icon-t">⚡</div>
+          <h3>Energy Efficiency</h3>
+          <p>Trainium2 instances are 3× more energy efficient than Trn1 instances, and deliver 30–40% better price-performance than GPU-based EC2 P5e and P5en instances running the same generative AI workloads.</p>
+          <div class="tags" style="margin-top:12px">
+            <span class="tag tag-t">3× vs Trn1 efficiency</span>
+            <span class="tag tag-t">30–40% vs GPU price</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SDK ───────────────────────────────────────────── -->
+<section id="sdk">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-orange">AWS Neuron SDK</div>
+    <h2>The <em>Software</em> Stack</h2>
+    <p class="section-lead">
+      A complete ML SDK from PyTorch/JAX through to NeuronCore silicon — 
+      with first-class support for NKI (Neuron Kernel Interface) for custom kernels 
+      that expose full ISA-level control over Trainium2.
+    </p>
+
+    <div class="g2 reveal" style="gap:32px">
+      <div>
+        <div class="sdk-stack">
+          <div class="sdk-layer sdk-0"><span class="sdk-name">PyTorch · JAX · TensorFlow</span><span class="sdk-badge">ML Frameworks</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-1"><span class="sdk-name">torch-neuronx / jax-neuronx</span><span class="sdk-badge">Neuron Plugins</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-2"><span class="sdk-name">NxD Training / NxD Inference</span><span class="sdk-badge">Distributed Libs</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-3"><span class="sdk-name">NKI — Neuron Kernel Interface</span><span class="sdk-badge">Custom Kernels / Full ISA</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-4"><span class="sdk-name">neuronx-cc (Graph Compiler)</span><span class="sdk-badge">XLA → NEFF</span></div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer sdk-5"><span class="sdk-name">Neuron Runtime + Trainium2</span><span class="sdk-badge">HW Abstraction + Silicon</span></div>
+        </div>
+
+        <div class="callout" style="margin-top:16px">
+          <strong>NKI (New in Trn2):</strong> Neuron Kernel Interface exposes the full Trainium2 ISA, giving developers instruction-level control over memory allocation and execution scheduling — enabling custom attention kernels, sparse operations, and performance-critical routines.
+        </div>
+      </div>
+
+      <div>
+        <div class="code-wrap">
+          <div class="code-header">
+            <div class="code-dots">
+              <div class="code-dot" style="background:#ff5f57"></div>
+              <div class="code-dot" style="background:#febc2e"></div>
+              <div class="code-dot" style="background:#28c840"></div>
+            </div>
+            <div class="code-fname">train_llm.py</div>
+          </div>
+          <div class="code-body"><span class="cm"># Trainium2 — unchanged from GPU code</span>
+<span class="kw">import</span> torch
+<span class="kw">import</span> torch_xla.core.xla_model <span class="kw">as</span> xm
+<span class="kw">from</span> neuronx_distributed <span class="kw">import</span> parallel_state
+
+<span class="cm"># Initialize model + tensor parallelism</span>
+parallel_state.<span class="fn">initialize_model_parallel</span>(
+    tensor_model_parallel_size=<span class="nu">8</span>,   <span class="cm"># 8 NeuronCores</span>
+    pipeline_model_parallel_size=<span class="nu">4</span>,
+)
+
+device = xm.<span class="fn">xla_device</span>()
+model = <span class="fn">LlamaModel</span>(config).<span class="fn">to</span>(device)
+
+<span class="kw">for</span> batch <span class="kw">in</span> dataloader:
+    loss = model(**batch).loss
+    loss.<span class="fn">backward</span>()
+    xm.<span class="fn">optimizer_step</span>(optimizer)
+    xm.<span class="fn">mark_step</span>()</div>
+        </div>
+
+        <div class="code-wrap" style="margin-top:12px">
+          <div class="code-header">
+            <div class="code-dots">
+              <div class="code-dot" style="background:#ff5f57"></div>
+              <div class="code-dot" style="background:#febc2e"></div>
+              <div class="code-dot" style="background:#28c840"></div>
+            </div>
+            <div class="code-fname">custom_kernel.py (NKI)</div>
+          </div>
+          <div class="code-body"><span class="cm"># NKI — full ISA control for custom ops</span>
+<span class="kw">import</span> neuronxcc.nki <span class="kw">as</span> nki
+<span class="kw">import</span> neuronxcc.nki.language <span class="kw">as</span> nl
+
+<span class="at">@nki.jit</span>
+<span class="kw">def</span> <span class="fn">fused_attention_kernel</span>(q, k, v, out):
+    <span class="cm"># Direct SBUF/Tensor Engine control</span>
+    q_sbuf = nl.<span class="fn">load</span>(q[nl.mgrid[...]])
+    k_sbuf = nl.<span class="fn">load</span>(k[nl.mgrid[...]])
+    scores = nki.isa.<span class="fn">nc_matmul</span>(q_sbuf, k_sbuf)
+    <span class="cm"># ... scales to full 28 MiB SBUF</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parallelism tabs -->
+    <div style="margin-top:48px">
+      <div class="section-eyebrow eyebrow-teal" style="margin-bottom:14px">Distributed Training</div>
+      <h2 style="font-size:26px;margin-bottom:10px">Parallelism <em>Strategies</em></h2>
+
+      <div class="tabs-wrap reveal">
+        <button class="tab-btn active" onclick="tab(this,'dp')">Data Parallel</button>
+        <button class="tab-btn" onclick="tab(this,'tp')">Tensor Parallel</button>
+        <button class="tab-btn" onclick="tab(this,'pp')">Pipeline Parallel</button>
+        <button class="tab-btn" onclick="tab(this,'cp')">Context Parallel</button>
+      </div>
+
+      <div class="tab-panel active" id="t-dp">
+        <div class="tab-txt">
+          <h3>Data Parallelism</h3>
+          <p>Each NeuronCore (or group) processes a separate data batch. The model is replicated across workers; gradients are synchronized via AllReduce over NeuronLink (intra-node) or EFAv3 (inter-node). ZeRO-1 shards optimizer states to reduce memory pressure.</p>
+          <p>Supported natively via <code>DistributedDataParallel</code>. Scales linearly with chip count through UltraCluster.</p>
+          <div class="tags"><span class="tag tag-o">AllReduce</span><span class="tag tag-o">ZeRO-1</span><span class="tag tag-t">NeuronLink</span><span class="tag tag-t">EFAv3</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 300 190" style="width:100%">
+            <text x="150" y="16" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,255,255,0.3)" text-anchor="middle" letter-spacing="1">DATA PARALLEL — 4 WORKERS</text>
+            <rect x="8" y="26" width="62" height="42" rx="4" fill="rgba(255,153,0,0.14)" stroke="rgba(255,153,0,0.4)"/>
+            <text x="39" y="48" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">Batch 0</text>
+            <text x="39" y="62" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">shard</text>
+            <rect x="82" y="26" width="62" height="42" rx="4" fill="rgba(255,153,0,0.14)" stroke="rgba(255,153,0,0.4)"/>
+            <text x="113" y="48" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">Batch 1</text>
+            <text x="113" y="62" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">shard</text>
+            <rect x="156" y="26" width="62" height="42" rx="4" fill="rgba(255,153,0,0.14)" stroke="rgba(255,153,0,0.4)"/>
+            <text x="187" y="48" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">Batch 2</text>
+            <text x="187" y="62" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">shard</text>
+            <rect x="230" y="26" width="62" height="42" rx="4" fill="rgba(255,153,0,0.14)" stroke="rgba(255,153,0,0.4)"/>
+            <text x="261" y="48" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">Batch 3</text>
+            <text x="261" y="62" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">shard</text>
+            <line x1="39" y1="68" x2="39" y2="90" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3,3"/>
+            <line x1="113" y1="68" x2="113" y2="90" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3,3"/>
+            <line x1="187" y1="68" x2="187" y2="90" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3,3"/>
+            <line x1="261" y1="68" x2="261" y2="90" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3,3"/>
+            <rect x="8" y="90" width="62" height="34" rx="4" fill="rgba(0,191,165,0.13)" stroke="rgba(0,191,165,0.4)"/>
+            <text x="39" y="111" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 0</text>
+            <rect x="82" y="90" width="62" height="34" rx="4" fill="rgba(0,191,165,0.13)" stroke="rgba(0,191,165,0.4)"/>
+            <text x="113" y="111" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 1</text>
+            <rect x="156" y="90" width="62" height="34" rx="4" fill="rgba(0,191,165,0.13)" stroke="rgba(0,191,165,0.4)"/>
+            <text x="187" y="111" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 2</text>
+            <rect x="230" y="90" width="62" height="34" rx="4" fill="rgba(0,191,165,0.13)" stroke="rgba(0,191,165,0.4)"/>
+            <text x="261" y="111" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 3</text>
+            <rect x="8" y="142" width="284" height="22" rx="4" fill="rgba(255,153,0,0.07)" stroke="rgba(255,153,0,0.25)" stroke-dasharray="5,3"/>
+            <text x="150" y="157" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.6)" text-anchor="middle">AllReduce — NeuronLink / EFAv3</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="t-tp">
+        <div class="tab-txt">
+          <h3>Tensor Parallelism</h3>
+          <p>Weight matrices are sharded across NeuronCores. Each core computes its partition; results are gathered with AllGather. Enabled by NxD Core's <code>ColumnParallelLinear</code> and <code>RowParallelLinear</code>.</p>
+          <p>Especially effective on Trainium2 with LNC-2: pairs of cores share SBUF for larger effective working set per partition, reducing HBM pressure for very large transformer layers.</p>
+          <div class="tags"><span class="tag tag-b">Weight sharding</span><span class="tag tag-b">AllGather</span><span class="tag tag-p">LNC-2 amplified</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 300 190" style="width:100%">
+            <text x="150" y="16" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,255,255,0.3)" text-anchor="middle" letter-spacing="1">TENSOR PARALLEL — WEIGHT SHARDING</text>
+            <rect x="90" y="26" width="120" height="32" rx="4" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.18)"/>
+            <text x="150" y="46" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weight Matrix W</text>
+            <line x1="110" y1="58" x2="60" y2="84" stroke="rgba(255,153,0,0.35)"/>
+            <line x1="150" y1="58" x2="150" y2="84" stroke="rgba(255,153,0,0.35)"/>
+            <line x1="190" y1="58" x2="238" y2="84" stroke="rgba(255,153,0,0.35)"/>
+            <rect x="20" y="84" width="80" height="32" rx="4" fill="rgba(255,153,0,0.13)" stroke="rgba(255,153,0,0.38)"/>
+            <text x="60" y="104" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">W[0:H/3]</text>
+            <rect x="110" y="84" width="80" height="32" rx="4" fill="rgba(255,153,0,0.13)" stroke="rgba(255,153,0,0.38)"/>
+            <text x="150" y="104" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">W[H/3:2H/3]</text>
+            <rect x="200" y="84" width="80" height="32" rx="4" fill="rgba(255,153,0,0.13)" stroke="rgba(255,153,0,0.38)"/>
+            <text x="240" y="104" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="rgba(255,153,0,0.9)" text-anchor="middle">W[2H/3:H]</text>
+            <line x1="60" y1="116" x2="60" y2="140" stroke="rgba(0,191,165,0.35)"/>
+            <line x1="150" y1="116" x2="150" y2="140" stroke="rgba(0,191,165,0.35)"/>
+            <line x1="240" y1="116" x2="240" y2="140" stroke="rgba(0,191,165,0.35)"/>
+            <rect x="20" y="140" width="80" height="26" rx="4" fill="rgba(0,191,165,0.12)" stroke="rgba(0,191,165,0.38)"/>
+            <text x="60" y="157" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 0</text>
+            <rect x="110" y="140" width="80" height="26" rx="4" fill="rgba(0,191,165,0.12)" stroke="rgba(0,191,165,0.38)"/>
+            <text x="150" y="157" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 1</text>
+            <rect x="200" y="140" width="80" height="26" rx="4" fill="rgba(0,191,165,0.12)" stroke="rgba(0,191,165,0.38)"/>
+            <text x="240" y="157" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">NC 2</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="t-pp">
+        <div class="tab-txt">
+          <h3>Pipeline Parallelism</h3>
+          <p>Model layers are partitioned into stages across chips or instances. Uses 1F1B scheduling with micro-batches to maintain high utilization across all pipeline stages simultaneously.</p>
+          <p>NxD Training provides automatic stage partitioning and activation recomputation — reducing HBM requirements by up to 60%, enabling models beyond Trn2's physical HBM capacity.</p>
+          <div class="tags"><span class="tag tag-t">1F1B schedule</span><span class="tag tag-t">Micro-batching</span><span class="tag tag-o">Activation recompute</span><span class="tag tag-o">-60% HBM</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 300 190" style="width:100%">
+            <text x="150" y="16" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,255,255,0.3)" text-anchor="middle" letter-spacing="1">PIPELINE — 4 STAGES (1F1B)</text>
+            <rect x="6" y="26" width="62" height="36" rx="4" fill="rgba(255,153,0,0.2)" stroke="rgba(255,153,0,0.5)"/>
+            <text x="37" y="47" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,1)" text-anchor="middle">Stage 0</text>
+            <text x="37" y="58" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">L 0–8</text>
+            <line x1="68" y1="44" x2="80" y2="44" stroke="rgba(255,153,0,0.4)"/>
+            <rect x="80" y="26" width="62" height="36" rx="4" fill="rgba(255,153,0,0.14)" stroke="rgba(255,153,0,0.38)"/>
+            <text x="111" y="47" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.85)" text-anchor="middle">Stage 1</text>
+            <text x="111" y="58" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">L 9–16</text>
+            <line x1="142" y1="44" x2="154" y2="44" stroke="rgba(255,153,0,0.35)"/>
+            <rect x="154" y="26" width="62" height="36" rx="4" fill="rgba(255,153,0,0.09)" stroke="rgba(255,153,0,0.28)"/>
+            <text x="185" y="47" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.7)" text-anchor="middle">Stage 2</text>
+            <text x="185" y="58" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">L 17–24</text>
+            <line x1="216" y1="44" x2="228" y2="44" stroke="rgba(255,153,0,0.28)"/>
+            <rect x="228" y="26" width="64" height="36" rx="4" fill="rgba(255,153,0,0.06)" stroke="rgba(255,153,0,0.2)"/>
+            <text x="260" y="47" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,153,0,0.55)" text-anchor="middle">Stage 3</text>
+            <text x="260" y="58" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">L 25–32</text>
+            <text x="6" y="88" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="rgba(255,255,255,0.28)" letter-spacing="0.5">SCHEDULE (1F1B)</text>
+            <rect x="6" y="98" width="24" height="14" rx="2" fill="rgba(255,153,0,0.22)" stroke="rgba(255,153,0,0.48)"/>
+            <text x="18" y="109" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="rgba(255,153,0,1)" text-anchor="middle">F0</text>
+            <rect x="32" y="98" width="24" height="14" rx="2" fill="rgba(255,153,0,0.16)"/>
+            <text x="44" y="109" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,153,0,0.82)" text-anchor="middle">F1</text>
+            <rect x="58" y="98" width="24" height="14" rx="2" fill="rgba(255,153,0,0.1)"/>
+            <text x="70" y="109" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,153,0,0.64)" text-anchor="middle">F2</text>
+            <rect x="84" y="98" width="24" height="14" rx="2" fill="rgba(255,153,0,0.07)"/>
+            <text x="96" y="109" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,153,0,0.5)" text-anchor="middle">F3</text>
+            <rect x="110" y="98" width="24" height="14" rx="2" fill="rgba(0,191,165,0.18)" stroke="rgba(0,191,165,0.38)"/>
+            <text x="122" y="109" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="rgba(0,191,165,0.9)" text-anchor="middle">B3</text>
+            <rect x="136" y="98" width="24" height="14" rx="2" fill="rgba(0,191,165,0.13)"/>
+            <text x="148" y="109" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(0,191,165,0.75)" text-anchor="middle">B2</text>
+            <rect x="162" y="98" width="24" height="14" rx="2" fill="rgba(0,191,165,0.09)"/>
+            <text x="174" y="109" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(0,191,165,0.6)" text-anchor="middle">B1</text>
+            <rect x="188" y="98" width="24" height="14" rx="2" fill="rgba(0,191,165,0.06)"/>
+            <text x="200" y="109" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(0,191,165,0.5)" text-anchor="middle">B0</text>
+            <text x="6" y="148" font-family="Plus Jakarta Sans" font-size="9" fill="rgba(255,255,255,0.3)">F = Forward   B = Backward</text>
+            <text x="6" y="164" font-family="Plus Jakarta Sans" font-size="9" fill="rgba(255,255,255,0.3)">Activation recompute → −60% HBM</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="t-cp">
+        <div class="tab-txt">
+          <h3>Context Parallelism</h3>
+          <p>Sequence length is sharded across NeuronCores, enabling training with extremely long context windows (128K+ tokens) that wouldn't fit in a single core's memory.</p>
+          <p>A new addition in NxD Core v2, Context Parallelism is critical for long-context reasoning models and multi-modal architectures with large visual token sequences. Combines well with TP and PP.</p>
+          <div class="tags"><span class="tag tag-p">Sequence sharding</span><span class="tag tag-p">128K+ context</span><span class="tag tag-p">Multi-modal</span><span class="tag tag-t">New in NxD v2</span></div>
+        </div>
+        <div class="tab-diag">
+          <svg viewBox="0 0 300 190" style="width:100%">
+            <text x="150" y="16" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(255,255,255,0.3)" text-anchor="middle" letter-spacing="1">CONTEXT PARALLEL — SEQUENCE SHARDING</text>
+            <rect x="20" y="28" width="260" height="26" rx="4" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.15)"/>
+            <text x="150" y="45" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="rgba(255,255,255,0.5)" text-anchor="middle">Full Sequence (128K tokens)</text>
+            <line x1="80" y1="54" x2="60" y2="76" stroke="rgba(206,147,216,0.35)"/>
+            <line x1="150" y1="54" x2="150" y2="76" stroke="rgba(206,147,216,0.35)"/>
+            <line x1="220" y1="54" x2="240" y2="76" stroke="rgba(206,147,216,0.35)"/>
+            <rect x="20" y="76" width="80" height="30" rx="4" fill="rgba(206,147,216,0.12)" stroke="rgba(206,147,216,0.35)"/>
+            <text x="60" y="90" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="rgba(206,147,216,0.9)" text-anchor="middle">Tokens 0–32K</text>
+            <text x="60" y="101" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">NC 0</text>
+            <rect x="110" y="76" width="80" height="30" rx="4" fill="rgba(206,147,216,0.12)" stroke="rgba(206,147,216,0.35)"/>
+            <text x="150" y="90" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="rgba(206,147,216,0.9)" text-anchor="middle">Tokens 32–64K</text>
+            <text x="150" y="101" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">NC 1</text>
+            <rect x="200" y="76" width="80" height="30" rx="4" fill="rgba(206,147,216,0.12)" stroke="rgba(206,147,216,0.35)"/>
+            <text x="240" y="90" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="rgba(206,147,216,0.9)" text-anchor="middle">Tokens 64–128K</text>
+            <text x="240" y="101" font-family="Plus Jakarta Sans" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">NC 2</text>
+            <rect x="20" y="126" width="260" height="22" rx="4" fill="rgba(206,147,216,0.06)" stroke="rgba(206,147,216,0.2)" stroke-dasharray="5,3"/>
+            <text x="150" y="141" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="rgba(206,147,216,0.55)" text-anchor="middle">AllGather — cross-attention scores</text>
+            <text x="20" y="172" font-family="Plus Jakarta Sans" font-size="9" fill="rgba(255,255,255,0.28)">Enables 128K+ context on Trainium2</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INSTANCES ─────────────────────────────────────── -->
+<section id="instances">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-blue">EC2 Instance Types</div>
+    <h2>Trn2 <em>Instance</em> Family</h2>
+    <p class="section-lead">
+      From single-chip development to 64-chip UltraServer for frontier model training — 
+      the Trn2 family spans a wide range of ML compute needs.
+    </p>
+
+    <div class="inst-grid reveal">
+      <div class="inst-card">
+        <div class="inst-name">trn2.48xlarge</div>
+        <table class="spec-tbl">
+          <tr><td>Trainium2 chips</td><td>16</td></tr>
+          <tr><td>NeuronCores v3</td><td>128 physical</td></tr>
+          <tr><td>HBM3 memory</td><td class="hl">1.5 TiB</td></tr>
+          <tr><td>HBM bandwidth</td><td class="hl">46 TB/s</td></tr>
+          <tr><td>FP8 compute</td><td class="hl">20.8 PF dense</td></tr>
+          <tr><td>vCPUs</td><td>192</td></tr>
+          <tr><td>Instance DRAM</td><td>2 TiB DDR5</td></tr>
+          <tr><td>EFA networking</td><td class="hl">3.2 Tbps (EFAv3)</td></tr>
+          <tr><td>Best for</td><td>LLM training / inference</td></tr>
+        </table>
+      </div>
+
+      <div class="inst-card featured">
+        <div class="inst-badge">FLAGSHIP</div>
+        <div class="inst-name">Trn2 UltraServer</div>
+        <table class="spec-tbl">
+          <tr><td>Trainium2 chips</td><td class="hl">64 (4 × trn2.48xl)</td></tr>
+          <tr><td>NeuronCores v3</td><td>512 physical</td></tr>
+          <tr><td>HBM3 memory</td><td class="hl">6 TiB</td></tr>
+          <tr><td>HBM bandwidth</td><td class="hl">185 TB/s</td></tr>
+          <tr><td>FP8 compute</td><td class="hl">83.2 PF dense</td></tr>
+          <tr><td>Sparse FP8</td><td class="hl">332 PF sparse</td></tr>
+          <tr><td>EFA networking</td><td class="hl">12.8 Tbps</td></tr>
+          <tr><td>NeuronLink</td><td class="hl">2D torus + ring</td></tr>
+          <tr><td>Best for</td><td>Frontier 1T+ models</td></tr>
+        </table>
+      </div>
+
+      <div class="inst-card">
+        <div class="inst-name">EC2 UltraCluster</div>
+        <table class="spec-tbl">
+          <tr><td>Scale</td><td class="hlb">Tens of thousands</td></tr>
+          <tr><td>Network</td><td class="hlb">Petabit non-blocking</td></tr>
+          <tr><td>Topology</td><td>EFAv3 fat-tree</td></tr>
+          <tr><td>Max chips</td><td class="hlb">400k+ (Project Rainier)</td></tr>
+          <tr><td>Scheduling</td><td>AWS HyperPod</td></tr>
+          <tr><td>Frameworks</td><td>PyTorch, JAX, NxD</td></tr>
+          <tr><td>Container</td><td>Neuron DLC / EKS</td></tr>
+          <tr><td>Partner</td><td>Anthropic (Rainier)</td></tr>
+          <tr><td>Best for</td><td>Frontier model pretraining</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PERFORMANCE ───────────────────────────────────── -->
+<section id="performance">
+  <div class="wrap">
+    <div class="section-eyebrow eyebrow-teal">Benchmarks</div>
+    <h2>Training & Inference <em>Performance</em></h2>
+    <p class="section-lead">
+      Trainium2 delivers dramatically improved performance across LLM training and inference — 
+      with up to 4× higher throughput than Trn1 and 30–40% better price-performance than GPU instances.
+    </p>
+
+    <div class="g2 reveal" style="gap:32px">
+      <div>
+        <div class="bench-grp">
+          <div class="bench-grp-title">Trn2 vs Trn1 — Relative Throughput <span class="bench-badge">Training, normalized</span></div>
+          <div class="bench-row">
+            <div class="bench-lbl">Trn1.32xlarge</div>
+            <div class="bench-track"><div class="bench-fill fill-o" data-w="25"><span class="bench-fill-lbl">1×</span></div></div>
+            <div class="bench-val">1×</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-lbl">trn2.48xlarge</div>
+            <div class="bench-track"><div class="bench-fill fill-o" data-w="100"><span class="bench-fill-lbl">~4×</span></div></div>
+            <div class="bench-val">~4×</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-lbl">Trn2 UltraServer</div>
+            <div class="bench-track"><div class="bench-fill fill-t" data-w="100"><span class="bench-fill-lbl">~16×</span></div></div>
+            <div class="bench-val t">~16×</div>
+          </div>
+        </div>
+
+        <div class="bench-grp">
+          <div class="bench-grp-title">Llama 3 70B Training — FP8 MFU % <span class="bench-badge">Model FLOP Utilization</span></div>
+          <div class="bench-row">
+            <div class="bench-lbl">BF16 baseline</div>
+            <div class="bench-track"><div class="bench-fill fill-o" data-w="65"><span class="bench-fill-lbl">~65%</span></div></div>
+            <div class="bench-val">65%</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-lbl">FP8 + ZeRO-1</div>
+            <div class="bench-track"><div class="bench-fill fill-o" data-w="78"><span class="bench-fill-lbl">~78%</span></div></div>
+            <div class="bench-val">78%</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-lbl">FP8 + TP + PP + CP</div>
+            <div class="bench-track"><div class="bench-fill fill-t" data-w="88"><span class="bench-fill-lbl">~88%</span></div></div>
+            <div class="bench-val t">88%</div>
+          </div>
+        </div>
+
+        <div class="bench-grp">
+          <div class="bench-grp-title">Price-Performance vs GPU <span class="bench-badge">Relative, P5e/P5en baseline</span></div>
+          <div class="bench-row">
+            <div class="bench-lbl">P5e.48xlarge (H200)</div>
+            <div class="bench-track"><div class="bench-fill fill-o" data-w="70"><span class="bench-fill-lbl">Baseline</span></div></div>
+            <div class="bench-val">1.0×</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-lbl">trn2.48xlarge</div>
+            <div class="bench-track"><div class="bench-fill fill-t" data-w="100"><span class="bench-fill-lbl">30–40% better</span></div></div>
+            <div class="bench-val t">1.35–1.4×</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Trn1 vs Trn2 key improvements -->
+        <div class="card card-o" style="margin-bottom:16px">
+          <h3 style="margin-bottom:14px">Trainium1 → Trainium2 Leap</h3>
+          <table class="spec-tbl">
+            <tr><td>Compute (FP8)</td><td class="hl">4× faster</td></tr>
+            <tr><td>Memory capacity</td><td class="hl">3× more (32→96 GiB)</td></tr>
+            <tr><td>Memory bandwidth</td><td class="hl">4× faster</td></tr>
+            <tr><td>Energy efficiency</td><td class="hl">3× better</td></tr>
+            <tr><td>Network (EFA)</td><td class="hl">4× more (800G→3.2T)</td></tr>
+            <tr><td>New: FP8 native</td><td class="hl">2× vs BF16</td></tr>
+            <tr><td>New: LNC config</td><td class="hl">1× or 2× SBUF</td></tr>
+            <tr><td>New: Context ∥</td><td class="hl">128K+ seq len</td></tr>
+          </table>
+        </div>
+
+        <div class="card card-t">
+          <h3 style="margin-bottom:8px">Supported Model Workloads</h3>
+          <p style="margin-bottom:14px; font-size:13px">Trainium2 supports all major LLM and diffusion architectures out of the box:</p>
+          <div class="tags">
+            <span class="tag tag-t">Llama 3.1 405B</span>
+            <span class="tag tag-t">Llama 3.3 70B</span>
+            <span class="tag tag-t">Mistral / Mixtral</span>
+            <span class="tag tag-o">Qwen3 MoE 235B</span>
+            <span class="tag tag-o">Pixtral (VLM)</span>
+            <span class="tag tag-b">FLUX diffusion</span>
+            <span class="tag tag-b">Llama 4</span>
+            <span class="tag tag-p">vLLM on Neuron</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">AWS Trainium2 Deep Dive</div>
+    <div class="footer-links">
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trainium2.html" target="_blank">Trainium2 Docs</a>
+      <a href="https://aws.amazon.com/ec2/instance-types/trn2/" target="_blank">EC2 Trn2</a>
+      <a href="https://github.com/aws-neuron/aws-neuron-samples" target="_blank">Code Samples</a>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/neuron-core-v3.html" target="_blank">NeuronCore-v3</a>
+    </div>
+    <div class="footer-copy">Based on AWS Neuron Documentation 2024</div>
+  </div>
+</footer>
+
+<script>
+/* ── NeuronCore grid ── */
+(function(){
+  var g = document.getElementById('hero-nc-grid');
+  var tt = document.getElementById('tip');
+  for(var i=0;i<8;i++){
+    var c = document.createElement('div');
+    c.className='nc-core'; c.textContent='v3';
+    c.dataset.i = i;
+    c.addEventListener('mouseenter', function(e){
+      var idx = this.dataset.i;
+      tt.style.display='block';
+      tt.innerHTML='<strong>NeuronCore-v3 #'+idx+'</strong><br>Tensor+Vector+Scalar+GpsimdE<br>28 MiB SBUF · 1.3 PF FP8';
+    });
+    c.addEventListener('mousemove', function(e){
+      tt.style.left=(e.clientX+14)+'px';
+      tt.style.top=(e.clientY-52)+'px';
+    });
+    c.addEventListener('mouseleave', function(){tt.style.display='none';});
+    g.appendChild(c);
+  }
+})();
+
+/* ── Scroll reveal ── */
+var ro = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('in'); ro.unobserve(e.target);}
+  });
+},{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
+
+/* ── Bar animation ── */
+var bo = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(!e.isIntersecting) return;
+    var fills = e.target.querySelectorAll('[data-w]');
+    fills.forEach(function(f,i){
+      setTimeout(function(){f.style.width=f.dataset.w+'%';},i*130);
+    });
+    bo.unobserve(e.target);
+  });
+},{threshold:0.25});
+document.querySelectorAll('.bench-grp, .mem-bars').forEach(function(g){bo.observe(g);});
+
+/* ── Tabs ── */
+function tab(btn, id){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('t-'+id).classList.add('active');
+}
+
+/* ── Active nav ── */
+var secs=document.querySelectorAll('section[id]');
+var links=document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll',function(){
+  var cur='';
+  secs.forEach(function(s){if(window.scrollY>=s.offsetTop-80)cur=s.id;});
+  links.forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+cur);});
+},{passive:true});
+</script>
+</body>
+</html>
