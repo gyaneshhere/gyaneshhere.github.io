@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Trainium — Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f8f9fa;
+  --bg-muted: #f0f2f5;
+  --surface: #ffffff;
+  --border: #e2e6ea;
+  --border-med: #cdd1d8;
+  --aws-orange: #FF9900;
+  --aws-orange-h:#e68900;
+  --aws-orange-l:#fff4e0;
+  --aws-navy: #232f3e;
+  --aws-blue: #0073bb;
+  --aws-blue-l: #e8f4fb;
+  --aws-teal: #00897b;
+  --aws-teal-l: #e0f2f1;
+  --aws-purple: #6b46c1;
+  --aws-purple-l:#f3f0ff;
+  --text: #0d1117;
+  --text-sec: #3d4a5c;
+  --text-muted: #6b7785;
+  --text-dim: #9aa5b4;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10),0 4px 8px rgba(0,0,0,0.06);
+  --r:8px; --rl:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--aws-blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:1080px;margin:0 auto;padding:0 32px}
+.cw{max-width:1240px;margin:0 auto;padding:0 32px}
+
+/* NAV */
+header{position:sticky;top:0;z-index:100;background:var(--aws-navy);border-bottom:3px solid var(--aws-orange)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1240px;margin:0 auto;padding:0 32px;height:56px}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.nav-brand-icon{width:28px;height:28px;background:var(--aws-orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--aws-navy)}
+.nav-links{display:flex;gap:2px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);padding:6px 12px;border-radius:4px;transition:color .15s,background .15s}
+.nav-links a:hover,.nav-links a.active{color:#fff;background:rgba(255,255,255,.1);text-decoration:none}
+.nav-badge{font-size:11px;font-weight:600;background:var(--aws-orange);color:var(--aws-navy);padding:3px 10px;border-radius:20px}
+
+/* HERO */
+.hero{background:var(--aws-navy);padding:72px 0 64px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 500px at 80% 50%,rgba(255,153,0,.07),transparent);pointer-events:none}
+.hero-inner{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:1fr 420px;gap:64px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--aws-orange);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+.hero-eyebrow::before{content:'';display:block;width:6px;height:6px;background:var(--aws-orange);border-radius:50%}
+.hero h1{font-size:48px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.03em;margin-bottom:20px}
+.hero h1 span{color:var(--aws-orange)}
+.hero-desc{font-size:16px;line-height:1.7;color:rgba(255,255,255,.6);margin-bottom:32px;max-width:520px}
+.hero-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:14px;font-weight:600;padding:10px 22px;border-radius:6px;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-orange{background:var(--aws-orange);color:var(--aws-navy)}
+.btn-orange:hover{background:var(--aws-orange-h);text-decoration:none}
+.btn-outline{background:transparent;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.25)}
+.btn-outline:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+
+/* CHIP DIAGRAM */
+.chip-wrap{background:var(--aws-navy);border-radius:var(--rl);padding:28px;box-shadow:var(--shadow-lg);position:relative;z-index:1}
+.chip-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.chip-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+.nc-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:12px}
+.nc-cell{aspect-ratio:1;background:rgba(255,153,0,.14);border:1px solid rgba(255,153,0,.28);border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:7px;color:rgba(255,153,0,.6);cursor:pointer;transition:background .15s,border-color .15s}
+.nc-cell:hover{background:rgba(255,153,0,.32);border-color:var(--aws-orange)}
+.hbm-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px}
+.hbm-cell{background:rgba(0,137,123,.14);border:1px solid rgba(0,200,180,.3);border-radius:3px;padding:5px 6px;font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(0,212,180,.85);text-align:center;line-height:1.4}
+.chip-legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.4)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+
+/* TOOLTIP */
+#tooltip{position:fixed;pointer-events:none;z-index:300;background:var(--aws-navy);color:#fff;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:6px;box-shadow:var(--shadow-md);display:none;white-space:nowrap}
+
+/* STAT STRIP */
+.stat-strip{background:#fff;border-bottom:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.stat-strip-inner{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:repeat(4,1fr)}
+.stat-item{padding:22px 28px;border-right:1px solid var(--border)}
+.stat-item:last-child{border-right:none}
+.stat-num{font-size:30px;font-weight:800;color:var(--aws-navy);letter-spacing:-.03em;line-height:1}
+.stat-num span{color:var(--aws-orange)}
+.stat-label{font-size:13px;color:var(--text-muted);margin-top:3px}
+
+/* SECTIONS */
+section{padding:72px 0}
+section:nth-child(even){background:var(--bg-subtle)}
+.section-label{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--aws-orange);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.section-label::before{content:'';display:block;width:14px;height:2px;background:var(--aws-orange);border-radius:2px}
+h2{font-size:32px;font-weight:800;color:var(--aws-navy);letter-spacing:-.025em;line-height:1.15;margin-bottom:10px}
+h2 em{font-style:normal;color:var(--aws-orange)}
+.section-desc{font-size:15px;color:var(--text-sec);line-height:1.7;max-width:600px;margin-bottom:36px}
+
+/* CARDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:26px;box-shadow:var(--shadow-sm);transition:box-shadow .2s,border-color .2s,transform .2s;position:relative}
+.card:hover{box-shadow:var(--shadow-md);border-color:var(--border-med);transform:translateY(-1px)}
+.card-to{border-top:3px solid var(--aws-orange)}
+.card-tb{border-top:3px solid var(--aws-blue)}
+.card-tt{border-top:3px solid var(--aws-teal)}
+.card-tp{border-top:3px solid var(--aws-purple)}
+.card-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:14px}
+.ico{background:var(--aws-orange-l)} .icb{background:var(--aws-blue-l)} .ict{background:var(--aws-teal-l)} .icp{background:var(--aws-purple-l)}
+.card h3{font-size:16px;font-weight:700;color:var(--aws-navy);margin-bottom:7px;letter-spacing:-.01em}
+.card p{font-size:14px;color:var(--text-sec);line-height:1.6}
+.card-meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:12px;display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.01em}
+.tag-o{background:var(--aws-orange-l);color:#b36a00}
+.tag-b{background:var(--aws-blue-l);color:#0058a0}
+.tag-t{background:var(--aws-teal-l);color:#00695c}
+.tag-p{background:var(--aws-purple-l);color:#553098}
+.tag-g{background:#f0f4f8;color:#4a5568}
+
+/* SPEC TABLE */
+.spec-table{width:100%;border-collapse:collapse;font-size:14px}
+.spec-table th{background:var(--aws-navy);color:#fff;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:12px 16px;text-align:left}
+.spec-table tr{border-bottom:1px solid var(--border)}
+.spec-table tr:last-child{border-bottom:none}
+.spec-table td{padding:12px 16px;color:var(--text-sec);vertical-align:top}
+.spec-table td:first-child{font-weight:600;color:var(--text);width:38%}
+.spec-table tr:hover td{background:var(--bg-subtle)}
+.spec-val{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--aws-navy)}
+
+/* CODE BLOCK */
+.code-block{background:var(--aws-navy);border-radius:var(--r);padding:22px 26px;font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(255,255,255,.85);line-height:1.7;overflow-x:auto;margin-top:16px}
+.code-block .kw{color:var(--aws-orange)}
+.code-block .cm{color:rgba(255,255,255,.35)}
+.code-block .st{color:#98c379}
+.code-block .nu{color:#d19a66}
+
+/* ARCH DIAGRAM */
+.arch-diagram{background:var(--aws-navy);border-radius:var(--rl);padding:32px;margin-top:24px}
+.arch-diagram-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:24px;text-align:center}
+.arch-row{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:10px}
+.arch-box{border-radius:6px;padding:10px 14px;font-size:12px;font-weight:600;text-align:center;line-height:1.3}
+.arch-box-nc{background:rgba(255,153,0,.18);border:1px solid rgba(255,153,0,.4);color:rgba(255,200,80,.95);flex:1;min-width:0}
+.arch-box-hbm{background:rgba(0,137,123,.18);border:1px solid rgba(0,200,180,.35);color:rgba(0,212,180,.9);flex:1;min-width:0}
+.arch-box-io{background:rgba(107,70,193,.18);border:1px solid rgba(160,120,255,.35);color:rgba(180,150,255,.9);flex:1;min-width:0}
+.arch-box-nl{background:rgba(0,115,187,.18);border:1px solid rgba(0,160,240,.35);color:rgba(100,180,255,.9);flex:1;min-width:0}
+.arch-box-efa{background:rgba(220,60,60,.18);border:1px solid rgba(255,100,100,.35);color:rgba(255,140,140,.9);flex:1;min-width:0}
+.arch-arrow{color:rgba(255,255,255,.25);font-size:16px;flex-shrink:0}
+.arch-sep{height:1px;background:rgba(255,255,255,.07);margin:14px 0}
+.arch-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.06em;text-transform:uppercase;text-align:center;margin-bottom:8px}
+
+/* INSTANCE COMPARISON TABLE */
+.inst-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:20px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
+.inst-table th{background:var(--aws-navy);color:#fff;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:12px 16px;text-align:left}
+.inst-table th:not(:first-child){text-align:center}
+.inst-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-sec)}
+.inst-table td:not(:first-child){text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--aws-navy);font-weight:600}
+.inst-table td:first-child{font-weight:700;color:var(--aws-navy)}
+.inst-table tr:last-child td{border-bottom:none}
+.inst-table tr:hover td{background:var(--bg-subtle)}
+.highlight-row td{background:var(--aws-orange-l)!important}
+
+/* NEURONCORE v2 DIAGRAM */
+.ncv2-diagram{background:var(--aws-navy);border-radius:var(--rl);padding:28px;margin-top:24px}
+.ncv2-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.ncv2-engine{border-radius:8px;padding:14px 16px;border:1px solid}
+.ncv2-te{background:rgba(255,153,0,.12);border-color:rgba(255,153,0,.3);color:rgba(255,200,80,.9)}
+.ncv2-ve{background:rgba(0,137,123,.12);border-color:rgba(0,200,180,.3);color:rgba(0,212,180,.9)}
+.ncv2-se{background:rgba(0,115,187,.12);border-color:rgba(0,160,240,.3);color:rgba(100,180,255,.9)}
+.ncv2-gp{background:rgba(107,70,193,.12);border-color:rgba(160,120,255,.3);color:rgba(180,150,255,.9)}
+.ncv2-engine h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.ncv2-engine p{font-size:11px;line-height:1.5;opacity:.8}
+.ncv2-mem{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ncv2-mem-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;text-align:center}
+.ncv2-mem-box .mem-label{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.ncv2-mem-box .mem-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#fff}
+.ncv2-mem-box .mem-bw{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+
+/* TORUS DIAGRAM */
+.torus-wrap{background:var(--aws-navy);border-radius:var(--rl);padding:28px;display:flex;align-items:center;justify-content:center;min-height:200px}
+.torus-grid{display:grid;grid-template-columns:repeat(4,52px);grid-template-rows:repeat(4,52px);gap:8px}
+.torus-node{width:52px;height:52px;background:rgba(255,153,0,.18);border:2px solid rgba(255,153,0,.35);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,180,60,.9);font-weight:600;cursor:pointer;transition:all .2s}
+.torus-node:hover{background:rgba(255,153,0,.35);border-color:var(--aws-orange)}
+.torus-node.tn-active{background:rgba(255,153,0,.4);border-color:var(--aws-orange);box-shadow:0 0 12px rgba(255,153,0,.4)}
+
+/* FEATURES */
+.feature-row{display:grid;grid-template-columns:260px 1fr;gap:48px;align-items:start;padding:40px 0;border-bottom:1px solid var(--border)}
+.feature-row:last-child{border-bottom:none}
+.feature-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--aws-orange);margin-bottom:8px}
+.feature-title{font-size:22px;font-weight:700;color:var(--aws-navy);line-height:1.25;letter-spacing:-.01em}
+.feature-desc{font-size:14px;color:var(--text-sec);line-height:1.7;margin-bottom:16px}
+.feature-stats{display:flex;gap:24px;flex-wrap:wrap}
+.fstat{min-width:80px}
+.fstat-num{font-size:22px;font-weight:800;color:var(--aws-navy);letter-spacing:-.02em}
+.fstat-num span{color:var(--aws-orange)}
+.fstat-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;margin-right:6px;margin-bottom:6px}
+.badge-o{background:var(--aws-orange-l);color:#b36a00}
+.badge-b{background:var(--aws-blue-l);color:#0058a0}
+.badge-t{background:var(--aws-teal-l);color:#00695c}
+.badge-p{background:var(--aws-purple-l);color:#553098}
+.badge-g{background:#f0f4f8;color:#4a5568}
+.badge::before{content:'●';font-size:7px}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.timeline-item{position:relative;margin-bottom:28px}
+.timeline-item:last-child{margin-bottom:0}
+.timeline-dot{position:absolute;left:-28px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--aws-orange);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--aws-orange)}
+.timeline-head{font-size:15px;font-weight:700;color:var(--aws-navy);margin-bottom:5px}
+.timeline-body{font-size:14px;color:var(--text-sec);line-height:1.6}
+
+/* FOOTER */
+footer{background:var(--aws-navy);color:rgba(255,255,255,.5);padding:32px 0;text-align:center;font-size:13px}
+footer a{color:rgba(255,255,255,.6)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr}
+  .chip-wrap{display:none}
+  .stat-strip-inner{grid-template-columns:1fr 1fr}
+  .grid-3,.grid-4{grid-template-columns:1fr 1fr}
+  .feature-row{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .hero h1{font-size:32px}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .stat-strip-inner{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+}
+
+/* NEW: Architecture section specific styles */
+.arch-section{background:#f8f9fa}
+.trn1-chip-diagram{background:var(--aws-navy);border-radius:var(--rl);padding:32px;margin-bottom:32px;position:relative;overflow:hidden}
+.trn1-chip-diagram::before{content:'TRAINIUM CHIP';position:absolute;top:16px;right:20px;font-size:10px;font-weight:700;letter-spacing:.15em;color:rgba(255,255,255,.12)}
+.chip-section-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.07)}
+.chip-cores-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.chip-core{background:rgba(255,153,0,.1);border:1px solid rgba(255,153,0,.25);border-radius:8px;padding:14px 16px}
+.chip-core-title{font-size:11px;font-weight:700;color:rgba(255,200,80,.9);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.chip-core-title::before{content:'';width:8px;height:8px;background:var(--aws-orange);border-radius:2px;display:block}
+.core-engines{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.core-engine{background:rgba(255,255,255,.06);border-radius:4px;padding:6px 8px;font-size:10px;color:rgba(255,255,255,.65);text-align:center;font-weight:600;letter-spacing:.02em}
+.chip-hbm-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.hbm-bank{background:rgba(0,137,123,.1);border:1px solid rgba(0,200,180,.25);border-radius:8px;padding:12px 16px;text-align:center}
+.hbm-bank-label{font-size:10px;color:rgba(0,212,180,.7);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.hbm-bank-val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:rgba(0,212,180,.95)}
+.hbm-bank-bw{font-size:10px;color:rgba(0,212,180,.5);margin-top:2px}
+.chip-io-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.chip-io-box{border-radius:6px;padding:10px 14px;font-size:11px;font-weight:600;text-align:center}
+.chip-io-nl{background:rgba(0,115,187,.15);border:1px solid rgba(0,160,240,.3);color:rgba(100,180,255,.9)}
+.chip-io-efa{background:rgba(220,60,60,.12);border:1px solid rgba(255,100,100,.25);color:rgba(255,140,140,.9)}
+
+.topology-diagram{display:flex;flex-direction:column;align-items:center;gap:12px}
+.topo-row{display:flex;gap:12px;align-items:center}
+.topo-node{width:56px;height:56px;background:rgba(255,153,0,.15);border:2px solid rgba(255,153,0,.35);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,190,60,.9);font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3}
+.topo-node:hover{background:rgba(255,153,0,.3);border-color:var(--aws-orange);transform:scale(1.05)}
+.topo-conn{color:rgba(255,255,255,.2);font-size:20px;line-height:1}
+.topo-conn-v{width:2px;height:12px;background:rgba(255,255,255,.15);margin:0 auto}
+.topo-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;text-align:center;margin-top:8px}
+
+/* Info box */
+.info-box{background:var(--aws-blue-l);border:1px solid #b8d8f0;border-left:4px solid var(--aws-blue);border-radius:var(--r);padding:18px 22px;margin-top:20px}
+.info-box p{font-size:14px;color:var(--text-sec);line-height:1.65}
+.info-box strong{color:var(--aws-navy)}
+.warn-box{background:var(--aws-orange-l);border:1px solid #f5c37a;border-left:4px solid var(--aws-orange);border-radius:var(--r);padding:18px 22px;margin-top:20px}
+.warn-box p{font-size:14px;color:#7a4800;line-height:1.65}
+</style>
+</head>
+<body>
+<div id="tooltip"></div>
+
+<!-- NAV -->
+<header>
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">AWS</div>
+      AWS Trainium · Deep Dive
+    </div>
+    <ul class="nav-links">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#neuroncore">NeuronCore v2</a></li>
+      <li><a href="#instances">Instances</a></li>
+      <li><a href="#networking">Networking</a></li>
+      <li><a href="#software">Software</a></li>
+      <li><a href="#usecases">Use Cases</a></li>
+    </ul>
+    <span class="nav-badge">Trn1 / Trn1n</span>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">AWS Custom Silicon · Second Generation</div>
+      <h1>AWS <span>Trainium</span><br>Architecture</h1>
+      <p class="hero-desc">A deep dive into Amazon's purpose-built ML training accelerator — from NeuronCore v2 internals to 2D Torus topology, NeuronLink interconnect, and the full Trn1/Trn1n instance family.</p>
+      <div class="hero-actions">
+        <a href="#architecture" class="btn btn-orange">Explore Architecture</a>
+        <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trn1-arch.html" target="_blank" class="btn btn-outline">AWS Docs ↗</a>
+      </div>
+    </div>
+    <div class="chip-wrap">
+      <div class="chip-title">Trainium Chip · 2× NeuronCore-v2</div>
+      <div class="nc-grid" id="ncGrid"></div>
+      <div class="chip-title" style="margin-top:14px">HBM · 32 GB per chip</div>
+      <div class="hbm-row" id="hbmRow"></div>
+      <div class="chip-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,153,0,.55)"></div>NeuronCore-v2</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(0,200,180,.55)"></div>HBM Stack</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(107,120,255,.55)"></div>NeuronLink</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STAT STRIP -->
+<div class="stat-strip">
+  <div class="stat-strip-inner">
+    <div class="stat-item">
+      <div class="stat-num">3<span> PFLOPS</span></div>
+      <div class="stat-label">FP16/BF16 peak compute (Trn1.32xl)</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">16<span> chips</span></div>
+      <div class="stat-label">Max Trainium chips per instance</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">512<span> GB</span></div>
+      <div class="stat-label">Shared HBM · 9.8 TB/s bandwidth</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">32<span> NCs</span></div>
+      <div class="stat-label">NeuronCore-v2 instances per Trn1.32xl</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 1: OVERVIEW -->
+<section id="overview">
+  <div class="container">
+    <div class="section-label">Overview</div>
+    <h2>What is <em>AWS Trainium</em>?</h2>
+    <p class="section-desc">AWS Trainium is the second-generation purpose-built ML accelerator from AWS, designed from the ground up for deep learning training of large-scale generative AI models including LLMs, diffusion models, and recommendation systems.</p>
+    <div class="grid-3">
+      <div class="card card-to">
+        <div class="card-icon ico">🎯</div>
+        <h3>Purpose-Built for Training</h3>
+        <p>Unlike general-purpose GPUs, Trainium's NeuronCore-v2 architecture is specifically optimized for large-scale DL training with dedicated collective communication hardware, stochastic rounding, and configurable FP8 data types.</p>
+        <div class="card-meta"><span class="tag tag-o">cFP8</span><span class="tag tag-o">BF16</span><span class="tag tag-o">TF32</span></div>
+      </div>
+      <div class="card card-tb">
+        <div class="card-icon icb">💰</div>
+        <h3>Up to 50% Cost Savings</h3>
+        <p>Trn1 instances offer up to 50% cost-to-train savings over comparable EC2 GPU instances, enabling organizations to train 100B+ parameter models at dramatically reduced cost.</p>
+        <div class="card-meta"><span class="tag tag-b">vs. GPU instances</span></div>
+      </div>
+      <div class="card card-tt">
+        <div class="card-icon ict">🔗</div>
+        <h3>Native Framework Support</h3>
+        <p>The AWS Neuron SDK integrates natively with PyTorch and TensorFlow, enabling teams to run existing training workloads with minimal code changes via XLA and torch-neuronx.</p>
+        <div class="card-meta"><span class="tag tag-t">PyTorch</span><span class="tag tag-t">JAX</span><span class="tag tag-t">TensorFlow</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: TRAINIUM CHIP ARCHITECTURE (NEW DETAILED SECTION) -->
+<section id="architecture" class="arch-section">
+  <div class="container">
+    <div class="section-label">Hardware Architecture</div>
+    <h2>Trn1 / Trn1n <em>Architecture</em></h2>
+    <p class="section-desc">The Trainium chip is AWS's second-generation ML accelerator built on advanced silicon. Each chip houses two NeuronCore-v2 engines connected to dedicated HBM stacks, with on-chip NeuronLink and EFA interconnects enabling massive scale-out training.</p>
+
+    <!-- Chip Block Diagram -->
+    <div class="trn1-chip-diagram">
+      <div class="arch-diagram-title">TRAINIUM CHIP — BLOCK DIAGRAM (per chip)</div>
+
+      <div class="chip-section-label">Compute — 2× NeuronCore-v2</div>
+      <div class="chip-cores-row">
+        <div class="chip-core">
+          <div class="chip-core-title">NeuronCore-v2 · Core 0</div>
+          <div class="core-engines">
+            <div class="core-engine">Tensor Engine</div>
+            <div class="core-engine">Vector Engine</div>
+            <div class="core-engine">Scalar Engine</div>
+            <div class="core-engine">GpSimd Engine</div>
+          </div>
+        </div>
+        <div class="chip-core">
+          <div class="chip-core-title">NeuronCore-v2 · Core 1</div>
+          <div class="core-engines">
+            <div class="core-engine">Tensor Engine</div>
+            <div class="core-engine">Vector Engine</div>
+            <div class="core-engine">Scalar Engine</div>
+            <div class="core-engine">GpSimd Engine</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chip-section-label">Memory — 32 GB HBM2e per chip (16 GB per NeuronCore)</div>
+      <div class="chip-hbm-row">
+        <div class="hbm-bank">
+          <div class="hbm-bank-label">HBM Stack A (NC0)</div>
+          <div class="hbm-bank-val">16 GB</div>
+          <div class="hbm-bank-bw">~615 GB/s bandwidth</div>
+        </div>
+        <div class="hbm-bank">
+          <div class="hbm-bank-label">HBM Stack B (NC1)</div>
+          <div class="hbm-bank-val">16 GB</div>
+          <div class="hbm-bank-bw">~615 GB/s bandwidth</div>
+        </div>
+      </div>
+
+      <div class="chip-section-label">Interconnect</div>
+      <div class="chip-io-row">
+        <div class="chip-io-box chip-io-nl">
+          ⚡ NeuronLink-v2<br>
+          <span style="font-size:10px;font-weight:400;opacity:.8">High-speed chip-to-chip · 2D Torus topology</span>
+        </div>
+        <div class="chip-io-box chip-io-efa">
+          🌐 EFAv2 Network<br>
+          <span style="font-size:10px;font-weight:400;opacity:.8">Up to 1600 Gbps (Trn1n) scale-out</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-chip specs table -->
+    <div style="margin-top:32px">
+      <h3 style="font-size:18px;font-weight:700;color:var(--aws-navy);margin-bottom:16px">Trainium Chip Specifications</h3>
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>Specification</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>NeuronCores per chip</td>
+            <td><span class="spec-val">2× NeuronCore-v2</span></td>
+          </tr>
+          <tr>
+            <td>FP16 / BF16 TFLOPS</td>
+            <td><span class="spec-val">190 TFLOPS per chip</span></td>
+          </tr>
+          <tr>
+            <td>INT8 TOPS</td>
+            <td><span class="spec-val">420 TOPS per chip</span></td>
+          </tr>
+          <tr>
+            <td>FP32 TFLOPS</td>
+            <td><span class="spec-val">47.5 TFLOPS per chip</span></td>
+          </tr>
+          <tr>
+            <td>cFP8 TFLOPS (configurable FP8)</td>
+            <td><span class="spec-val">190 TFLOPS per chip</span></td>
+          </tr>
+          <tr>
+            <td>HBM capacity per chip</td>
+            <td><span class="spec-val">32 GB HBM2e</span></td>
+          </tr>
+          <tr>
+            <td>HBM bandwidth per chip</td>
+            <td><span class="spec-val">~820 GB/s</span></td>
+          </tr>
+          <tr>
+            <td>On-chip SRAM (SBUF)</td>
+            <td><span class="spec-val">24 MiB per NeuronCore-v2</span></td>
+          </tr>
+          <tr>
+            <td>On-chip SRAM (PSUM)</td>
+            <td><span class="spec-val">2 MiB per NeuronCore-v2</span></td>
+          </tr>
+          <tr>
+            <td>Chip interconnect</td>
+            <td><span class="spec-val">NeuronLink-v2</span></td>
+          </tr>
+          <tr>
+            <td>Data types supported</td>
+            <td><span class="spec-val">FP32, TF32, BF16, FP16, cFP8, INT8, UINT8</span></td>
+          </tr>
+          <tr>
+            <td>Custom operator support</td>
+            <td><span class="spec-val">C++ custom operators via GpSimd</span></td>
+          </tr>
+          <tr>
+            <td>Dynamic input shapes</td>
+            <td><span class="spec-val">Hardware + software support</span></td>
+          </tr>
+          <tr>
+            <td>Stochastic rounding</td>
+            <td><span class="spec-val">Supported (hardware)</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box" style="margin-top:24px">
+      <p><strong>Configurable FP8 (cFP8):</strong> Trainium introduced cFP8 — a novel data type where the exponent/mantissa split is configurable per-layer by the compiler, enabling higher accuracy than fixed FP8 while retaining the throughput benefits of 8-bit computation. This is particularly effective for transformer attention layers which have differing numerical ranges across layers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: NEURONCORE V2 -->
+<section id="neuroncore">
+  <div class="container">
+    <div class="section-label">Compute Engine</div>
+    <h2>NeuronCore-v2 <em>Deep Dive</em></h2>
+    <p class="section-desc">Each Trainium chip contains two second-generation NeuronCore-v2 engines. Unlike GPU architectures with hundreds of small streaming multiprocessors, Trainium uses fewer but much larger and more capable NeuronCores — reducing control overhead and maximizing efficiency for large-model training.</p>
+
+    <!-- NeuronCore v2 engine diagram -->
+    <div class="ncv2-diagram">
+      <div class="arch-diagram-title">NeuronCore-v2 · Compute Engines</div>
+      <div class="ncv2-grid">
+        <div class="ncv2-engine ncv2-te">
+          <h4>🔢 Tensor Engine</h4>
+          <p>128×128 systolic array optimized for GEMM, convolution, and transposition. Reads from SRAM buffer (SBUF), outputs to partial-sum buffer (PSUM). Loops over K-dimension for complete matrix multiplications.</p>
+        </div>
+        <div class="ncv2-engine ncv2-ve">
+          <h4>📊 Vector Engine</h4>
+          <p>SIMD-parallel execution of element-wise operations across multiple inputs to multiple outputs. Handles activations, normalization, and other vector-parallel workloads with high throughput.</p>
+        </div>
+        <div class="ncv2-engine ncv2-se">
+          <h4>⚡ Scalar Engine</h4>
+          <p>Accelerates scalar operations where each output depends on a single input element. Provides hardware acceleration for non-linear functions like GeLU and Sqrt — reducing software emulation overhead.</p>
+        </div>
+        <div class="ncv2-engine ncv2-gp">
+          <h4>🛠 GpSimd Engine</h4>
+          <p>Turing-complete general-purpose SIMD cores that execute arbitrary C++ code. Enables custom operators (e.g., triangular masking for attention) without CPU round-trips. Supports future operator extensibility.</p>
+        </div>
+      </div>
+      <div class="arch-diagram-title" style="margin-top:20px;margin-bottom:12px">On-Chip Memory Hierarchy (per NeuronCore-v2)</div>
+      <div class="ncv2-mem">
+        <div class="ncv2-mem-box">
+          <div class="mem-label">SBUF (Input SRAM)</div>
+          <div class="mem-val">24 MiB</div>
+          <div class="mem-bw">High-BW scratchpad</div>
+        </div>
+        <div class="ncv2-mem-box">
+          <div class="mem-label">PSUM (Output SRAM)</div>
+          <div class="mem-val">2 MiB</div>
+          <div class="mem-bw">Partial sum accumulation</div>
+        </div>
+        <div class="ncv2-mem-box">
+          <div class="mem-label">HBM (off-chip)</div>
+          <div class="mem-val">16 GB</div>
+          <div class="mem-bw">~615 GB/s per NC</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card card-to">
+        <h3>Dedicated Collective Communication</h3>
+        <p>NeuronCore-v2 includes dedicated hardware communication cores separate from compute resources. This enables compute-communication overlap — gradient all-reduce and other collective operations proceed simultaneously with forward/backward passes without contention.</p>
+        <div class="card-meta"><span class="tag tag-o">AllReduce</span><span class="tag tag-o">AllGather</span><span class="tag tag-o">Overlap</span></div>
+      </div>
+      <div class="card card-tb">
+        <h3>Large Core Architecture</h3>
+        <p>Trainium uses 2 large NeuronCores per chip versus GPU architectures with hundreds of small tensor cores (e.g., 528 on H100 SXM). Larger cores reduce control plane overhead and provide better utilization for GenAI workloads characterized by large matrix multiplications.</p>
+        <div class="card-meta"><span class="tag tag-b">2 NCs per chip</span><span class="tag tag-b">vs. 528+ GPU TCs</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: INSTANCE TYPES -->
+<section id="instances" style="background:var(--bg-subtle)">
+  <div class="container">
+    <div class="section-label">Instance Family</div>
+    <h2>Trn1 &amp; Trn1n <em>Instances</em></h2>
+    <p class="section-desc">The Trn1 instance family offers three sizes — from single-chip experimentation to massive 16-chip training nodes with high-bandwidth NeuronLink interconnect. The Trn1n variant adds 2× more network bandwidth for network-intensive models like MoE.</p>
+
+    <table class="inst-table">
+      <thead>
+        <tr>
+          <th>Instance Size</th>
+          <th>Trainium Chips</th>
+          <th>NeuronCore-v2</th>
+          <th>HBM Memory</th>
+          <th>HBM Bandwidth</th>
+          <th>NeuronLink BW</th>
+          <th>EFA Network</th>
+          <th>vCPUs</th>
+          <th>Host RAM</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>trn1.2xlarge</td>
+          <td>1</td>
+          <td>2</td>
+          <td>32 GB</td>
+          <td>~820 GB/s</td>
+          <td>—</td>
+          <td>Up to 12.5 Gbps</td>
+          <td>8</td>
+          <td>32 GB</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>trn1.32xlarge</td>
+          <td>16</td>
+          <td>32</td>
+          <td>512 GB</td>
+          <td>9.8 TB/s</td>
+          <td>768 GB/s</td>
+          <td>800 Gbps EFAv2</td>
+          <td>128</td>
+          <td>512 GB</td>
+        </tr>
+        <tr>
+          <td>trn1n.32xlarge</td>
+          <td>16</td>
+          <td>32</td>
+          <td>512 GB</td>
+          <td>9.8 TB/s</td>
+          <td>768 GB/s</td>
+          <td>1,600 Gbps EFAv2</td>
+          <td>128</td>
+          <td>512 GB</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px">★ Highlighted row: most common training configuration</p>
+
+    <div class="grid-2" style="margin-top:32px">
+      <div class="card card-tt">
+        <div class="card-icon ict">🧪</div>
+        <h3>trn1.2xlarge — Single Chip</h3>
+        <p>The smallest instance hosts a single Trainium chip with 1 NeuronCore-v2. Ideal for model experimentation, debugging, small model training, and pipeline development before scaling to larger configurations. NeuronLink is not available at this size.</p>
+        <div class="card-meta">
+          <span class="tag tag-t">1 chip · 32 GB HBM</span>
+          <span class="tag tag-t">Single-chip training</span>
+        </div>
+      </div>
+      <div class="card card-to">
+        <div class="card-icon ico">🚀</div>
+        <h3>trn1.32xlarge — Full Node</h3>
+        <p>16 Trainium chips connected via NeuronLink-v2 in a 2D Torus topology. All 512 GB of HBM is directly addressable from any chip, enabling efficient tensor parallelism and pipeline parallelism for training 100B+ parameter models on a single node.</p>
+        <div class="card-meta">
+          <span class="tag tag-o">16 chips · 512 GB</span>
+          <span class="tag tag-o">768 GB/s NeuronLink</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box" style="margin-top:24px">
+      <p><strong>Local Storage &amp; EBS:</strong> Trn1 instances support up to <strong>8 TB of local NVMe SSD</strong> storage for fast dataset access, and up to <strong>80 Gbps of Amazon EBS</strong> bandwidth. This avoids storage bottlenecks when training on large datasets that need to be shuffled and streamed efficiently during the training loop.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: NEURONLINK & NETWORKING -->
+<section id="networking">
+  <div class="container">
+    <div class="section-label">Interconnect &amp; Networking</div>
+    <h2>NeuronLink-v2 &amp; <em>2D Torus</em></h2>
+    <p class="section-desc">Fast intra-node chip-to-chip communication is critical for tensor parallelism and pipeline parallelism. Trainium's NeuronLink-v2 provides high-bandwidth, low-latency connectivity between all 16 chips on the largest instances via a 2D Torus topology.</p>
+
+    <div class="grid-2" style="gap:32px;align-items:start">
+      <div>
+        <h3 style="font-size:18px;font-weight:700;color:var(--aws-navy);margin-bottom:16px">2D Torus Topology (4×4 layout on Trn1.32xl)</h3>
+        <div class="arch-diagram" style="padding:20px">
+          <div class="topology-diagram">
+            <div class="topo-row">
+              <div class="topo-node topo-node-active">TRN<br>0,0</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>0,1</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>0,2</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>0,3</div>
+            </div>
+            <div class="topo-row" style="gap:12px;justify-content:space-around;padding:0 8px">
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+            </div>
+            <div class="topo-row">
+              <div class="topo-node">TRN<br>1,0</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>1,1</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>1,2</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>1,3</div>
+            </div>
+            <div class="topo-row" style="gap:12px;justify-content:space-around;padding:0 8px">
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+            </div>
+            <div class="topo-row">
+              <div class="topo-node">TRN<br>2,0</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>2,1</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>2,2</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>2,3</div>
+            </div>
+            <div class="topo-row" style="gap:12px;justify-content:space-around;padding:0 8px">
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+              <div class="topo-conn-v"></div>
+            </div>
+            <div class="topo-row">
+              <div class="topo-node">TRN<br>3,0</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>3,1</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>3,2</div>
+              <div class="topo-conn">↔</div>
+              <div class="topo-node">TRN<br>3,3</div>
+            </div>
+            <div class="topo-label">16 Trainium chips · NeuronLink-v2 · 2D Torus (edges wrap around)</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:18px;font-weight:700;color:var(--aws-navy);margin-bottom:16px">NeuronLink-v2 Properties</h3>
+        <table class="spec-table">
+          <tbody>
+            <tr>
+              <td>Topology</td>
+              <td><span class="spec-val">2D Torus</span></td>
+            </tr>
+            <tr>
+              <td>Total intra-node bandwidth</td>
+              <td><span class="spec-val">768 GB/s</span></td>
+            </tr>
+            <tr>
+              <td>Connectivity</td>
+              <td><span class="spec-val">Non-blocking, high-speed</span></td>
+            </tr>
+            <tr>
+              <td>Memory pooling</td>
+              <td><span class="spec-val">All 512 GB addressable from each chip</span></td>
+            </tr>
+            <tr>
+              <td>Use case</td>
+              <td><span class="spec-val">Tensor parallelism, Pipeline parallelism, Collective comms</span></td>
+            </tr>
+            <tr>
+              <td>Collective ops</td>
+              <td><span class="spec-val">AllReduce, AllGather, ReduceScatter</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style="font-size:18px;font-weight:700;color:var(--aws-navy);margin:24px 0 12px">EFAv2 Scale-Out Networking</h3>
+        <table class="spec-table">
+          <tbody>
+            <tr>
+              <td>Trn1.32xlarge</td>
+              <td><span class="spec-val">800 Gbps EFAv2</span></td>
+            </tr>
+            <tr>
+              <td>Trn1n.32xlarge</td>
+              <td><span class="spec-val">1,600 Gbps EFAv2 (2×)</span></td>
+            </tr>
+            <tr>
+              <td>vs. EFAv1</td>
+              <td><span class="spec-val">+50% collective communications perf</span></td>
+            </tr>
+            <tr>
+              <td>Target workload</td>
+              <td><span class="spec-val">MoE, GPT, multi-node scale-out</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="warn-box" style="margin-top:24px">
+      <p><strong>NeuronLink availability:</strong> The NeuronLink-v2 2D Torus interconnect is only present on the <strong>trn1.32xlarge</strong> and <strong>trn1n.32xlarge</strong> instance sizes. The smaller <strong>trn1.2xlarge</strong> only has a single chip and does not include NeuronLink. For multi-chip tensor parallelism, always use the .32xlarge variants.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: DATA TYPES & PRECISION -->
+<section id="datatypes" style="background:var(--bg-subtle)">
+  <div class="container">
+    <div class="section-label">Numerical Formats</div>
+    <h2>Mixed Precision &amp; <em>Data Types</em></h2>
+    <p class="section-desc">Trainium supports a rich set of numeric formats carefully chosen to balance compute throughput, memory efficiency, and training accuracy — including the novel configurable FP8 format unique to AWS silicon.</p>
+    <div class="grid-4">
+      <div class="card card-to">
+        <h3>cFP8</h3>
+        <p>Configurable FP8 — novel AWS format where the exponent/mantissa split is tunable per-layer by the compiler. Maximum throughput with controllable accuracy.</p>
+        <div class="card-meta"><span class="tag tag-o">Training</span><span class="tag tag-o">NEW</span></div>
+      </div>
+      <div class="card card-to">
+        <h3>BF16</h3>
+        <p>BFloat16 with the same exponent range as FP32. Optimal for training stability in transformer models. The primary training format on Trn1.</p>
+        <div class="card-meta"><span class="tag tag-o">Primary</span></div>
+      </div>
+      <div class="card card-tb">
+        <h3>FP16</h3>
+        <p>Half-precision floating point. Supported with stochastic rounding for improved accuracy versus standard round-to-nearest. Compatible with CUDA frameworks.</p>
+        <div class="card-meta"><span class="tag tag-b">Inference &amp; Training</span></div>
+      </div>
+      <div class="card card-tb">
+        <h3>TF32</h3>
+        <p>TensorFloat-32: 10-bit mantissa, 8-bit exponent. Provides near-FP32 accuracy with FP16-level throughput on the Tensor Engine systolic array.</p>
+        <div class="card-meta"><span class="tag tag-b">Mixed precision</span></div>
+      </div>
+      <div class="card card-tt">
+        <h3>FP32</h3>
+        <p>Full single-precision floating point for master weights, gradient accumulation, and optimizer states where numerical precision is critical.</p>
+        <div class="card-meta"><span class="tag tag-t">Master weights</span></div>
+      </div>
+      <div class="card card-tt">
+        <h3>INT8 / UINT8</h3>
+        <p>8-bit integer formats for inference quantization. The Tensor Engine delivers 420 INT8 TOPS per chip — more than 2× the BF16 TFLOPS throughput.</p>
+        <div class="card-meta"><span class="tag tag-t">Inference</span></div>
+      </div>
+      <div class="card card-tp">
+        <h3>Stochastic Rounding</h3>
+        <p>Hardware-accelerated stochastic rounding mode prevents systematic bias in gradient accumulation. Achieves higher accuracy than legacy round-to-nearest at low precision.</p>
+        <div class="card-meta"><span class="tag tag-p">Hardware SR</span></div>
+      </div>
+      <div class="card card-tp">
+        <h3>Dynamic Shapes</h3>
+        <p>Hardware and software support for dynamic input shapes enables variable sequence length training without recompilation — critical for production LLM training pipelines.</p>
+        <div class="card-meta"><span class="tag tag-p">Variable SeqLen</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: SOFTWARE STACK -->
+<section id="software">
+  <div class="container">
+    <div class="section-label">Software Ecosystem</div>
+    <h2>AWS Neuron <em>SDK</em></h2>
+    <p class="section-desc">The AWS Neuron SDK abstracts Trainium hardware complexity and integrates natively with popular ML frameworks, enabling existing training workflows to run on Trainium with minimal changes.</p>
+    <div class="grid-2" style="gap:32px">
+      <div>
+        <div class="feature-row" style="padding-top:0">
+          <div></div>
+          <div>
+            <div class="feature-label">Compiler</div>
+            <div class="feature-title">neuronx-cc</div>
+            <p class="feature-desc">The Neuron compiler translates XLA HLO graphs to Trainium native instructions. It automatically applies mixed precision, operator fusion, memory layout optimization, and collective communication scheduling.</p>
+            <div class="feature-stats">
+              <div class="fstat"><div class="fstat-num">XLA</div><div class="fstat-label">IR basis</div></div>
+              <div class="fstat"><div class="fstat-num">cFP8</div><div class="fstat-label">Auto precision</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div></div>
+          <div>
+            <div class="feature-label">Runtime</div>
+            <div class="feature-title">Neuron Runtime</div>
+            <p class="feature-desc">Manages NeuronCore scheduling, memory allocation across HBM, DMA transfers, and collective communication operations. Supports pipelining of compute and communication for maximum throughput.</p>
+            <div class="feature-stats">
+              <div class="fstat"><div class="fstat-num">DMA</div><div class="fstat-label">HBM transfers</div></div>
+              <div class="fstat"><div class="fstat-num">CC</div><div class="fstat-label">Comm-compute</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div></div>
+          <div>
+            <div class="feature-label">Parallelism Library</div>
+            <div class="feature-title">NxD Core</div>
+            <p class="feature-desc">NeuronX Distributed Core provides tensor parallelism, pipeline parallelism, ZeRO-1 optimizer sharding, and activation memory reduction — enabling efficient training of 100B+ parameter models across multiple chips and nodes.</p>
+            <div class="feature-stats">
+              <div class="fstat"><div class="fstat-num">TP</div><div class="fstat-label">Tensor parallel</div></div>
+              <div class="fstat"><div class="fstat-num">PP</div><div class="fstat-label">Pipeline parallel</div></div>
+              <div class="fstat"><div class="fstat-num">ZeRO</div><div class="fstat-label">Optimizer shard</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:18px;font-weight:700;color:var(--aws-navy);margin-bottom:16px">Framework Integration</h3>
+        <div class="code-block">
+<span class="cm"># torch-neuronx: trace a model for Trn1</span>
+<span class="kw">import</span> torch_neuronx
+
+<span class="cm"># Trace and compile for NeuronCore-v2</span>
+traced = torch_neuronx.<span class="kw">trace</span>(
+    model,
+    example_inputs,
+    compiler_args=<span class="st">"--target trn1"</span>
+)
+
+<span class="cm"># Distributed training with XLA</span>
+<span class="kw">import</span> torch_xla.distributed.xla_multiprocessing <span class="kw">as</span> xmp
+xmp.<span class="kw">spawn</span>(train_fn, args=(flags,), nprocs=<span class="nu">32</span>)
+        </div>
+        <div style="margin-top:20px">
+          <h3 style="font-size:15px;font-weight:700;color:var(--aws-navy);margin-bottom:12px">Neuron Persistent Cache</h3>
+          <p style="font-size:14px;color:var(--text-sec);line-height:1.65">Compiled NEFF (Neuron Executable File Format) graphs are cached to avoid repeated compilation. Cache hits allow rapid instance restart and scaling without recompilation latency — critical for production training pipelines with frequent checkpoint restarts.</p>
+        </div>
+        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px">
+          <span class="badge badge-o">PyTorch NeuronX</span>
+          <span class="badge badge-b">JAX NeuronX</span>
+          <span class="badge badge-t">TensorFlow NeuronX</span>
+          <span class="badge badge-p">Hugging Face</span>
+          <span class="badge badge-g">NxD Training</span>
+          <span class="badge badge-g">NxD Inference</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: PARALLELISM STRATEGIES -->
+<section id="parallelism" style="background:var(--bg-subtle)">
+  <div class="container">
+    <div class="section-label">Distributed Training</div>
+    <h2>Parallelism <em>Strategies</em></h2>
+    <p class="section-desc">Large model training on Trn1 uses a combination of parallelism strategies, exploiting both NeuronLink intra-node and EFAv2 inter-node communication to efficiently partition models too large to fit on a single chip or instance.</p>
+    <div class="grid-3">
+      <div class="card card-to">
+        <div class="card-icon ico">↔️</div>
+        <h3>Tensor Parallelism (TP)</h3>
+        <p>Splits individual tensors (e.g., weight matrices) across multiple NeuronCores. Requires high-bandwidth, low-latency communication — ideal for NeuronLink-v2. Reduces per-chip memory footprint proportionally to TP degree.</p>
+        <div class="card-meta"><span class="tag tag-o">Intra-node</span><span class="tag tag-o">NeuronLink</span></div>
+      </div>
+      <div class="card card-tb">
+        <div class="card-icon icb">⬛</div>
+        <h3>Pipeline Parallelism (PP)</h3>
+        <p>Assigns consecutive model layers to different chips or nodes. Uses micro-batching to keep all stages busy. Lower communication bandwidth requirement than TP — suitable across EFAv2 inter-node connections.</p>
+        <div class="card-meta"><span class="tag tag-b">Inter/intra-node</span><span class="tag tag-b">EFAv2</span></div>
+      </div>
+      <div class="card card-tt">
+        <div class="card-icon ict">📦</div>
+        <h3>Data Parallelism (DP)</h3>
+        <p>Replicates the model across chips, each processing different data shards. Gradients are synchronized via AllReduce. ZeRO-1 shards the optimizer state across DP ranks to reduce memory overhead.</p>
+        <div class="card-meta"><span class="tag tag-t">ZeRO-1</span><span class="tag tag-t">AllReduce</span></div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:24px">
+      <p><strong>3D Parallelism on Trn1:</strong> Large models like GPT-style LLMs are trained with all three parallelism strategies simultaneously — Tensor Parallelism within a node over NeuronLink, Pipeline Parallelism across nodes over EFAv2, and Data Parallelism for throughput scaling. The Neuron SDK's NxD Training library handles the configuration automatically.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9: USE CASES -->
+<section id="usecases">
+  <div class="container">
+    <div class="section-label">Applications</div>
+    <h2>Supported <em>Workloads</em></h2>
+    <p class="section-desc">Trainium and the Neuron SDK support a broad range of deep learning training workloads, from small fine-tuning experiments to multi-node pre-training of frontier-scale generative AI models.</p>
+    <div class="grid-2" style="gap:16px">
+      <div class="card card-to">
+        <h3>Large Language Models (LLMs)</h3>
+        <p>Pre-training and fine-tuning of GPT-style and encoder-decoder LLMs including Llama, BERT, T5, and GPT-2/3 architectures. Trn1 customers have successfully pre-trained 13B and 70B parameter models.</p>
+        <div class="card-meta"><span class="tag tag-o">Llama 3</span><span class="tag tag-o">BERT</span><span class="tag tag-o">T5</span><span class="tag tag-o">GPT</span></div>
+      </div>
+      <div class="card card-tb">
+        <h3>Diffusion Models &amp; Image Generation</h3>
+        <p>Training of latent diffusion models and UNet architectures for image, video, and audio generation. Convolution support in NeuronCore-v2 Tensor Engine enables efficient spatial processing.</p>
+        <div class="card-meta"><span class="tag tag-b">Stable Diffusion</span><span class="tag tag-b">UNet</span></div>
+      </div>
+      <div class="card card-tt">
+        <h3>Mixture of Experts (MoE)</h3>
+        <p>Expert-parallel training of MoE models leveraging EFAv2 for high-bandwidth expert routing. Trn1n's 1600 Gbps network is designed for the all-to-all communication patterns in MoE training.</p>
+        <div class="card-meta"><span class="tag tag-t">Expert routing</span><span class="tag tag-t">Trn1n</span></div>
+      </div>
+      <div class="card card-tp">
+        <h3>Recommendation &amp; Ranking</h3>
+        <p>Training of embedding-heavy recommendation models with large embedding tables distributed across HBM. Efficient embedding lookup via direct memory addressing across NeuronLink-connected chips.</p>
+        <div class="card-meta"><span class="tag tag-p">Embeddings</span><span class="tag tag-p">CTR</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 10: COMPARISON TO TRAINIUM 2 -->
+<section id="comparison" style="background:var(--bg-subtle)">
+  <div class="container">
+    <div class="section-label">Generation Comparison</div>
+    <h2>Trainium vs <em>Trainium 2</em></h2>
+    <p class="section-desc">AWS released Trainium2 (Trn2) in 2024, delivering 4× the performance of Trainium. Understanding the architectural evolution helps guide decisions about which instance generation to use for different workloads.</p>
+
+    <table class="inst-table">
+      <thead>
+        <tr>
+          <th>Specification</th>
+          <th>Trainium (Trn1)</th>
+          <th>Trainium2 (Trn2)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>NeuronCore version</td>
+          <td>NeuronCore-v2</td>
+          <td>NeuronCore-v3</td>
+        </tr>
+        <tr>
+          <td>NeuronCores per chip</td>
+          <td>2</td>
+          <td>8</td>
+        </tr>
+        <tr>
+          <td>HBM per chip</td>
+          <td>32 GB HBM2e</td>
+          <td>96 GB HBM3</td>
+        </tr>
+        <tr>
+          <td>HBM bandwidth per chip</td>
+          <td>~820 GB/s</td>
+          <td>2.9 TB/s</td>
+        </tr>
+        <tr>
+          <td>FP8 compute (dense)</td>
+          <td>190 TFLOPS per chip</td>
+          <td>1.3 PFLOPS per chip</td>
+        </tr>
+        <tr>
+          <td>SBUF per NeuronCore</td>
+          <td>24 MiB</td>
+          <td>28 MiB</td>
+        </tr>
+        <tr>
+          <td>NeuronLink bandwidth</td>
+          <td>768 GB/s (per instance)</td>
+          <td>1 TB/s chip-to-chip</td>
+        </tr>
+        <tr>
+          <td>Max EFA bandwidth</td>
+          <td>1,600 Gbps (Trn1n)</td>
+          <td>3,200 Gbps</td>
+        </tr>
+        <tr>
+          <td>Logical NeuronCore Config</td>
+          <td>Not supported</td>
+          <td>Supported (LNC2)</td>
+        </tr>
+        <tr>
+          <td>Cost savings vs GPU</td>
+          <td>Up to 50%</td>
+          <td>30-40% vs P5e</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="info-box" style="margin-top:20px">
+      <p><strong>When to use Trn1:</strong> Trn1 remains an excellent choice for models up to ~70B parameters, fine-tuning workloads, and teams with established Neuron SDK workflows. For frontier-scale training (100B+ parameters, MoE at trillion scale) or maximum inference throughput, Trn2 or Trn3 are recommended. Trn1 offers up to 50% cost savings versus GPU instances for compatible workloads.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p style="margin-bottom:8px">AWS Trainium Deep Dive · Built with ❤️ for ML engineers</p>
+    <p>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trn1-arch.html" target="_blank">Trn1 Architecture Docs</a> ·
+      <a href="https://aws.amazon.com/ec2/instance-types/trn1/" target="_blank">EC2 Trn1 Instances</a> ·
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/" target="_blank">AWS Neuron SDK Docs</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+// Hero chip diagram
+const ncGrid = document.getElementById('ncGrid');
+const hbmRow = document.getElementById('hbmRow');
+const tooltip = document.getElementById('tooltip');
+
+const ncLabels = ['TE','VE','SE','GP','TE','VE','SE','GP','NC0','NC0','NC1','NC1','TE','VE','SE','GP','TE','VE','SE','GP','NC0','NC0','NC1','NC1','DMA','DMA','NL','EFA','CC','CC','IO','IO'];
+const ncDescriptions = {
+  'TE': 'Tensor Engine: 128×128 systolic array for GEMM, CONV, Transposition',
+  'VE': 'Vector Engine: SIMD parallel element-wise operations',
+  'SE': 'Scalar Engine: 1:1 element operations, hardware GeLU/Sqrt',
+  'GP': 'GpSimd Engine: Turing-complete SIMD for custom C++ operators',
+  'NC0': 'NeuronCore-v2 Core 0 — 16 GB HBM dedicated',
+  'NC1': 'NeuronCore-v2 Core 1 — 16 GB HBM dedicated',
+  'DMA': 'DMA Engine: Async data movement between HBM and SBUF',
+  'NL': 'NeuronLink-v2: High-speed chip-to-chip interconnect (2D Torus)',
+  'EFA': 'EFA v2: Elastic Fabric Adapter for scale-out networking',
+  'CC': 'Collective Communication Engine: AllReduce, AllGather hardware',
+  'IO': 'I/O Engine: PCIe and host communication'
+};
+
+for (let i = 0; i < 32; i++) {
+  const cell = document.createElement('div');
+  cell.className = 'nc-cell';
+  const lbl = ncLabels[i] || '·';
+  cell.textContent = lbl;
+  cell.addEventListener('mousemove', (e) => {
+    const desc = ncDescriptions[lbl] || `NeuronCore-v2 component ${i}`;
+    tooltip.textContent = desc;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top = (e.clientY - 8) + 'px';
+  });
+  cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+  ncGrid.appendChild(cell);
+}
+
+const hbmLabels = ['HBM-0\n16 GB', 'HBM-1\n16 GB', 'NLink\nv2', 'EFAv2'];
+for (let i = 0; i < 4; i++) {
+  const cell = document.createElement('div');
+  cell.className = 'hbm-cell';
+  cell.style.whiteSpace = 'pre';
+  cell.textContent = hbmLabels[i];
+  if (i === 2) { cell.style.background = 'rgba(0,115,187,.14)'; cell.style.borderColor = 'rgba(0,160,240,.3)'; cell.style.color = 'rgba(100,180,255,.9)'; }
+  if (i === 3) { cell.style.background = 'rgba(220,60,60,.1)'; cell.style.borderColor = 'rgba(255,100,100,.25)'; cell.style.color = 'rgba(255,140,140,.9)'; }
+  hbmRow.appendChild(cell);
+}
+
+// Topo nodes interaction
+document.querySelectorAll('.topo-node').forEach(n => {
+  n.addEventListener('click', function() {
+    document.querySelectorAll('.topo-node').forEach(x => x.classList.remove('topo-node-active'));
+    this.classList.add('topo-node-active');
+  });
+});
+
+// Nav active links on scroll
+const sections = document.querySelectorAll('section[id], div[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id);
+      });
+    }
+  });
+}, { threshold: 0.4 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
