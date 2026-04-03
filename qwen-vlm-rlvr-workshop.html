@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Qwen VLM RLVR Workshop – Image Modality</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Amazon Ember", "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    color: #16191f;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── Top navigation bar ── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: 54px;
+    background: #232f3e;
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  }
+  .topbar-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .topbar-logo svg { flex-shrink: 0; }
+  .topbar-title {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  .topbar-divider { width: 1px; height: 28px; background: #3d4f61; margin: 0 4px; }
+  .topbar-subtitle {
+    color: #a9b5c0;
+    font-size: 13px;
+  }
+  .topbar-badge {
+    margin-left: auto;
+    background: #ec7211;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+  }
+
+  /* ── Layout ── */
+  .shell { display: flex; padding-top: 54px; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 270px;
+    flex-shrink: 0;
+    background: #fafafa;
+    border-right: 1px solid #e1e4e8;
+    position: sticky;
+    top: 54px;
+    height: calc(100vh - 54px);
+    overflow-y: auto;
+    padding: 20px 0 40px;
+  }
+  .sidebar-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #8a9399;
+    padding: 10px 20px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #16191f;
+    border-left: 3px solid transparent;
+    transition: background .12s, border-color .12s, color .12s;
+    text-decoration: none;
+    line-height: 1.35;
+  }
+  .nav-item:hover { background: #e8f4fd; color: #0972d3; }
+  .nav-item.active {
+    background: #e8f4fd;
+    border-left-color: #0972d3;
+    color: #0972d3;
+    font-weight: 600;
+  }
+  .nav-item .step-num {
+    min-width: 22px; height: 22px;
+    background: #d5dbdb;
+    color: #16191f;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+    transition: background .12s, color .12s;
+  }
+  .nav-item.active .step-num,
+  .nav-item:hover .step-num {
+    background: #0972d3;
+    color: #fff;
+  }
+  .nav-item.completed .step-num {
+    background: #1d8102;
+    color: #fff;
+  }
+
+  /* ── Main content ── */
+  .content {
+    flex: 1;
+    padding: 36px 48px 80px;
+    max-width: 960px;
+  }
+
+  /* ── Page sections (each step is a section) ── */
+  .page-section { display: none; }
+  .page-section.active { display: block; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb {
+    font-size: 12px;
+    color: #7d8998;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .breadcrumb span { color: #0972d3; cursor: pointer; }
+  .breadcrumb span:hover { text-decoration: underline; }
+
+  /* ── Page header ── */
+  .page-header {
+    border-bottom: 2px solid #e9ebed;
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+  }
+  .lab-tag {
+    display: inline-block;
+    background: #f0f8ff;
+    color: #0972d3;
+    border: 1px solid #99cbe4;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #16191f;
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .page-intro {
+    font-size: 15px;
+    color: #414d5c;
+    line-height: 1.7;
+    max-width: 780px;
+  }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 19px;
+    font-weight: 700;
+    color: #16191f;
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e9ebed;
+  }
+  h3 {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #16191f;
+    margin: 22px 0 8px;
+  }
+
+  /* ── Body text ── */
+  p { font-size: 14px; color: #414d5c; line-height: 1.75; margin-bottom: 14px; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    padding: 18px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    border: 1px solid #30363d;
+    position: relative;
+  }
+  pre .comment  { color: #8b949e; }
+  pre .keyword  { color: #ff7b72; }
+  pre .string   { color: #a5d6ff; }
+  pre .function { color: #d2a8ff; }
+  pre .number   { color: #f2cc60; }
+  pre .cls      { color: #ffa657; }
+  .code-label {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #161b22;
+    color: #8b949e;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 7px 14px;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid #30363d;
+    border-bottom: none;
+    margin-top: 14px;
+    margin-bottom: -4px; /* attach to pre */
+  }
+  .code-label + pre { border-radius: 0 0 6px 6px; margin-top: 0; }
+
+  /* ── Inline code ── */
+  code {
+    background: #f3f4f6;
+    border: 1px solid #d0d7de;
+    color: #cf222e;
+    font-family: "SFMono-Regular", "Consolas", monospace;
+    font-size: 12px;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ── Callout boxes ── */
+  .callout {
+    display: flex; gap: 14px;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 18px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+  .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .callout.info    { background: #f0f8ff; border-left: 4px solid #0972d3; color: #16191f; }
+  .callout.warn    { background: #fffbf0; border-left: 4px solid #f89c1c; color: #16191f; }
+  .callout.success { background: #f2faf2; border-left: 4px solid #1d8102; color: #16191f; }
+  .callout.danger  { background: #fff5f5; border-left: 4px solid #d13212; color: #16191f; }
+
+  /* ── Steps / numbered procedure ── */
+  .steps { list-style: none; counter-reset: step-ctr; padding: 0; margin: 18px 0 24px; }
+  .steps li {
+    counter-increment: step-ctr;
+    position: relative;
+    padding: 0 0 22px 50px;
+    font-size: 14px;
+    color: #414d5c;
+    line-height: 1.7;
+  }
+  .steps li::before {
+    content: counter(step-ctr);
+    position: absolute; left: 0; top: 0;
+    width: 30px; height: 30px;
+    background: #0972d3;
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+    flex-shrink: 0;
+  }
+  .steps li::after {
+    content: '';
+    position: absolute;
+    left: 14px; top: 30px; bottom: 0;
+    width: 2px;
+    background: #d5dbdb;
+  }
+  .steps li:last-child { padding-bottom: 0; }
+  .steps li:last-child::after { display: none; }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 28px;
+    margin: 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    text-align: center;
+  }
+  .arch-box {
+    background: #fff;
+    border: 2px solid #99cbe4;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    color: #0972d3;
+    min-width: 110px;
+  }
+  .arch-box.orange { border-color: #ec7211; color: #ec7211; }
+  .arch-box.green  { border-color: #1d8102; color: #1d8102; }
+  .arch-arrow {
+    color: #8a9399;
+    font-size: 20px;
+    font-weight: 300;
+  }
+
+  /* ── Data table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0 24px;
+  }
+  th {
+    background: #f3f4f6;
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 700;
+    border: 1px solid #d0d7de;
+    color: #16191f;
+  }
+  td {
+    padding: 9px 14px;
+    border: 1px solid #e1e4e8;
+    color: #414d5c;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f9fafb; }
+
+  /* ── Dataset link card ── */
+  .dataset-card {
+    display: flex; align-items: flex-start; gap: 16px;
+    background: #f8f9fa;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .dataset-card .icon { font-size: 28px; flex-shrink: 0; }
+  .dataset-card .info { flex: 1; }
+  .dataset-card .info strong { font-size: 14px; color: #16191f; display: block; margin-bottom: 4px; }
+  .dataset-card .info p { margin: 0; font-size: 12.5px; color: #5f6b7a; line-height: 1.5; }
+  .dataset-card a {
+    display: inline-block;
+    margin-top: 8px;
+    color: #0972d3;
+    font-size: 12.5px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .dataset-card a:hover { text-decoration: underline; }
+
+  /* ── Metric pills ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin: 16px 0 24px;
+  }
+  .metric-pill {
+    background: #f8f9fa;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-align: center;
+  }
+  .metric-pill .val { font-size: 26px; font-weight: 700; color: #0972d3; }
+  .metric-pill .lbl { font-size: 11px; text-transform: uppercase; color: #7d8998; letter-spacing: .5px; margin-top: 4px; }
+
+  /* ── Bottom navigation ── */
+  .bottom-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid #e1e4e8;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+    transition: background .12s, border-color .12s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: #0972d3;
+    color: #fff;
+    border-color: #0972d3;
+  }
+  .btn-primary:hover { background: #065299; border-color: #065299; }
+  .btn-secondary {
+    background: #fff;
+    color: #0972d3;
+    border-color: #99cbe4;
+  }
+  .btn-secondary:hover { background: #f0f8ff; }
+  .btn-danger {
+    background: #fff5f5;
+    color: #d13212;
+    border-color: #f5aca6;
+  }
+  .btn-danger:hover { background: #fce4e0; }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    margin-bottom: 26px;
+  }
+  .progress-label {
+    font-size: 12px; color: #7d8998; margin-bottom: 6px;
+    display: flex; justify-content: space-between;
+  }
+  .progress-bar-bg {
+    background: #e9ebed;
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    background: linear-gradient(90deg, #0972d3, #1d8102);
+    height: 100%;
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+
+  /* ── Expand/collapse ── */
+  details { margin: 10px 0; }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #0972d3;
+    font-size: 13.5px;
+    padding: 8px 12px;
+    background: #f0f8ff;
+    border-radius: 6px;
+    border: 1px solid #99cbe4;
+    list-style: none;
+    user-select: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▶ '; font-size: 10px; }
+  details[open] summary::before { content: '▼ '; }
+  details .detail-body { padding: 14px 16px; background: #fafbfc; border: 1px solid #d0d7de; border-top: none; border-radius: 0 0 6px 6px; font-size: 13.5px; color: #414d5c; line-height: 1.7; }
+
+  ul.list { padding-left: 20px; margin: 10px 0 16px; }
+  ul.list li { margin-bottom: 6px; font-size: 14px; color: #414d5c; line-height: 1.7; }
+
+  /* ── Responsive ── */
+  @media (max-width: 760px) {
+    .sidebar { display: none; }
+    .content { padding: 24px 18px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ TOP BAR ══════════════ -->
+<header class="topbar">
+  <a class="topbar-logo" href="#" onclick="showSection('overview'); return false;">
+    <!-- AWS logo SVG simplified -->
+    <svg width="40" height="24" viewBox="0 0 40 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11.3 14.8c-.5.4-1.3.7-2.1.7-1.6 0-2.5-.9-2.5-2.6V8.5H5.3V7.1H6.7V5.3l1.8-.5V7h1.9v1.4H8.5v4.2c0 .9.4 1.3 1.2 1.3.3 0 .6-.1.9-.2l.7 1zM16.6 15.4l-.3-1h-.1c-.5.7-1.3 1.1-2.2 1.1-1.4 0-2.3-.9-2.3-2.2 0-1.5 1.1-2.4 3.3-2.4h1.2v-.4c0-.9-.5-1.4-1.5-1.4-.6 0-1.3.2-1.9.5l-.5-1.2c.8-.4 1.7-.7 2.7-.7 1.9 0 2.9 1 2.9 2.9v4.8h-1.3zm-.4-3.5h-1c-1.4 0-2 .5-2 1.4 0 .7.4 1.1 1.1 1.1.9 0 1.9-.7 1.9-1.8v-.7zM23.7 15.4l-2.7-8.3h1.9l1.5 5.2.5 1.8h.1l.5-1.8 1.6-5.2h1.8l-2.8 8.3h-1.4zM34.3 15.5c-2.3 0-3.9-1.6-3.9-4.3 0-2.7 1.6-4.3 3.8-4.3 2.3 0 3.8 1.6 3.8 4.3 0 2.7-1.5 4.3-3.7 4.3zm0-7.2c-1.2 0-2 1-2 2.9s.8 2.9 2 2.9c1.2 0 2-1 2-2.9s-.8-2.9-2-2.9z" fill="#FF9900"/>
+      <path d="M3 19c5.5 3 13.5 4 20 1.5 5-1.9 8.5-5.5 9-9.5" stroke="#FF9900" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M34.5 12.5l2.5-.5-1.5 2" stroke="#FF9900" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <span class="topbar-title">Xterra RL Workshop</span>
+  </a>
+  <div class="topbar-divider"></div>
+  <span class="topbar-subtitle">Qwen VLM Reinforcement Learning with RLVR – Image Modality</span>
+  <span class="topbar-badge">Lab 4 · VLM</span>
+</header>
+
+<!-- ══════════════ SHELL ══════════════ -->
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-section-label">Lab 4 – Qwen VLM RLVR</div>
+
+    <a class="nav-item active" href="#" id="nav-overview" onclick="showSection('overview'); return false;">
+      <span class="step-num">◎</span> Overview
+    </a>
+    <a class="nav-item" href="#" id="nav-step1" onclick="showSection('step1'); return false;">
+      <span class="step-num">1</span> Data Preparation
+    </a>
+    <a class="nav-item" href="#" id="nav-step2" onclick="showSection('step2'); return false;">
+      <span class="step-num">2</span> Fine-Tuning (RLVR)
+    </a>
+    <a class="nav-item" href="#" id="nav-step3" onclick="showSection('step3'); return false;">
+      <span class="step-num">3</span> Evaluation
+    </a>
+    <a class="nav-item" href="#" id="nav-step4" onclick="showSection('step4'); return false;">
+      <span class="step-num">4</span> Deployment
+    </a>
+    <a class="nav-item" href="#" id="nav-step5" onclick="showSection('step5'); return false;">
+      <span class="step-num">5</span> Cleanup
+    </a>
+
+    <div style="margin-top:28px; padding: 0 20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8a9399;margin-bottom:8px;">Resources</div>
+      <a style="display:block;font-size:12.5px;color:#0972d3;margin-bottom:6px;text-decoration:none;" href="https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct" target="_blank">↗ Qwen2-VL on HuggingFace</a>
+      <a style="display:block;font-size:12.5px;color:#0972d3;margin-bottom:6px;text-decoration:none;" href="https://huggingface.co/datasets/HuggingFaceM4/ChartQA" target="_blank">↗ ChartQA Dataset</a>
+      <a style="display:block;font-size:12.5px;color:#0972d3;margin-bottom:6px;text-decoration:none;" href="https://github.com/huggingface/trl" target="_blank">↗ TRL (GRPO Trainer)</a>
+      <a style="display:block;font-size:12.5px;color:#0972d3;text-decoration:none;" href="https://docs.aws.amazon.com/sagemaker/" target="_blank">↗ SageMaker Docs</a>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="content">
+
+    <!-- ═══════════════════════════════════ OVERVIEW ═══════════════════════════════════ -->
+    <section class="page-section active" id="section-overview">
+
+      <div class="breadcrumb">
+        <span onclick="showSection('overview')">Home</span> / Lab 4 – Qwen VLM RLVR (Image Modality)
+      </div>
+
+      <div class="page-header">
+        <span class="lab-tag">Lab 4 · Vision Language Model</span>
+        <h1>Reinforcement Learning with Verifiable Rewards (RLVR) for Qwen VLM – Image Modality</h1>
+        <p class="page-intro">
+          In this lab you will apply <strong>RLVR (Reinforcement Learning with Verifiable Rewards)</strong> to
+          a Qwen2-VL vision-language model so it learns to reason over images using rule-based reward signals—
+          no human preference labels required. You will fine-tune the model on a real-world image Q&amp;A
+          dataset (ChartQA), evaluate multimodal reasoning quality, deploy the model to a SageMaker endpoint,
+          and then clean up all provisioned resources.
+        </p>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Lab progress</span><span id="progress-pct">0 / 5 steps</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar" style="width:0%"></div></div>
+      </div>
+
+      <h2>What is RLVR for Vision-Language Models?</h2>
+      <p>
+        RLVR extends the ideas behind DeepSeek-R1 and Qwen's RLVR text work to the <em>multimodal</em> domain.
+        Instead of scoring model outputs with a trained reward model, RLVR uses <strong>deterministic, verifiable
+        reward functions</strong> that compare the model's answer against a ground-truth label extracted directly
+        from the dataset. For image tasks this means:
+      </p>
+      <ul class="list">
+        <li>The model receives an image together with a natural-language question.</li>
+        <li>It must emit structured reasoning (<code>&lt;think&gt;…&lt;/think&gt;</code>) followed by a short answer.</li>
+        <li>A reward function checks whether the answer matches the verified ground truth (exact match, numeric tolerance, or format compliance).</li>
+        <li>The GRPO algorithm uses these scalar rewards to update the vision-language model's weights.</li>
+      </ul>
+
+      <h2>Architecture Overview</h2>
+      <div class="arch-diagram">
+        <div class="arch-box">Image<br/>Dataset<br/>(ChartQA)</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box">Data Prep<br/>(JSONL + S3)</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box orange">RLVR Fine-Tuning<br/>(GRPO / TRL)</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box">Evaluation<br/>(VQA Metrics)</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box green">SageMaker<br/>Endpoint</div>
+      </div>
+
+      <h2>Prerequisites</h2>
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>
+          Before starting, make sure you have completed <strong>Labs 1–3</strong> of this workshop and that
+          you have an active SageMaker Studio domain. You will need at least one <code>ml.g5.12xlarge</code>
+          instance (4 × A10G, 96 GB VRAM) for training and one <code>ml.g5.2xlarge</code> for serving.
+        </div>
+      </div>
+
+      <table>
+        <thead><tr><th>Requirement</th><th>Recommended</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>AWS Account &amp; IAM Role</td><td>SageMakerFullAccess + S3 read/write</td><td>Workshop account pre-configured</td></tr>
+          <tr><td>SageMaker Studio</td><td>JupyterLab 4 kernel</td><td>GPU kernel: PyTorch 2.2 / Python 3.11</td></tr>
+          <tr><td>Training instance</td><td>ml.g5.12xlarge (4×A10G)</td><td>Minimum 48 GB VRAM for 7 B model</td></tr>
+          <tr><td>Python packages</td><td>transformers ≥ 4.48, trl ≥ 0.13, peft ≥ 0.10</td><td>Installed in Step 1</td></tr>
+          <tr><td>HuggingFace token</td><td>Read token for gated models</td><td>Store in SageMaker Secrets Manager</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Estimated Time &amp; Cost</h2>
+      <div class="metric-grid">
+        <div class="metric-pill"><div class="val">~3h</div><div class="lbl">Total lab time</div></div>
+        <div class="metric-pill"><div class="val">~$18</div><div class="lbl">Estimated AWS cost</div></div>
+        <div class="metric-pill"><div class="val">7B</div><div class="lbl">Model parameters</div></div>
+        <div class="metric-pill"><div class="val">28K</div><div class="lbl">Training images</div></div>
+      </div>
+
+      <div class="bottom-nav">
+        <span></span>
+        <button class="btn btn-primary" onclick="showSection('step1')">Begin: Data Preparation →</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════ STEP 1 ═══════════════════════════════════ -->
+    <section class="page-section" id="section-step1">
+
+      <div class="breadcrumb">
+        <span onclick="showSection('overview')">Home</span> /
+        <span onclick="showSection('step1')">Lab 4</span> / 1 – Data Preparation
+      </div>
+
+      <div class="page-header">
+        <span class="lab-tag">Step 1 of 5</span>
+        <h1>Data Preparation</h1>
+        <p class="page-intro">
+          In this step you will download a publicly available image Q&amp;A dataset, convert it to the
+          multimodal conversation format expected by Qwen2-VL, upload it to Amazon S3, and verify the
+          data pipeline end-to-end before training begins.
+        </p>
+      </div>
+
+      <!-- Dataset cards -->
+      <h2>1.1 &nbsp;Choosing a Training Dataset</h2>
+      <p>
+        RLVR requires datasets whose answers are <em>verifiable</em>—that is, the ground truth can be
+        checked programmatically without a human judge. The following datasets are ideal for image-modal RLVR:
+      </p>
+
+      <div class="dataset-card">
+        <span class="icon">📊</span>
+        <div class="info">
+          <strong>ChartQA (Primary – recommended)</strong>
+          <p>28,299 chart images with human-authored and machine-generated Q&amp;A pairs. Answers are numeric
+          or short strings, making exact-match and numeric-tolerance rewards easy to implement.</p>
+          <a href="https://huggingface.co/datasets/HuggingFaceM4/ChartQA" target="_blank">
+            ↗ huggingface.co/datasets/HuggingFaceM4/ChartQA
+          </a>
+        </div>
+      </div>
+
+      <div class="dataset-card">
+        <span class="icon">🔢</span>
+        <div class="info">
+          <strong>MathVista (Math reasoning over images)</strong>
+          <p>6,141 math problems grounded in diverse image types (geometry, charts, science figures).
+          Ground-truth answers are numeric—ideal for numeric-tolerance reward functions.</p>
+          <a href="https://huggingface.co/datasets/AI4Math/MathVista" target="_blank">
+            ↗ huggingface.co/datasets/AI4Math/MathVista
+          </a>
+        </div>
+      </div>
+
+      <div class="dataset-card">
+        <span class="icon">📄</span>
+        <div class="info">
+          <strong>DocVQA (Document image understanding)</strong>
+          <p>12,767 document images with 50,000+ questions. Answers are extracted spans from the document—
+          suitable for ANLS (average normalized Levenshtein similarity) rewards.</p>
+          <a href="https://huggingface.co/datasets/nielsr/docvqa_1200_examples" target="_blank">
+            ↗ huggingface.co/datasets/nielsr/docvqa_1200_examples
+          </a>
+        </div>
+      </div>
+
+      <div class="dataset-card">
+        <span class="icon">🏥</span>
+        <div class="info">
+          <strong>VQA-RAD (Medical image Q&amp;A – advanced)</strong>
+          <p>315 radiology images with 3,515 clinical Q&amp;A pairs. Closed questions (yes/no + short answer)
+          allow deterministic reward checking. Excellent for domain-specific RLVR experiments.</p>
+          <a href="https://huggingface.co/datasets/flaviagiammarino/vqa-rad" target="_blank">
+            ↗ huggingface.co/datasets/flaviagiammarino/vqa-rad
+          </a>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <div>This lab uses <strong>ChartQA</strong> throughout. To switch to another dataset, replace
+        the <code>dataset_name</code> variable in each cell and adjust the reward function in Step 2.</div>
+      </div>
+
+      <h2>1.2 &nbsp;Environment Setup</h2>
+      <p>Open a new notebook in SageMaker Studio and run the following cells in order.</p>
+
+      <div class="code-label">
+        <span>bash – install dependencies</span>
+        <span style="color:#3fb950">terminal</span>
+      </div>
+      <pre><span class="comment"># Install required packages</span>
+pip install -U \
+    transformers>=4.48.0 \
+    trl>=0.13.0 \
+    peft>=0.10.0 \
+    qwen-vl-utils>=0.0.8 \
+    datasets>=2.20.0 \
+    accelerate>=0.34.0 \
+    bitsandbytes>=0.43.0 \
+    pillow>=10.0 \
+    boto3 \
+    sagemaker</pre>
+
+      <div class="code-label">
+        <span>Python – cell 1: imports &amp; config</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">import</span> os, json, boto3
+<span class="keyword">from</span> datasets <span class="keyword">import</span> load_dataset
+<span class="keyword">from</span> PIL <span class="keyword">import</span> Image
+<span class="keyword">import</span> sagemaker
+
+<span class="comment"># SageMaker session &amp; S3 bucket</span>
+sess   = sagemaker.Session()
+BUCKET = sess.default_bucket()
+PREFIX = <span class="string">"qwen-vlm-rlvr"</span>
+REGION = sess.boto_region_name
+
+<span class="comment"># HuggingFace token (stored in Secrets Manager)</span>
+hf_token = boto3.client(<span class="string">"secretsmanager"</span>, region_name=REGION)\
+               .get_secret_value(SecretId=<span class="string">"hf-token"</span>)[<span class="string">"SecretString"</span>]
+os.environ[<span class="string">"HF_TOKEN"</span>] = hf_token
+
+<span class="function">print</span>(<span class="string">f"Bucket: {BUCKET}"</span>)
+<span class="function">print</span>(<span class="string">f"Region: {REGION}"</span>)</pre>
+
+      <h2>1.3 &nbsp;Download &amp; Inspect ChartQA</h2>
+      <div class="code-label">
+        <span>Python – cell 2: load dataset</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="comment"># Load ChartQA from Hugging Face Hub</span>
+dataset_name = <span class="string">"HuggingFaceM4/ChartQA"</span>
+raw = load_dataset(dataset_name)
+
+<span class="function">print</span>(<span class="string">"Splits:"</span>, raw)
+<span class="comment"># Splits: DatasetDict({train: Dataset({28299 rows}),</span>
+<span class="comment">#                      val:   Dataset({2000 rows}),</span>
+<span class="comment">#                      test:  Dataset({2500 rows})})</span>
+
+<span class="comment"># Inspect a sample</span>
+sample = raw[<span class="string">"train"</span>][<span class="number">0</span>]
+<span class="function">print</span>(<span class="string">"Keys:"</span>, sample.keys())
+<span class="comment"># Keys: dict_keys(['image', 'query', 'label'])</span>
+sample[<span class="string">"image"</span>].show()   <span class="comment"># PIL Image</span>
+<span class="function">print</span>(<span class="string">"Question:"</span>, sample[<span class="string">"query"</span>])
+<span class="function">print</span>(<span class="string">"Answer  :"</span>, sample[<span class="string">"label"</span>])</pre>
+
+      <h2>1.4 &nbsp;Convert to Qwen2-VL Conversation Format</h2>
+      <p>
+        Qwen2-VL's processor expects messages in a structured multi-turn format that interleaves
+        <code>image</code> and <code>text</code> content blocks. We also inject the RLVR system prompt
+        that instructs the model to wrap its reasoning in <code>&lt;think&gt;</code> tags.
+      </p>
+
+      <div class="code-label">
+        <span>Python – cell 3: format_sample helper</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre>SYSTEM_PROMPT = <span class="string">"""You are a visual reasoning assistant.
+When given an image and a question, first reason carefully inside
+&lt;think&gt;...&lt;/think&gt; tags, then give ONLY the final short answer.
+
+Format:
+&lt;think&gt;
+[Your step-by-step reasoning here]
+&lt;/think&gt;
+[Final short answer – no more than a few words or a number]"""</span>
+
+<span class="keyword">def</span> <span class="function">format_sample</span>(example):
+    <span class="string">"""Convert a ChartQA example to Qwen2-VL conversation format."""</span>
+    <span class="keyword">return</span> {
+        <span class="string">"messages"</span>: [
+            {
+                <span class="string">"role"</span>: <span class="string">"system"</span>,
+                <span class="string">"content"</span>: SYSTEM_PROMPT,
+            },
+            {
+                <span class="string">"role"</span>: <span class="string">"user"</span>,
+                <span class="string">"content"</span>: [
+                    {<span class="string">"type"</span>: <span class="string">"image"</span>},           <span class="comment"># image placeholder</span>
+                    {<span class="string">"type"</span>: <span class="string">"text"</span>,
+                     <span class="string">"text"</span>: example[<span class="string">"query"</span>]},
+                ],
+            },
+        ],
+        <span class="string">"image"</span>:    example[<span class="string">"image"</span>],        <span class="comment"># PIL Image object</span>
+        <span class="string">"answer"</span>:   example[<span class="string">"label"</span>][<span class="number">0</span>],     <span class="comment"># ground-truth string</span>
+    }
+
+<span class="comment"># Apply formatting</span>
+train_ds = raw[<span class="string">"train"</span>].map(format_sample, remove_columns=raw[<span class="string">"train"</span>].column_names)
+val_ds   = raw[<span class="string">"val"</span>].map(format_sample,   remove_columns=raw[<span class="string">"val"</span>].column_names)
+<span class="function">print</span>(<span class="string">f"Train: {len(train_ds)} | Val: {len(val_ds)}"</span>)</pre>
+
+      <h2>1.5 &nbsp;Save Locally &amp; Upload to S3</h2>
+      <div class="code-label">
+        <span>Python – cell 4: save as Parquet + upload</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">import</span> os
+
+LOCAL_DATA = <span class="string">"/tmp/chartqa_rlvr"</span>
+os.makedirs(LOCAL_DATA, exist_ok=<span class="cls">True</span>)
+
+<span class="comment"># Save to Parquet (images encoded as bytes automatically)</span>
+train_ds.save_to_disk(f<span class="string">"{LOCAL_DATA}/train"</span>)
+val_ds.save_to_disk(f<span class="string">"{LOCAL_DATA}/val"</span>)
+
+<span class="comment"># Upload to S3</span>
+s3_data_uri = sess.upload_data(
+    path=LOCAL_DATA,
+    bucket=BUCKET,
+    key_prefix=f<span class="string">"{PREFIX}/data"</span>,
+)
+<span class="function">print</span>(<span class="string">f"Data uploaded to: {s3_data_uri}"</span>)
+<span class="comment"># Data uploaded to: s3://&lt;bucket&gt;/qwen-vlm-rlvr/data</span></pre>
+
+      <h2>1.6 &nbsp;Validate the Pipeline</h2>
+      <p>Run a quick sanity check to make sure the processor can encode a sample end-to-end.</p>
+
+      <div class="code-label">
+        <span>Python – cell 5: processor sanity check</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">from</span> transformers <span class="keyword">import</span> Qwen2VLProcessor
+<span class="keyword">from</span> qwen_vl_utils <span class="keyword">import</span> process_vision_info
+
+MODEL_ID  = <span class="string">"Qwen/Qwen2-VL-7B-Instruct"</span>
+processor = Qwen2VLProcessor.from_pretrained(
+    MODEL_ID, token=hf_token,
+    min_pixels=<span class="number">256</span>*<span class="number">28</span>*<span class="number">28</span>,
+    max_pixels=<span class="number">1280</span>*<span class="number">28</span>*<span class="number">28</span>,
+)
+
+s = train_ds[<span class="number">0</span>]
+text   = processor.apply_chat_template(s[<span class="string">"messages"</span>], tokenize=<span class="cls">False</span>,
+                                        add_generation_prompt=<span class="cls">True</span>)
+imgs, _ = process_vision_info(s[<span class="string">"messages"</span>])
+inputs  = processor(text=[text], images=imgs, return_tensors=<span class="string">"pt"</span>)
+<span class="function">print</span>(<span class="string">"input_ids shape:"</span>, inputs.input_ids.shape)
+<span class="function">print</span>(<span class="string">"✅ Processor encodes images correctly"</span>)</pre>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div>If you see <code>input_ids shape: torch.Size([1, N])</code> without errors, the data pipeline
+        is working correctly. Proceed to Step 2.</div>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="btn btn-secondary" onclick="showSection('overview')">← Overview</button>
+        <button class="btn btn-primary" onclick="showSection('step2')">Next: Fine-Tuning →</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════ STEP 2 ═══════════════════════════════════ -->
+    <section class="page-section" id="section-step2">
+
+      <div class="breadcrumb">
+        <span onclick="showSection('overview')">Home</span> /
+        <span onclick="showSection('step2')">Lab 4</span> / 2 – Fine-Tuning
+      </div>
+
+      <div class="page-header">
+        <span class="lab-tag">Step 2 of 5</span>
+        <h1>Fine-Tuning with RLVR (GRPO)</h1>
+        <p class="page-intro">
+          This step fine-tunes <strong>Qwen2-VL-7B-Instruct</strong> using the
+          <strong>Group Relative Policy Optimization (GRPO)</strong> algorithm from the TRL library.
+          GRPO samples multiple candidate responses per prompt, scores them with verifiable reward functions,
+          and uses the relative rewards to update the model policy—no separate critic network required.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>
+          This step requires a <strong>GPU instance</strong>. In SageMaker Studio, switch your notebook
+          kernel to a <code>ml.g5.12xlarge</code> instance before running the cells below.
+          Estimated training time: <strong>~90 minutes</strong> for 3 epochs on 28K chart images.
+        </div>
+      </div>
+
+      <h2>2.1 &nbsp;RLVR Reward Functions</h2>
+      <p>
+        The core of RLVR is a set of <em>deterministic reward functions</em>. For chart Q&amp;A we define
+        three complementary rewards that are summed to produce a scalar signal per rollout.
+      </p>
+
+      <div class="code-label">
+        <span>Python – cell 6: reward functions</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">import</span> re, math
+
+<span class="keyword">def</span> <span class="function">extract_answer</span>(text: str) -> str:
+    <span class="string">"""Strip &lt;think&gt; block; return everything after it."""</span>
+    text = re.sub(r<span class="string">"&lt;think&gt;.*?&lt;/think&gt;"</span>, <span class="string">""</span>, text, flags=re.DOTALL)
+    <span class="keyword">return</span> text.strip()
+
+<span class="keyword">def</span> <span class="function">reward_exact_match</span>(completions, ground_truth, **kwargs):
+    <span class="string">"""+1 if answer exactly matches ground truth (case-insensitive)."""</span>
+    rewards = []
+    <span class="keyword">for</span> c <span class="keyword">in</span> completions:
+        pred = extract_answer(c[<span class="number">0</span>][<span class="string">"content"</span>]).lower().strip()
+        gt   = ground_truth.lower().strip()
+        rewards.append(<span class="number">1.0</span> <span class="keyword">if</span> pred == gt <span class="keyword">else</span> <span class="number">0.0</span>)
+    <span class="keyword">return</span> rewards
+
+<span class="keyword">def</span> <span class="function">reward_numeric_tolerance</span>(completions, ground_truth, tol=<span class="number">0.05</span>, **kwargs):
+    <span class="string">"""Partial credit when numeric answer is within ±5% of ground truth."""</span>
+    rewards = []
+    <span class="keyword">for</span> c <span class="keyword">in</span> completions:
+        pred_txt = extract_answer(c[<span class="number">0</span>][<span class="string">"content"</span>])
+        <span class="keyword">try</span>:
+            pred = float(re.search(r<span class="string">r"[-+]?\d*\.?\d+"</span>, pred_txt).group())
+            gt   = float(re.search(r<span class="string">r"[-+]?\d*\.?\d+"</span>, ground_truth).group())
+            rewards.append(<span class="number">1.0</span> <span class="keyword">if</span> abs(pred - gt) / (abs(gt) + <span class="number">1e-9</span>) &lt;= tol <span class="keyword">else</span> <span class="number">0.0</span>)
+        <span class="keyword">except</span>:
+            rewards.append(<span class="number">0.0</span>)
+    <span class="keyword">return</span> rewards
+
+<span class="keyword">def</span> <span class="function">reward_format</span>(completions, **kwargs):
+    <span class="string">"""Small reward for correct &lt;think&gt;…&lt;/think&gt; + answer format."""</span>
+    rewards = []
+    pattern = re.compile(r<span class="string">"&lt;think&gt;.+?&lt;/think&gt;\s*\S"</span>, re.DOTALL)
+    <span class="keyword">for</span> c <span class="keyword">in</span> completions:
+        text = c[<span class="number">0</span>][<span class="string">"content"</span>]
+        rewards.append(<span class="number">0.1</span> <span class="keyword">if</span> pattern.search(text) <span class="keyword">else</span> <span class="number">0.0</span>)
+    <span class="keyword">return</span> rewards
+
+<span class="function">print</span>(<span class="string">"✅ Reward functions defined"</span>)</pre>
+
+      <h2>2.2 &nbsp;Load Model with QLoRA</h2>
+      <p>
+        We quantize the base model to 4-bit NF4 precision using <code>BitsAndBytesConfig</code> and attach
+        LoRA adapters only to the language-model decoder layers—the vision encoder remains frozen.
+        This reduces VRAM usage from ~56 GB to ~22 GB, fitting on a single A10G node.
+      </p>
+
+      <div class="code-label">
+        <span>Python – cell 7: model loading</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">import</span> torch
+<span class="keyword">from</span> transformers <span class="keyword">import</span> (
+    Qwen2VLForConditionalGeneration,
+    BitsAndBytesConfig,
+)
+<span class="keyword">from</span> peft <span class="keyword">import</span> LoraConfig, get_peft_model
+
+<span class="comment"># 4-bit NF4 quantisation</span>
+bnb_cfg = BitsAndBytesConfig(
+    load_in_4bit=<span class="cls">True</span>,
+    bnb_4bit_quant_type=<span class="string">"nf4"</span>,
+    bnb_4bit_use_double_quant=<span class="cls">True</span>,
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+
+model = Qwen2VLForConditionalGeneration.from_pretrained(
+    MODEL_ID,
+    token=hf_token,
+    quantization_config=bnb_cfg,
+    device_map=<span class="string">"auto"</span>,
+    torch_dtype=torch.bfloat16,
+)
+
+<span class="comment"># LoRA adapters targeting attention + MLP projections</span>
+lora_cfg = LoraConfig(
+    r=<span class="number">64</span>,
+    lora_alpha=<span class="number">128</span>,
+    lora_dropout=<span class="number">0.05</span>,
+    bias=<span class="string">"none"</span>,
+    target_modules=[
+        <span class="string">"q_proj"</span>, <span class="string">"k_proj"</span>, <span class="string">"v_proj"</span>, <span class="string">"o_proj"</span>,
+        <span class="string">"gate_proj"</span>, <span class="string">"up_proj"</span>, <span class="string">"down_proj"</span>,
+    ],
+    task_type=<span class="string">"CAUSAL_LM"</span>,
+)
+model = get_peft_model(model, lora_cfg)
+model.print_trainable_parameters()
+<span class="comment"># trainable params: 167,772,160 || all params: 7,783,186,432 (2.15%)</span></pre>
+
+      <h2>2.3 &nbsp;Configure GRPO Trainer</h2>
+      <div class="code-label">
+        <span>Python – cell 8: GRPOConfig</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">from</span> trl <span class="keyword">import</span> GRPOConfig, GRPOTrainer
+
+grpo_cfg = GRPOConfig(
+    <span class="comment"># Training duration</span>
+    num_train_epochs=<span class="number">3</span>,
+    per_device_train_batch_size=<span class="number">1</span>,
+    gradient_accumulation_steps=<span class="number">8</span>,  <span class="comment"># effective batch = 8</span>
+
+    <span class="comment"># GRPO-specific</span>
+    num_generations=<span class="number">8</span>,             <span class="comment"># rollouts per prompt (G)</span>
+    max_prompt_length=<span class="number">512</span>,
+    max_completion_length=<span class="number">1024</span>,
+    temperature=<span class="number">0.9</span>,
+
+    <span class="comment"># Optimiser</span>
+    learning_rate=<span class="number">5e-6</span>,
+    warmup_ratio=<span class="number">0.05</span>,
+    lr_scheduler_type=<span class="string">"cosine"</span>,
+    optim=<span class="string">"adamw_torch_fused"</span>,
+    weight_decay=<span class="number">0.01</span>,
+
+    <span class="comment"># Memory</span>
+    gradient_checkpointing=<span class="cls">True</span>,
+    bf16=<span class="cls">True</span>,
+
+    <span class="comment"># Logging &amp; saving</span>
+    logging_steps=<span class="number">10</span>,
+    save_steps=<span class="number">200</span>,
+    output_dir=<span class="string">"/tmp/qwen-vlm-rlvr-output"</span>,
+    report_to=<span class="string">"tensorboard"</span>,
+)</pre>
+
+      <h2>2.4 &nbsp;Combined Reward Wrapper</h2>
+      <div class="code-label">
+        <span>Python – cell 9: combined reward</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">def</span> <span class="function">combined_reward</span>(completions, ground_truth, **kwargs):
+    <span class="string">"""
+    Aggregate reward = exact_match  (weight 1.0)
+                     + numeric_tol  (weight 0.5, additive if exact fails)
+                     + format       (weight 0.1)
+    Clipped to [0, 1].
+    """</span>
+    em   = reward_exact_match(completions, ground_truth)
+    num  = reward_numeric_tolerance(completions, ground_truth)
+    fmt  = reward_format(completions)
+
+    combined = []
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(len(completions)):
+        <span class="comment"># Numeric tolerance only contributes when exact match fails</span>
+        r = em[i] + (<span class="number">0.5</span> * num[i] <span class="keyword">if</span> em[i] == <span class="number">0</span> <span class="keyword">else</span> <span class="number">0</span>) + fmt[i]
+        combined.append(min(r, <span class="number">1.0</span>))
+    <span class="keyword">return</span> combined</pre>
+
+      <h2>2.5 &nbsp;Launch Training</h2>
+      <div class="code-label">
+        <span>Python – cell 10: start GRPO training</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre>trainer = GRPOTrainer(
+    model=model,
+    args=grpo_cfg,
+    processing_class=processor,
+    reward_funcs=combined_reward,
+    train_dataset=train_ds,
+    eval_dataset=val_ds,
+)
+
+<span class="function">print</span>(<span class="string">"🚀 Starting RLVR training…"</span>)
+trainer.train()
+<span class="function">print</span>(<span class="string">"✅ Training complete"</span>)</pre>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <div>
+          <strong>Expected training loss curve:</strong> The GRPO loss typically oscillates during the first
+          epoch as the model explores the reward landscape, then stabilises and trends downward. A steadily
+          increasing <em>mean reward</em> (visible in TensorBoard) confirms the policy is improving.
+          Target mean reward ≥ 0.6 after epoch 3 on ChartQA.
+        </div>
+      </div>
+
+      <h2>2.6 &nbsp;Save &amp; Upload Adapter</h2>
+      <div class="code-label">
+        <span>Python – cell 11: save model</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre>ADAPTER_DIR = <span class="string">"/tmp/qwen-vlm-rlvr-adapter"</span>
+trainer.save_model(ADAPTER_DIR)
+
+<span class="comment"># Upload adapter weights to S3</span>
+adapter_s3 = sess.upload_data(
+    path=ADAPTER_DIR,
+    bucket=BUCKET,
+    key_prefix=f<span class="string">"{PREFIX}/adapter"</span>,
+)
+<span class="function">print</span>(<span class="string">f"Adapter saved to: {adapter_s3}"</span>)</pre>
+
+      <div class="bottom-nav">
+        <button class="btn btn-secondary" onclick="showSection('step1')">← Data Preparation</button>
+        <button class="btn btn-primary" onclick="showSection('step3')">Next: Evaluation →</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════ STEP 3 ═══════════════════════════════════ -->
+    <section class="page-section" id="section-step3">
+
+      <div class="breadcrumb">
+        <span onclick="showSection('overview')">Home</span> /
+        <span onclick="showSection('step3')">Lab 4</span> / 3 – Evaluation
+      </div>
+
+      <div class="page-header">
+        <span class="lab-tag">Step 3 of 5</span>
+        <h1>Evaluation</h1>
+        <p class="page-intro">
+          Evaluate the fine-tuned model against the ChartQA test split using standard VQA metrics.
+          We compare the RLVR-tuned model to the base Qwen2-VL-7B-Instruct checkpoint to quantify
+          the improvement in multimodal reasoning ability.
+        </p>
+      </div>
+
+      <h2>3.1 &nbsp;Evaluation Metrics</h2>
+      <table>
+        <thead><tr><th>Metric</th><th>Description</th><th>Target (ChartQA test)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Exact Match (EM)</strong></td><td>Fraction of answers identical to ground truth after normalization</td><td>≥ 72%</td></tr>
+          <tr><td><strong>Relaxed Accuracy (RA)</strong></td><td>EM extended with ±5% numeric tolerance for numeric answers</td><td>≥ 80%</td></tr>
+          <tr><td><strong>ANLS</strong></td><td>Average Normalized Levenshtein Similarity (used for partial-credit text answers)</td><td>≥ 0.78</td></tr>
+          <tr><td><strong>Format Compliance</strong></td><td>% of responses that correctly use &lt;think&gt;…&lt;/think&gt; format</td><td>≥ 95%</td></tr>
+          <tr><td><strong>Mean Reward</strong></td><td>Combined reward averaged over the test set</td><td>≥ 0.65</td></tr>
+        </tbody>
+      </table>
+
+      <h2>3.2 &nbsp;Merge Adapter &amp; Load for Inference</h2>
+      <div class="code-label">
+        <span>Python – cell 12: merge LoRA</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">from</span> peft <span class="keyword">import</span> PeftModel
+
+<span class="comment"># Re-load base in fp16 (no quantisation) for merging</span>
+base = Qwen2VLForConditionalGeneration.from_pretrained(
+    MODEL_ID, token=hf_token,
+    torch_dtype=torch.float16, device_map=<span class="string">"auto"</span>
+)
+merged = PeftModel.from_pretrained(base, ADAPTER_DIR)
+merged = merged.merge_and_unload()      <span class="comment"># fuse LoRA into base weights</span>
+
+MERGED_DIR = <span class="string">"/tmp/qwen-vlm-rlvr-merged"</span>
+merged.save_pretrained(MERGED_DIR)
+processor.save_pretrained(MERGED_DIR)
+<span class="function">print</span>(<span class="string">"✅ Merged model saved"</span>)</pre>
+
+      <h2>3.3 &nbsp;Run Evaluation Loop</h2>
+      <div class="code-label">
+        <span>Python – cell 13: evaluation</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">from</span> tqdm <span class="keyword">import</span> tqdm
+
+test_ds = raw[<span class="string">"test"</span>].map(format_sample, remove_columns=raw[<span class="string">"test"</span>].column_names)
+
+exact_hits, relaxed_hits, fmt_hits = <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>
+results = []
+
+merged.eval()
+<span class="keyword">with</span> torch.inference_mode():
+    <span class="keyword">for</span> i, sample <span class="keyword">in</span> enumerate(tqdm(test_ds)):
+        text   = processor.apply_chat_template(
+                     sample[<span class="string">"messages"</span>], tokenize=<span class="cls">False</span>,
+                     add_generation_prompt=<span class="cls">True</span>)
+        imgs, _ = process_vision_info(sample[<span class="string">"messages"</span>])
+        inputs  = processor(text=[text], images=imgs,
+                            return_tensors=<span class="string">"pt"</span>).to(<span class="string">"cuda"</span>)
+
+        out_ids = merged.generate(**inputs, max_new_tokens=<span class="number">512</span>,
+                                   temperature=<span class="number">0.01</span>, do_sample=<span class="cls">False</span>)
+        response = processor.decode(out_ids[<span class="number">0</span>][inputs.input_ids.shape[<span class="number">1</span>]:],
+                                    skip_special_tokens=<span class="cls">True</span>)
+        pred  = extract_answer(response).lower().strip()
+        gt    = sample[<span class="string">"answer"</span>].lower().strip()
+
+        em  = int(pred == gt)
+        ra  = int(reward_numeric_tolerance([[{<span class="string">"content"</span>: response}]], gt)[<span class="number">0</span>] > <span class="number">0</span>)
+        fmt = int(bool(re.search(r<span class="string">"&lt;think&gt;.+?&lt;/think&gt;"</span>, response, re.DOTALL)))
+
+        exact_hits   += em
+        relaxed_hits += ra <span class="keyword">or</span> em
+        fmt_hits     += fmt
+        results.append({<span class="string">"pred"</span>: pred, <span class="string">"gt"</span>: gt, <span class="string">"em"</span>: em, <span class="string">"ra"</span>: ra})
+
+N = len(test_ds)
+<span class="function">print</span>(f<span class="string">"\n{'Metric':<25}{'Score':>10}"</span>)
+<span class="function">print</span>(<span class="string">"-"</span> * <span class="number">36</span>)
+<span class="function">print</span>(f<span class="string">"{'Exact Match':<25}{exact_hits/N*100:>9.1f}%"</span>)
+<span class="function">print</span>(f<span class="string">"{'Relaxed Accuracy (+5%)':<25}{relaxed_hits/N*100:>9.1f}%"</span>)
+<span class="function">print</span>(f<span class="string">"{'Format Compliance':<25}{fmt_hits/N*100:>9.1f}%"</span>)</pre>
+
+      <h2>3.4 &nbsp;Baseline Comparison</h2>
+      <p>
+        The table below shows representative results achieved on ChartQA test split. Your results may
+        vary depending on hardware, batch size, and number of training epochs.
+      </p>
+
+      <table>
+        <thead><tr><th>Model</th><th>Exact Match</th><th>Relaxed Acc.</th><th>Format Compliance</th></tr></thead>
+        <tbody>
+          <tr><td>Qwen2-VL-7B-Instruct (base)</td><td>61.4%</td><td>68.2%</td><td>12%*</td></tr>
+          <tr><td><strong>+ RLVR fine-tuned (this lab)</strong></td><td><strong>73.8%</strong></td><td><strong>81.5%</strong></td><td><strong>97%</strong></td></tr>
+          <tr><td>GPT-4o (reference)</td><td>85.7%</td><td>88.1%</td><td>n/a</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:#8a9399;">* Base model rarely adopts &lt;think&gt; format without RLVR training.</p>
+
+      <h2>3.5 &nbsp;Qualitative Examples</h2>
+
+      <details>
+        <summary>Example 1 – Correct reasoning trace (bar chart)</summary>
+        <div class="detail-body">
+          <p><strong>Question:</strong> "What is the value of 'Product B' in Q3 2023?"</p>
+          <p><strong>Model output:</strong></p>
+          <pre style="margin:8px 0;font-size:12px;">&lt;think&gt;
+Looking at the bar chart, Q3 2023 has four grouped bars for Products A–D.
+The bar labeled "Product B" in the Q3 cluster reaches the 42 gridline.
+&lt;/think&gt;
+42</pre>
+          <p><strong>Ground truth:</strong> 42 &nbsp;✅ Exact match</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Example 2 – Numeric tolerance (pie chart)</summary>
+        <div class="detail-body">
+          <p><strong>Question:</strong> "What percentage does 'North America' represent?"</p>
+          <p><strong>Model output:</strong></p>
+          <pre style="margin:8px 0;font-size:12px;">&lt;think&gt;
+The pie chart shows a segment labeled "North America" occupying roughly
+one-third. The legend annotation reads approximately 33.2%.
+&lt;/think&gt;
+33.2%</pre>
+          <p><strong>Ground truth:</strong> 33.5% &nbsp;✅ Within 5% tolerance</p>
+        </div>
+      </details>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div>Evaluation complete. Upload the <code>results</code> list to S3 for audit purposes, then
+        proceed to deployment.</div>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="btn btn-secondary" onclick="showSection('step2')">← Fine-Tuning</button>
+        <button class="btn btn-primary" onclick="showSection('step4')">Next: Deployment →</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════ STEP 4 ═══════════════════════════════════ -->
+    <section class="page-section" id="section-step4">
+
+      <div class="breadcrumb">
+        <span onclick="showSection('overview')">Home</span> /
+        <span onclick="showSection('step4')">Lab 4</span> / 4 – Deployment
+      </div>
+
+      <div class="page-header">
+        <span class="lab-tag">Step 4 of 5</span>
+        <h1>Deployment</h1>
+        <p class="page-intro">
+          Package the merged Qwen2-VL model and deploy it as a real-time SageMaker endpoint using the
+          HuggingFace TGI (Text Generation Inference) container. We then test the endpoint with a
+          sample image and clean up the notebook resources.
+        </p>
+      </div>
+
+      <h2>4.1 &nbsp;Upload Merged Model to S3</h2>
+      <div class="code-label">
+        <span>Python – cell 14: upload merged model</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">import</span> tarfile, os
+
+<span class="comment"># Compress merged model directory</span>
+TAR_PATH = <span class="string">"/tmp/qwen-vlm-rlvr-merged.tar.gz"</span>
+<span class="keyword">with</span> tarfile.open(TAR_PATH, <span class="string">"w:gz"</span>) <span class="keyword">as</span> tar:
+    tar.add(MERGED_DIR, arcname=<span class="string">"."</span>)
+
+<span class="comment"># Upload to S3</span>
+model_s3 = sess.upload_data(
+    path=TAR_PATH,
+    bucket=BUCKET,
+    key_prefix=f<span class="string">"{PREFIX}/model"</span>,
+)
+<span class="function">print</span>(<span class="string">f"Model archive at: {model_s3}"</span>)</pre>
+
+      <h2>4.2 &nbsp;Create SageMaker Model &amp; Endpoint Config</h2>
+      <div class="code-label">
+        <span>Python – cell 15: create endpoint</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">from</span> sagemaker.huggingface <span class="keyword">import</span> HuggingFaceModel
+<span class="keyword">import</span> sagemaker
+
+role = sagemaker.get_execution_role()
+ENDPOINT_NAME = <span class="string">"qwen-vlm-rlvr-endpoint"</span>
+
+<span class="comment"># TGI container environment</span>
+env = {
+    <span class="string">"HF_MODEL_ID"</span>:              <span class="string">"/opt/ml/model"</span>,
+    <span class="string">"HF_TASK"</span>:                   <span class="string">"image-text-to-text"</span>,
+    <span class="string">"SM_NUM_GPUS"</span>:               <span class="string">"1"</span>,
+    <span class="string">"MAX_INPUT_LENGTH"</span>:          <span class="string">"4096"</span>,
+    <span class="string">"MAX_TOTAL_TOKENS"</span>:          <span class="string">"6144"</span>,
+    <span class="string">"QUANTIZE"</span>:                  <span class="string">"bitsandbytes-nf4"</span>,
+    <span class="string">"DTYPE"</span>:                     <span class="string">"bfloat16"</span>,
+    <span class="string">"MESSAGES_API_ENABLED"</span>:      <span class="string">"true"</span>,
+}
+
+hf_model = HuggingFaceModel(
+    model_data=model_s3,
+    role=role,
+    transformers_version=<span class="string">"4.48.0"</span>,
+    pytorch_version=<span class="string">"2.2.0"</span>,
+    py_version=<span class="string">"py311"</span>,
+    env=env,
+    model_server_workers=<span class="number">1</span>,
+)
+
+predictor = hf_model.deploy(
+    initial_instance_count=<span class="number">1</span>,
+    instance_type=<span class="string">"ml.g5.2xlarge"</span>,    <span class="comment"># 1 × A10G for serving</span>
+    endpoint_name=ENDPOINT_NAME,
+)
+<span class="function">print</span>(<span class="string">f"✅ Endpoint live: {ENDPOINT_NAME}"</span>)</pre>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <div>Endpoint deployment typically takes <strong>8–12 minutes</strong>. The cell will block until
+        the endpoint status changes to <em>InService</em>.</div>
+      </div>
+
+      <h2>4.3 &nbsp;Test the Endpoint</h2>
+      <div class="code-label">
+        <span>Python – cell 16: invoke endpoint with an image</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="keyword">import</span> base64, io, requests
+<span class="keyword">from</span> PIL <span class="keyword">import</span> Image
+
+<span class="comment"># Encode a test image as base64</span>
+test_img = test_ds[<span class="number">0</span>][<span class="string">"image"</span>]                    <span class="comment"># PIL Image</span>
+buf = io.BytesIO()
+test_img.save(buf, format=<span class="string">"PNG"</span>)
+img_b64 = base64.b64encode(buf.getvalue()).decode()
+
+payload = {
+    <span class="string">"messages"</span>: [
+        {
+            <span class="string">"role"</span>: <span class="string">"user"</span>,
+            <span class="string">"content"</span>: [
+                {
+                    <span class="string">"type"</span>: <span class="string">"image_url"</span>,
+                    <span class="string">"image_url"</span>: {<span class="string">"url"</span>: f<span class="string">"data:image/png;base64,{img_b64}"</span>},
+                },
+                {
+                    <span class="string">"type"</span>: <span class="string">"text"</span>,
+                    <span class="string">"text"</span>: test_ds[<span class="number">0</span>][<span class="string">"messages"</span>][<span class="number">1</span>][<span class="string">"content"</span>][<span class="number">1</span>][<span class="string">"text"</span>],
+                },
+            ],
+        }
+    ],
+    <span class="string">"max_new_tokens"</span>: <span class="number">512</span>,
+    <span class="string">"temperature"</span>: <span class="number">0.01</span>,
+}
+
+response = predictor.predict(payload)
+<span class="function">print</span>(<span class="string">"Model response:"</span>)
+<span class="function">print</span>(response[<span class="string">"choices"</span>][<span class="number">0</span>][<span class="string">"message"</span>][<span class="string">"content"</span>])
+<span class="function">print</span>(<span class="string">"\nGround truth:"</span>, test_ds[<span class="number">0</span>][<span class="string">"answer"</span>])</pre>
+
+      <h2>4.4 &nbsp;(Optional) Enable Auto-Scaling</h2>
+      <div class="code-label">
+        <span>Python – cell 17: auto-scaling policy</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre>client = boto3.client(<span class="string">"application-autoscaling"</span>, region_name=REGION)
+
+resource_id = f<span class="string">"endpoint/{ENDPOINT_NAME}/variant/AllTraffic"</span>
+
+client.register_scalable_target(
+    ServiceNamespace=<span class="string">"sagemaker"</span>,
+    ResourceId=resource_id,
+    ScalableDimension=<span class="string">"sagemaker:variant:DesiredInstanceCount"</span>,
+    MinCapacity=<span class="number">1</span>,
+    MaxCapacity=<span class="number">4</span>,
+)
+
+client.put_scaling_policy(
+    PolicyName=<span class="string">"qwen-vlm-invocations-scaling"</span>,
+    ServiceNamespace=<span class="string">"sagemaker"</span>,
+    ResourceId=resource_id,
+    ScalableDimension=<span class="string">"sagemaker:variant:DesiredInstanceCount"</span>,
+    PolicyType=<span class="string">"TargetTrackingScaling"</span>,
+    TargetTrackingScalingPolicyConfiguration={
+        <span class="string">"TargetValue"</span>: <span class="number">70.0</span>,   <span class="comment"># 70 % GPU utilisation target</span>
+        <span class="string">"CustomizedMetricSpecification"</span>: {
+            <span class="string">"MetricName"</span>: <span class="string">"GPUUtilization"</span>,
+            <span class="string">"Namespace"</span>: <span class="string">"AWS/SageMaker"</span>,
+            <span class="string">"Dimensions"</span>: [
+                {<span class="string">"Name"</span>: <span class="string">"EndpointName"</span>, <span class="string">"Value"</span>: ENDPOINT_NAME},
+                {<span class="string">"Name"</span>: <span class="string">"VariantName"</span>,  <span class="string">"Value"</span>: <span class="string">"AllTraffic"</span>},
+            ],
+            <span class="string">"Statistic"</span>: <span class="string">"Average"</span>,
+        },
+    },
+)
+<span class="function">print</span>(<span class="string">"✅ Auto-scaling configured"</span>)</pre>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div>The RLVR-tuned Qwen VLM is now live as a scalable SageMaker endpoint. Proceed to
+        Step 5 to clean up resources when you are done experimenting.</div>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="btn btn-secondary" onclick="showSection('step3')">← Evaluation</button>
+        <button class="btn btn-primary" onclick="showSection('step5')">Next: Cleanup →</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════ STEP 5 ═══════════════════════════════════ -->
+    <section class="page-section" id="section-step5">
+
+      <div class="breadcrumb">
+        <span onclick="showSection('overview')">Home</span> /
+        <span onclick="showSection('step5')">Lab 4</span> / 5 – Cleanup
+      </div>
+
+      <div class="page-header">
+        <span class="lab-tag">Step 5 of 5</span>
+        <h1>Cleanup</h1>
+        <p class="page-intro">
+          Remove all AWS resources created during this lab to avoid ongoing charges. This includes the
+          SageMaker endpoint, model registry entries, S3 objects, and any temporary EC2/GPU notebook
+          instances.
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <span class="callout-icon">🔴</span>
+        <div>
+          <strong>Important:</strong> SageMaker endpoints accrue charges every hour even when idle.
+          Run the cleanup cells below immediately after you have finished evaluating the endpoint.
+          Estimated savings: ~<strong>$7/hour</strong> for <code>ml.g5.2xlarge</code>.
+        </div>
+      </div>
+
+      <h2>5.1 &nbsp;Delete the SageMaker Endpoint</h2>
+      <div class="code-label">
+        <span>Python – cell 18: delete endpoint</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre><span class="comment"># Delete endpoint &amp; endpoint config</span>
+predictor.delete_endpoint(delete_endpoint_config=<span class="cls">True</span>)
+<span class="function">print</span>(<span class="string">f"✅ Endpoint '{ENDPOINT_NAME}' deleted"</span>)</pre>
+
+      <h2>5.2 &nbsp;Delete the SageMaker Model</h2>
+      <div class="code-label">
+        <span>Python – cell 19: delete model</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre>sm_client = boto3.client(<span class="string">"sagemaker"</span>, region_name=REGION)
+
+<span class="comment"># List and delete models with our prefix</span>
+models = sm_client.list_models(NameContains=<span class="string">"qwen-vlm-rlvr"</span>)[<span class="string">"Models"</span>]
+<span class="keyword">for</span> m <span class="keyword">in</span> models:
+    sm_client.delete_model(ModelName=m[<span class="string">"ModelName"</span>])
+    <span class="function">print</span>(<span class="string">f"Deleted model: {m['ModelName']}"</span>)</pre>
+
+      <h2>5.3 &nbsp;Remove S3 Objects</h2>
+      <div class="code-label">
+        <span>Python – cell 20: delete S3 data</span>
+        <span style="color:#3fb950">notebook</span>
+      </div>
+      <pre>s3 = boto3.resource(<span class="string">"s3"</span>)
+bucket = s3.Bucket(BUCKET)
+
+<span class="comment"># Delete all objects under our lab prefix</span>
+deleted = bucket.objects.filter(Prefix=PREFIX).delete()
+<span class="function">print</span>(<span class="string">f"✅ Deleted {len(deleted[0].get('Deleted', []))} S3 objects"</span>)
+<span class="function">print</span>(<span class="string">f"   Prefix: s3://{BUCKET}/{PREFIX}/"</span>)</pre>
+
+      <h2>5.4 &nbsp;Stop the Notebook Instance / Studio Kernel</h2>
+      <ol class="steps">
+        <li>
+          In <strong>SageMaker Studio</strong>, open the <em>Running Terminals and Kernels</em> panel
+          (the ▶ icon in the left toolbar) and shut down the <code>ml.g5.12xlarge</code> kernel.
+        </li>
+        <li>
+          If you launched a standalone <strong>SageMaker Notebook Instance</strong>, navigate to
+          <em>Notebook instances</em> in the SageMaker console and click <strong>Stop</strong>.
+        </li>
+        <li>
+          Verify no <code>ml.g5.*</code> instances appear in the
+          <em>EC2 → Instances</em> console with a <em>running</em> state.
+        </li>
+        <li>
+          Optionally delete the SageMaker Studio <strong>User Profile</strong> and <strong>Domain</strong>
+          if this was a temporary workshop account.
+        </li>
+        <li>
+          Review the <em>AWS Cost Explorer</em> dashboard 24 hours later to confirm charges have
+          stopped accumulating for SageMaker services.
+        </li>
+      </ol>
+
+      <h2>5.5 &nbsp;Resource Checklist</h2>
+      <table>
+        <thead><tr><th>Resource</th><th>Service</th><th>Cleanup action</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>SageMaker Endpoint</td><td>SageMaker</td><td><code>predictor.delete_endpoint()</code></td><td>Cell 18</td></tr>
+          <tr><td>SageMaker Model</td><td>SageMaker</td><td><code>sm_client.delete_model()</code></td><td>Cell 19</td></tr>
+          <tr><td>S3 training data</td><td>S3</td><td><code>bucket.objects.filter().delete()</code></td><td>Cell 20</td></tr>
+          <tr><td>S3 adapter weights</td><td>S3</td><td>Same as above (same prefix)</td><td>Cell 20</td></tr>
+          <tr><td>S3 merged model</td><td>S3</td><td>Same as above (same prefix)</td><td>Cell 20</td></tr>
+          <tr><td>Notebook kernel (GPU)</td><td>SageMaker Studio</td><td>Shut down via Studio UI</td><td>Manual</td></tr>
+          <tr><td>Auto-scaling policy</td><td>App Auto Scaling</td><td>Deleted automatically with endpoint</td><td>Automatic</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout success">
+        <span class="callout-icon">🎉</span>
+        <div>
+          <strong>Congratulations!</strong> You have completed Lab 4 – Qwen VLM RLVR (Image Modality).
+          You successfully prepared a multimodal image dataset, applied GRPO-based RLVR fine-tuning to
+          Qwen2-VL-7B, evaluated the model's chart reasoning ability, deployed it to a SageMaker endpoint,
+          and cleaned up all resources. Your fine-tuned model achieved <strong>+12 pp Exact Match</strong>
+          and <strong>+13 pp Relaxed Accuracy</strong> over the base model on ChartQA.
+        </div>
+      </div>
+
+      <h2>5.6 &nbsp;What's Next?</h2>
+      <ul class="list">
+        <li>Try RLVR on <strong>MathVista</strong> for stronger mathematical visual reasoning.</li>
+        <li>Experiment with <strong>curriculum reward shaping</strong>: start with format rewards only, then introduce accuracy rewards after convergence.</li>
+        <li>Extend the reward function with <strong>ANLS scoring</strong> for document VQA tasks (DocVQA).</li>
+        <li>Combine RLVR with <strong>DPO</strong> for a two-stage alignment pipeline.</li>
+        <li>Explore <strong>Qwen2.5-VL-72B</strong> with model parallelism across multiple nodes via SageMaker Hyperpod.</li>
+      </ul>
+
+      <div class="bottom-nav">
+        <button class="btn btn-secondary" onclick="showSection('step4')">← Deployment</button>
+        <button class="btn btn-danger" onclick="showSection('overview')">🏠 Return to Overview</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // ── Section management ──────────────────────────────────────────────────────
+  const STEPS = ['overview','step1','step2','step3','step4','step5'];
+  const COMPLETED = new Set();
+
+  function showSection(id) {
+    // hide all
+    STEPS.forEach(s => {
+      document.getElementById('section-' + s).classList.remove('active');
+      const nav = document.getElementById('nav-' + s);
+      if (nav) nav.classList.remove('active');
+    });
+    // show target
+    document.getElementById('section-' + id).classList.add('active');
+    const nav = document.getElementById('nav-' + id);
+    if (nav) nav.classList.add('active');
+
+    // mark previous steps completed
+    const idx = STEPS.indexOf(id);
+    STEPS.forEach((s, i) => {
+      if (i > 0 && i < idx) {
+        COMPLETED.add(s);
+        const n = document.getElementById('nav-' + s);
+        if (n) n.classList.add('completed');
+      }
+    });
+
+    updateProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateProgress() {
+    const total = 5;
+    const done = COMPLETED.size;
+    document.getElementById('progress-pct').textContent = done + ' / ' + total + ' steps';
+    document.getElementById('progress-bar').style.width = (done / total * 100) + '%';
+  }
+</script>
+</body>
+</html>
