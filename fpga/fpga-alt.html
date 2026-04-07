@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FPGA for AI Inference | Software-Defined Hardware</title>
+  <meta name="description" content="Explore FPGA fundamentals, architecture, AI inference use cases, AWS case studies, and AWS FPGA instance comparisons." />
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#11182f;
+      --panel-2:#17213d;
+      --text:#eef3ff;
+      --muted:#b6c3e6;
+      --accent:#7dd3fc;
+      --accent-2:#a78bfa;
+      --line:rgba(255,255,255,.10);
+      --good:#34d399;
+      --warn:#fbbf24;
+      --shadow:0 20px 60px rgba(0,0,0,.35);
+      --radius:18px;
+      --max:1180px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(125,211,252,.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(167,139,250,.14), transparent 28%),
+        linear-gradient(180deg, #070b16 0%, var(--bg) 100%);
+      line-height:1.6;
+    }
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:var(--max); margin:0 auto; padding:0 22px}
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(16px);
+      background:rgba(7,11,22,.75);
+      border-bottom:1px solid var(--line);
+    }
+    .nav{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:18px; padding:16px 0;
+    }
+    .brand{font-weight:800; letter-spacing:.4px; font-size:1.05rem}
+    .brand span{color:var(--accent)}
+    .navlinks{
+      display:flex; flex-wrap:wrap; gap:12px;
+      font-size:.95rem; color:var(--muted);
+    }
+    .navlinks a{padding:7px 10px; border-radius:999px}
+    .navlinks a:hover{background:rgba(255,255,255,.06); color:var(--text)}
+    .hero{
+      padding:72px 0 34px;
+    }
+    .hero-grid{
+      display:grid; grid-template-columns:1.25fr .75fr; gap:26px; align-items:stretch;
+    }
+    .hero-card, .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .hero-card{padding:34px}
+    .eyebrow{
+      display:inline-flex; align-items:center; gap:8px;
+      color:var(--accent); font-weight:700; font-size:.9rem;
+      background:rgba(125,211,252,.10); border:1px solid rgba(125,211,252,.22);
+      padding:7px 12px; border-radius:999px;
+    }
+    h1{font-size:clamp(2.3rem,5vw,4.4rem); line-height:1.03; margin:18px 0 16px}
+    .lead{font-size:1.06rem; color:var(--muted); max-width:62ch}
+    .cta-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:22px}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:12px 16px; border-radius:12px; font-weight:700;
+      border:1px solid var(--line);
+    }
+    .btn.primary{background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#08111f}
+    .btn.secondary{background:rgba(255,255,255,.04)}
+    .side{
+      padding:24px;
+      display:grid; gap:14px;
+    }
+    .stat{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+    }
+    .stat b{display:block; font-size:1.2rem; margin-bottom:4px}
+    .stat span{color:var(--muted); font-size:.94rem}
+    section{padding:22px 0}
+    .section-title{
+      font-size:1.7rem; margin:0 0 10px;
+    }
+    .section-sub{color:var(--muted); margin:0 0 18px; max-width:78ch}
+    .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+    .grid-3{display:grid; grid-template-columns:repeat(3, 1fr); gap:18px}
+    .card{padding:22px}
+    .card h3{margin:0 0 10px; font-size:1.1rem}
+    .card p, .card li{color:var(--muted)}
+    ul{margin:0; padding-left:18px}
+    .tag{
+      display:inline-block; margin-bottom:10px;
+      color:#dbeafe; background:rgba(125,211,252,.10);
+      border:1px solid rgba(125,211,252,.18);
+      padding:5px 10px; border-radius:999px; font-size:.82rem; font-weight:700;
+    }
+    .table-wrap{
+      overflow:auto; border-radius:16px; border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+    }
+    table{width:100%; border-collapse:collapse; min-width:760px}
+    th, td{
+      text-align:left; padding:14px 14px; border-bottom:1px solid var(--line);
+      vertical-align:top;
+    }
+    th{background:rgba(255,255,255,.05); font-size:.92rem}
+    td{color:var(--muted)}
+    .footer{
+      padding:38px 0 48px; color:var(--muted); font-size:.95rem;
+      border-top:1px solid var(--line); margin-top:24px;
+    }
+    .subnav{
+      display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;
+    }
+    .subnav a{
+      padding:9px 12px; border-radius:12px;
+      background:rgba(255,255,255,.04); border:1px solid var(--line);
+      color:var(--text); font-size:.93rem;
+    }
+    .subnav a:hover{border-color:rgba(125,211,252,.45)}
+    .note{
+      color:var(--muted); font-size:.92rem;
+      border-left:3px solid var(--accent);
+      padding-left:12px;
+      margin-top:12px;
+    }
+    @media (max-width: 920px){
+      .hero-grid, .grid-2, .grid-3{grid-template-columns:1fr}
+      .hero{padding-top:38px}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap">
+      <div class="nav">
+        <div class="brand">FPGA<span>.AI</span></div>
+        <div class="navlinks">
+          <a href="#intro">What is FPGA</a>
+          <a href="#asic-gpu">ASIC vs GPU</a>
+          <a href="#software-defined">Software-Defined Hardware</a>
+          <a href="#architecture">Architecture</a>
+          <a href="#ai-inference">AI Inference</a>
+          <a href="#aws">AWS</a>
+          <a href="#instances">Instances</a>
+          <a href="#conclusion">Conclusion</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-card">
+        <div class="eyebrow">Reconfigurable compute for modern AI</div>
+        <h1>FPGA is not just hardware.<br/>It is software-defined hardware.</h1>
+        <p class="lead">
+          This page explains what FPGAs are, where they came from, how they differ from ASICs and GPUs,
+          and why they matter for low-latency, power-efficient AI inference in cloud and edge systems. Ross Freeman
+          is widely recognized as the inventor of the FPGA, and Xilinx was founded in 1984 to commercialize that idea. [web:1][web:4][web:7]
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="#intro">Start with FPGA basics</a>
+          <a class="btn secondary" href="#instances">See AWS FPGA types</a>
+        </div>
+        <div class="subnav">
+          <a href="fpga-basics.html">FPGA Basics</a>
+          <a href="fpga-vs-gpu.html">FPGA vs GPU</a>
+          <a href="fpga-aws.html">FPGA on AWS</a>
+          <a href="fpga-ai-inference.html">FPGA for AI Inference</a>
+        </div>
+      </div>
+      <div class="card side">
+        <div class="stat"><b>1960s–1970s roots</b><span>Programmable logic evolved from earlier PAL/PLA ideas into field-reconfigurable devices.</span></div>
+        <div class="stat"><b>1984</b><span>Ross Freeman, Bernard Vonderschmitt, and James Barnett founded Xilinx.</span></div>
+        <div class="stat"><b>AWS F1 + F2</b><span>Amazon offers FPGA-backed instances for custom acceleration, with F2 as the newer generation.</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="intro">
+      <h2 class="section-title">What FPGA means</h2>
+      <p class="section-sub">
+        A field-programmable gate array is a chip whose logic can be configured after manufacturing, letting engineers build custom digital circuits without fabricating a new silicon design every time. Ross Freeman’s invention enabled engineers to reprogram “open gates” to add functionality, adapt to changing standards, and make late-stage design changes. [web:1][web:4][web:7]
+      </p>
+      <div class="grid-2">
+        <div class="card">
+          <span class="tag">Origin and inventor</span>
+          <h3>Why FPGAs changed computing</h3>
+          <p>
+            Freeman’s idea bridged the gap between fixed hardware and software flexibility, creating a new class of adaptable silicon. Xilinx was founded in 1984 to commercialize the concept, and the FPGA became the foundation for a major programmable-logic industry. [web:1][web:4][web:7]
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag">Practical meaning</span>
+          <h3>What makes them special</h3>
+          <p>
+            FPGAs let you map a workload into hardware pipelines, memory paths, and interfaces that match the application, rather than forcing the application to fit a fixed processor architecture. That is why they are often used for real-time, deterministic, or protocol-specific acceleration. [web:11][web:16]
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="asic-gpu">
+      <h2 class="section-title">Custom ASIC and hardwired GPU</h2>
+      <p class="section-sub">
+        An FPGA is not an ASIC, but it can behave like a custom ASIC in the sense that you can specialize the datapath, memory access, and control flow for one workload. Compared with a hardwired GPU, the FPGA trades general-purpose parallel throughput for reconfigurability, deterministic latency, and custom data movement. [web:11][web:13][web:16]
+      </p>
+      <div class="table-wrap card" style="padding:0">
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>FPGA</th>
+              <th>Custom ASIC</th>
+              <th>GPU</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Flexibility</td>
+              <td>High; reprogrammable after deployment. [web:1][web:24]</td>
+              <td>Low; fixed after fabrication.</td>
+              <td>High at software level, fixed at silicon level.</td>
+            </tr>
+            <tr>
+              <td>Latency</td>
+              <td>Very low and deterministic when well designed. [web:13][web:16]</td>
+              <td>Excellent, often best possible for a target workload.</td>
+              <td>Usually higher due to scheduling and memory hierarchy. [web:16]</td>
+            </tr>
+            <tr>
+              <td>Cost to change</td>
+              <td>Low compared with fabricating a new chip.</td>
+              <td>Very high, requires new tape-out.</td>
+              <td>Low in software, but hardware behavior stays fixed.</td>
+            </tr>
+            <tr>
+              <td>Best fit</td>
+              <td>Latency-sensitive, power-sensitive, or custom I/O workloads. [web:16]</td>
+              <td>Stable high-volume products with known demand.</td>
+              <td>Large-batch throughput and broad ML ecosystems.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="software-defined">
+      <h2 class="section-title">Software-defined hardware</h2>
+      <p class="section-sub">
+        Software-defined hardware means the hardware structure itself is adapted to the model or workload, not only the code running on top of it. In FPGA AI flows, the toolchain compiles a model into hardware-aware primitives, and the resulting design can be reconfigured as the model changes. [web:12][web:15][web:24]
+      </p>
+      <div class="grid-2">
+        <div class="card">
+          <span class="tag">Core differences with GPU</span>
+          <h3>Why the GPU model is different</h3>
+          <p>
+            GPUs are built for broad parallel numerical computing, while FPGAs are built for shaping custom pipelines around the workload. GPUs usually win on development speed and ecosystem maturity; FPGAs often win on predictable latency and power efficiency in specialized deployments. [web:13][web:16]
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag">Comparison</span>
+          <h3>FPGA vs GPU at a glance</h3>
+          <u
+          <ul>
+            >FPGA: custom datapaths, deterministic timing, high control over I/O.</l/li>
+            >GPU: massive throughput, easier programming, stronger software stack.</l/li>
+            >FPGA: stronger when the workload is stable enough to specialize.</l/li>
+            >GPU: stronger when model iteration and portability matter most.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2 class="section-title">FPGA architecture</h2>
+      <p class="section-sub">
+        Classic FPGA architecture combines configurable logic blocks, lookup tables, flip-flops, routing fabric, embedded memory, and clocking resources. Architecture diagrams commonly show a sea of logic blocks connected by programmable interconnect, with LUTs implementing Boolean functions and routing switches joining the pieces together. [web:11][image:20][image:21]
+      </p>
+      <div class="grid-2">
+        <div class="card">
+          <span class="tag">Architecture blocks</span>
+          <h3>Main building blocks</h3>
+          <u
+          <ul>
+            >Configurable Logic Blocks for Boolean logic and state machines.</l/li>
+            >LUTs for combinational logic.</l/li>
+            >Flip-flops for sequential logic.</l/li>
+            >Programmable routing channels and switches.</l/li>
+            >Block RAM, DSP slices, PLL/DLL clock resources, and I/O blocks. [web:11]</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="tag">Why it matters</span>
+          <h3>How the architecture helps AI</h3>
+          <p>
+            AI inference benefits when memory movement, operators, and control paths are tuned together. An FPGA can implement only the exact math and buffering required, reducing unnecessary work and giving the designer far more influence over timing and power than a fixed accelerator can provide. [web:12][web:15]
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="ai-inference">
+      <h2 class="section-title">Elastic, cost-efficient AI inference</h2>
+      <p class="section-sub">
+        FPGA-based AI inference can be efficient because the model, software stack, and reconfigurable hardware are co-designed as one system. Recent FPGA inference discussions emphasize ML-defined reconfigurable compute, workload-specific primitives, and a hardware architecture that can evolve with the model, reducing the lag of custom silicon while preserving specialization. [web:12][web:15][web:18]
+      </p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Elasticity</h3>
+          <p>Reconfigure the FPGA as workloads shift, enabling fast adaptation without waiting for a new chip revision. [web:12][web:24]</p>
+        </div>
+        <div class="card">
+          <h3>Cost efficiency</h3>
+          <p>Specialized pipelines can avoid wasteful general-purpose execution, improving performance per watt and often performance per dollar in the right workload. [web:15][web:16]</p>
+        </div>
+        <div class="card">
+          <h3>Unified architecture</h3>
+          <p>The best designs treat model structure, runtime, memory, and hardware as one co-optimized stack. [web:15][web:24]</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="aws">
+      <h2 class="section-title">AWS case studies and products</h2>
+      <p class="section-sub">
+        AWS has used FPGA-backed infrastructure for customers such as Xilinx and offers FPGA instances for custom acceleration. The Xilinx case study highlights software testing and FPGA developer workflows on EC2, while the newer F2 family is purpose-built for reconfigurable hardware in the cloud. [web:2][web:23][web:28]
+      </p>
+      <div class="grid-2">
+        <div class="card">
+          <span class="tag">Case study</span>
+          <h3>Xilinx on AWS</h3>
+          <p>
+            AWS says Xilinx uses EC2 clusters for software testing and that F1 instances support FPGA developers building custom hardware accelerations. That makes AWS relevant not only as a compute provider, but also as an FPGA development and deployment platform. [web:2][web:25][web:30]
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag">Altera ecosystem</span>
+          <h3>FPGA AI Suite</h3>
+          <p>
+            Altera’s FPGA AI Suite is an end-to-end AI inference workflow that converts models, compiles architectures, and generates FPGA-ready artifacts for optimized inference. Its documentation highlights model switching, lower power, and higher FPS for supported flows. [web:24][web:29]
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">FPGA inference vs GPU inference</h2>
+      <p class="section-sub">
+        FPGA inference wins when latency, determinism, power, and fixed-function dataflow matter more than raw flexibility. GPUs usually win when rapid model iteration, broad framework support, and very high batch throughput are the priority. [web:13][web:15][web:16]
+      </p>
+      <div class="table-wrap card" style="padding:0">
+        <table>
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>FPGA inference</th>
+              <th>GPU inference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Latency</td>
+              <td>Very low and deterministic. [web:13][web:16]</td>
+              <td>Usually higher, especially for small or tightly constrained workloads. [web:13][web:16]</td>
+            </tr>
+            <tr>
+              <td>Power efficiency</td>
+              <td>Often superior when the design is specialized. [web:15][web:19]</td>
+              <td>Good throughput, but less tailored to a single workload.</td>
+            </tr>
+            <tr>
+              <td>Development speed</td>
+              <td>Slower; requires hardware-aware design and compilation flow. [web:24]</td>
+              <td>Faster; mature frameworks and libraries.</td>
+            </tr>
+            <tr>
+              <td>Best use cases</td>
+              <td>Real-time ranking, network acceleration, video pipelines, genomic processing, satellite links. [web:23][web:28]</td>
+              <td>Large-batch LLM serving, training-adjacent inference, broad ML workloads.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        In practice, FPGA wins when the business value comes from a stable low-latency path rather than a constantly changing model zoo. [web:13][web:16]
+      </p>
+    </section>
+
+    <section>
+      <h2 class="section-title">Advanced AI use cases</h2>
+      <p class="section-sub">
+        A promising direction is disaggregated inference, where different parts of the request pipeline run on different accelerators. One example is using FPGA for prefill or front-end conditioning and Trainium for decode, so each stage uses the most suitable hardware for its compute profile and latency target. This kind of partitioning aligns with the broader co-design trend in AI systems. [web:15]
+      </p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Why disaggregation matters</h3>
+          <p>
+            Prefill often benefits from structured throughput and pipeline control, while decode needs scalable token generation efficiency. Splitting the workload lets the system choose the best accelerator for each phase rather than forcing one chip to do everything. [web:15]
+          </p>
+        </div>
+        <div class="card">
+          <h3>Where FPGA fits best</h3>
+          <p>
+            FPGA is especially attractive at the edges of the AI stack: packet ingestion, video preprocessing, compression, custom feature extraction, and deterministic serving paths. Those are the places where software-defined hardware gives the most leverage. [web:12][web:16][web:24]
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="instances">
+      <h2 class="section-title">AWS FPGA instance types</h2>
+      <p class="section-sub">
+        AWS currently documents two FPGA instance generations worth highlighting: first-generation F1 and second-generation F2. F1 uses Xilinx UltraScale+ VU9P FPGAs, while F2 uses AMD Virtex UltraScale+ HBM VU47P FPGAs and adds 16 GiB HBM per FPGA. [web:25][web:23][web:28]
+      </p>
+      <div class="table-wrap card" style="padding:0">
+        <table>
+          <thead>
+            <tr>
+              <th>Instance</th>
+              <th>FPGAs</th>
+              <th>vCPU</th>
+              <th>Memory</th>
+              <th>Local storage</th>
+              <th>Network</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>f1.2xlarge</td>
+              <td>1</td>
+              <td>8</td>
+              <td>15.25 GiB</td>
+              <td>470 GiB NVMe</td>
+              <td>25 Gbps</td>
+              <td>First-gen FPGA instance with Xilinx UltraScale+ VU9P. [web:25][web:30]</td>
+            </tr>
+            <tr>
+              <td>f1.16xlarge</td>
+              <td>1</td>
+              <td>64</td>
+              <td>976 GiB</td>
+              <td>4 TB NVMe</td>
+              <td>25 Gbps</td>
+              <td>Higher CPU/memory envelope for FPGA workflows. [web:25]</td>
+            </tr>
+            <tr>
+              <td>f2.6xlarge</td>
+              <td>1</td>
+              <td>24</td>
+              <td>256 GiB</td>
+              <td>940 GiB NVMe</td>
+              <td>12.5 Gbps</td>
+              <td>Second-gen F2 with 16 GiB HBM per FPGA. [web:3][web:23]</td>
+            </tr>
+            <tr>
+              <td>f2.12xlarge</td>
+              <td>2</td>
+              <td>48</td>
+              <td>512 GiB</td>
+              <td>2 x 940 GiB NVMe</td>
+              <td>25 Gbps</td>
+              <td>Scaled-up F2 option for more FPGA capacity. [web:3]</td>
+            </tr>
+            <tr>
+              <td>f2.48xlarge</td>
+              <td>8</td>
+              <td>192</td>
+              <td>2 TiB</td>
+              <td>8 x 940 GiB NVMe</td>
+              <td>100 Gbps</td>
+              <td>Top-end F2 with advanced live-video support and up to 460 GiB/s HBM bandwidth per the AWS docs. [web:3][web:22][web:23]</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        For the most current per-size values, AWS documentation should be treated as the source of truth because instance details evolve over time. [web:3][web:22][web:28]
+      </p>
+    </section>
+
+    <section id="conclusion">
+      <h2 class="section-title">A broader view of AI inference</h2>
+      <p class="section-sub">
+        The main takeaway is simple: AI inference does not mean GPU only. FPGAs are a strong option when the goal is open-ended architectural control, predictable latency, better power efficiency, and workload-specific acceleration, especially in cloud FPGA offerings such as AWS F1/F2 and vendor tools like Altera’s FPGA AI Suite. [web:2][web:15][web:24][web:28]
+      </p>
+      <div class="card">
+        <h3>Open-minded engineering wins</h3>
+        <p>
+          The best infrastructure teams choose the accelerator that fits the workload, not the other way around. For many serving systems, the winning architecture may be hybrid: CPU for orchestration, FPGA for deterministic pipelines or prefill, and GPU or Trainium for dense neural generation.
+        </p>
+      </div>
+    </section>
+
+    <div class="footer">
+      Built as a single-page FPGA landing site with subpage links and technical sections. You can split each section into its own HTML file by reusing the navigation and the content blocks above.
+    </div>
+  </main>
+</body>
+</html>
