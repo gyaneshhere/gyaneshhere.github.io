@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Neuron SDK — The Developer Stack for AI on Trainium & Inferentia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0a0c10;
+    --bg2:     #0d1117;
+    --bg3:     #111827;
+    --surface: #161b27;
+    --surface2:#1c2333;
+    --border:  rgba(99,200,180,0.12);
+    --border2: rgba(99,200,180,0.24);
+    --accent:  #2dd4bf;   /* teal — Neuron's identity colour */
+    --accent2: #818cf8;   /* indigo */
+    --accent3: #34d399;   /* green */
+    --accent4: #fb923c;   /* orange */
+    --accent5: #f472b6;   /* pink */
+    --text:    #e2e8f0;
+    --text2:   #94a3b8;
+    --text3:   #64748b;
+    --glow:    0 0 40px rgba(45,212,191,0.14);
+    --font-mono:    'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+    --font-body:    'Inter', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* noise */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:9999; opacity:.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 2rem; height:58px;
+    background:rgba(10,12,16,.87);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav-logo {
+    font-family:var(--font-mono); font-size:.85rem; font-weight:700;
+    letter-spacing:.08em; color:var(--accent);
+    display:flex; align-items:center; gap:.6rem;
+  }
+  .nav-badge {
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#000; font-size:.6rem; font-weight:700;
+    letter-spacing:.15em; padding:2px 7px; border-radius:3px; text-transform:uppercase;
+  }
+  .nav-version {
+    font-family:var(--font-mono); font-size:.62rem;
+    color:var(--text3); letter-spacing:.06em;
+  }
+  .nav-links { display:flex; gap:1.4rem; list-style:none; }
+  .nav-links a {
+    font-family:var(--font-mono); font-size:.7rem;
+    color:var(--text2); text-decoration:none;
+    letter-spacing:.06em; transition:color .2s;
+  }
+  .nav-links a:hover { color:var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; text-align:center;
+    padding:110px 2rem 5rem; position:relative; overflow:hidden;
+  }
+  .hero-bg {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 900px 550px at 50% 38%,rgba(45,212,191,.07) 0%,transparent 70%),
+      radial-gradient(ellipse 500px 350px at 15% 75%,rgba(129,140,248,.05) 0%,transparent 60%),
+      radial-gradient(ellipse 400px 280px at 85% 18%,rgba(52,211,153,.04) 0%,transparent 60%);
+    z-index:0;
+  }
+  .hero-grid {
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(45,212,191,.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(45,212,191,.035) 1px,transparent 1px);
+    background-size:48px 48px; z-index:0;
+  }
+  /* animated circuit lines */
+  .hero-circuit {
+    position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+  }
+  .hero-circuit svg { width:100%; height:100%; opacity:.13; }
+
+  .hero-content { position:relative; z-index:1; max-width:880px; }
+  .hero-eyebrow {
+    font-family:var(--font-mono); font-size:.7rem;
+    letter-spacing:.2em; color:var(--accent); text-transform:uppercase;
+    margin-bottom:1.4rem; opacity:0; animation:fadeUp .7s .1s forwards;
+  }
+  .hero-eyebrow span { color:var(--text3); margin:0 .5em; }
+  .hero h1 {
+    font-family:var(--font-display); font-size:clamp(2.8rem,6.5vw,5.2rem);
+    font-weight:800; line-height:1.06; letter-spacing:-.02em; margin-bottom:1.5rem;
+    opacity:0; animation:fadeUp .7s .25s forwards;
+  }
+  .hero h1 em {
+    font-style:normal;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 55%,var(--accent3) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .hero-sub {
+    font-size:1.1rem; color:var(--text2); max-width:640px;
+    margin:0 auto 2.5rem; line-height:1.75;
+    opacity:0; animation:fadeUp .7s .4s forwards;
+  }
+  .hero-ctas {
+    display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;
+    opacity:0; animation:fadeUp .7s .55s forwards;
+  }
+  .btn-primary {
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#000; border:none; padding:.75rem 1.8rem; border-radius:6px;
+    font-family:var(--font-mono); font-size:.8rem; font-weight:700;
+    letter-spacing:.06em; cursor:pointer; text-decoration:none;
+    transition:transform .2s,box-shadow .2s;
+    box-shadow:0 4px 24px rgba(45,212,191,.35);
+  }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(45,212,191,.45); }
+  .btn-secondary {
+    background:transparent; color:var(--text2);
+    border:1px solid var(--border2); padding:.75rem 1.8rem; border-radius:6px;
+    font-family:var(--font-mono); font-size:.8rem; font-weight:500;
+    letter-spacing:.06em; cursor:pointer; text-decoration:none;
+    transition:border-color .2s,color .2s;
+  }
+  .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+
+  .hero-stats {
+    display:flex; gap:2.5rem; justify-content:center; flex-wrap:wrap;
+    margin-top:4rem; padding-top:3rem; border-top:1px solid var(--border);
+    opacity:0; animation:fadeUp .7s .7s forwards;
+  }
+  .hero-stat { text-align:center; }
+  .hero-stat-val {
+    font-family:var(--font-mono); font-size:1.8rem; font-weight:700;
+    color:var(--accent); display:block; line-height:1;
+  }
+  .hero-stat-label {
+    font-size:.7rem; color:var(--text3); margin-top:.4rem;
+    letter-spacing:.08em; text-transform:uppercase;
+  }
+
+  /* ── SECTION SHELL ── */
+  section { padding:5rem 2rem; }
+  .container { max-width:1100px; margin:0 auto; }
+  .section-header { margin-bottom:3.5rem; }
+  .section-label {
+    font-family:var(--font-mono); font-size:.68rem; letter-spacing:.2em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:.75rem;
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .section-label::after {
+    content:''; flex:1; max-width:60px; height:1px;
+    background:var(--accent); opacity:.4;
+  }
+  .section-title {
+    font-family:var(--font-display); font-size:clamp(1.9rem,4vw,2.8rem);
+    font-weight:800; letter-spacing:-.02em; line-height:1.1;
+  }
+  .section-title em {
+    font-style:normal;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .section-desc { color:var(--text2); margin-top:.75rem; max-width:620px; font-size:1.02rem; }
+
+  /* ── WHAT IS NEURON ── */
+  #what { background:var(--bg2); }
+  .what-grid { display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; align-items:center; }
+  @media(max-width:768px){ .what-grid{ grid-template-columns:1fr; } }
+  .what-text p { color:var(--text2); font-size:.95rem; line-height:1.8; margin-bottom:1rem; }
+  .what-text p:last-child { margin-bottom:0; }
+
+  /* full-stack visual */
+  .stack-visual {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; overflow:hidden;
+  }
+  .stack-header {
+    background:var(--surface2); padding:.75rem 1.2rem;
+    font-family:var(--font-mono); font-size:.68rem; color:var(--text3);
+    border-bottom:1px solid var(--border); letter-spacing:.1em; text-transform:uppercase;
+    display:flex; align-items:center; gap:.6rem;
+  }
+  .stack-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .stack-layers { padding:1.2rem; display:flex; flex-direction:column; gap:.5rem; }
+  .sl {
+    display:flex; align-items:center; gap:.85rem;
+    background:rgba(255,255,255,.025); border:1px solid var(--border);
+    border-radius:7px; padding:.7rem 1rem; transition:border-color .2s;
+  }
+  .sl:hover { border-color:var(--border2); }
+  .sl-icon { font-size:1rem; flex-shrink:0; }
+  .sl-name { font-family:var(--font-mono); font-size:.78rem; font-weight:600; color:var(--text); }
+  .sl-sub  { font-size:.68rem; color:var(--text3); }
+  .sl-arrow { text-align:center; color:var(--text3); font-size:.7rem; padding:.1rem 1rem; }
+
+  /* ── COMPONENTS ── */
+  #components { background:var(--bg); }
+  .comp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; }
+  .comp-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:1.8rem; position:relative; overflow:hidden;
+    transition:border-color .3s,transform .3s,box-shadow .3s;
+  }
+  .comp-card:hover {
+    border-color:var(--cc,var(--accent));
+    transform:translateY(-3px);
+    box-shadow:0 12px 40px rgba(0,0,0,.4);
+  }
+  .comp-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,transparent,var(--cc,var(--accent)),transparent);
+  }
+  .comp-card[data-c="compiler"]  { --cc:#2dd4bf; }
+  .comp-card[data-c="runtime"]   { --cc:#818cf8; }
+  .comp-card[data-c="nkd"]       { --cc:#34d399; }
+  .comp-card[data-c="training"]  { --cc:#fb923c; }
+  .comp-card[data-c="inference"] { --cc:#f472b6; }
+  .comp-card[data-c="tools"]     { --cc:#fbbf24; }
+  .comp-icon {
+    width:38px; height:38px; border-radius:8px;
+    background:rgba(255,255,255,.04); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+    margin-bottom:1rem;
+  }
+  .comp-name {
+    font-family:var(--font-display); font-size:1.05rem; font-weight:700;
+    margin-bottom:.25rem; color:var(--text);
+  }
+  .comp-tag {
+    font-family:var(--font-mono); font-size:.62rem;
+    color:var(--cc,var(--accent)); letter-spacing:.1em;
+    text-transform:uppercase; margin-bottom:.85rem;
+  }
+  .comp-card p { color:var(--text2); font-size:.87rem; line-height:1.7; }
+  .comp-pills { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:1rem; }
+  .pill {
+    background:rgba(255,255,255,.03); border:1px solid var(--border);
+    border-radius:4px; padding:2px 8px;
+    font-family:var(--font-mono); font-size:.62rem; color:var(--text3); letter-spacing:.07em;
+  }
+
+  /* ── NKI ── */
+  #nki { background:var(--bg2); }
+  .nki-cols { display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; align-items:start; }
+  @media(max-width:768px){ .nki-cols{ grid-template-columns:1fr; } }
+  .nki-features { display:flex; flex-direction:column; gap:.85rem; }
+  .nki-feature {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:1.1rem 1.3rem; display:flex; gap:1rem; align-items:flex-start;
+    transition:border-color .2s;
+  }
+  .nki-feature:hover { border-color:var(--border2); }
+  .nki-feat-icon {
+    width:32px; height:32px; border-radius:6px;
+    background:rgba(45,212,191,.08); border:1px solid rgba(45,212,191,.18);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.85rem; flex-shrink:0; margin-top:.1rem;
+  }
+  .nki-feat-name { font-family:var(--font-mono); font-size:.82rem; font-weight:600; margin-bottom:.25rem; }
+  .nki-feat-desc { color:var(--text2); font-size:.82rem; line-height:1.6; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background:#0d1117; border:1px solid var(--border); border-radius:10px; overflow:hidden;
+  }
+  .code-block-header {
+    background:var(--surface); padding:.6rem 1rem;
+    display:flex; align-items:center; gap:.5rem;
+    border-bottom:1px solid var(--border);
+    font-family:var(--font-mono); font-size:.68rem; color:var(--text3);
+  }
+  .code-block-dot { width:10px; height:10px; border-radius:50%; }
+  .code-block-dot:nth-child(1){ background:#ff5f57; }
+  .code-block-dot:nth-child(2){ background:#febc2e; }
+  .code-block-dot:nth-child(3){ background:#28c840; }
+  .code-block pre {
+    padding:1.25rem; font-family:var(--font-mono); font-size:.74rem;
+    line-height:1.75; overflow-x:auto; color:var(--text2);
+  }
+  .code-block pre .c  { color:#4b6380; }
+  .code-block pre .k  { color:#a78bfa; }
+  .code-block pre .f  { color:#2dd4bf; }
+  .code-block pre .s  { color:#34d399; }
+  .code-block pre .v  { color:#fb923c; }
+  .code-block pre .n  { color:#f472b6; }
+  /* tab switcher */
+  .code-tabs { display:flex; gap:0; background:var(--surface); border-bottom:1px solid var(--border); }
+  .code-tab {
+    font-family:var(--font-mono); font-size:.68rem; color:var(--text3);
+    padding:.55rem 1.1rem; cursor:pointer; border-right:1px solid var(--border);
+    transition:color .2s,background .2s; letter-spacing:.05em;
+  }
+  .code-tab.active { color:var(--accent); background:rgba(45,212,191,.06); }
+  .code-pane { display:none; }
+  .code-pane.active { display:block; }
+
+  /* ── FRAMEWORKS ── */
+  #frameworks { background:var(--bg); }
+  .fw-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.1rem; }
+  .fw-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:9px;
+    padding:1.4rem 1.5rem; display:flex; flex-direction:column; gap:.65rem;
+    transition:border-color .2s,transform .2s;
+  }
+  .fw-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+  .fw-logo { font-size:1.4rem; }
+  .fw-name { font-family:var(--font-display); font-size:1rem; font-weight:700; }
+  .fw-desc { color:var(--text2); font-size:.83rem; line-height:1.65; }
+  .fw-badge {
+    display:inline-flex; align-items:center; gap:.35rem;
+    background:rgba(45,212,191,.07); border:1px solid rgba(45,212,191,.18);
+    border-radius:4px; padding:2px 8px;
+    font-family:var(--font-mono); font-size:.6rem;
+    color:var(--accent); letter-spacing:.08em; width:fit-content;
+  }
+
+  /* ── SAMPLES ── */
+  #samples { background:var(--bg2); }
+  .samples-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.25rem; }
+  .sample-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    overflow:hidden; transition:border-color .2s,transform .2s;
+  }
+  .sample-card:hover { border-color:var(--border2); transform:translateY(-3px); }
+  .sample-header {
+    padding:.9rem 1.2rem; display:flex; align-items:center; gap:.75rem;
+    border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.015);
+  }
+  .sample-type-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .sample-header-text { font-family:var(--font-mono); font-size:.68rem; color:var(--text3); letter-spacing:.08em; }
+  .sample-instance-badge {
+    margin-left:auto; font-family:var(--font-mono); font-size:.58rem;
+    color:var(--accent); background:rgba(45,212,191,.08);
+    border:1px solid rgba(45,212,191,.2); border-radius:3px;
+    padding:1px 7px; white-space:nowrap; letter-spacing:.06em;
+  }
+  .sample-body { padding:1.2rem; }
+  .sample-title { font-family:var(--font-display); font-size:1rem; font-weight:700; margin-bottom:.5rem; }
+  .sample-desc { color:var(--text2); font-size:.83rem; line-height:1.65; margin-bottom:1rem; }
+  .sample-tags { display:flex; flex-wrap:wrap; gap:.4rem; }
+  .sample-tag {
+    background:rgba(255,255,255,.03); border:1px solid var(--border);
+    border-radius:4px; padding:2px 8px;
+    font-family:var(--font-mono); font-size:.6rem; color:var(--text3);
+  }
+  .sample-link {
+    display:flex; align-items:center; gap:.4rem;
+    font-family:var(--font-mono); font-size:.72rem;
+    color:var(--accent); text-decoration:none;
+    border-top:1px solid var(--border); padding:.85rem 1.2rem;
+    transition:background .2s;
+  }
+  .sample-link:hover { background:rgba(45,212,191,.04); }
+
+  /* ── DEPLOYMENT ── */
+  #deploy { background:var(--bg); }
+  .deploy-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.25rem; }
+  .deploy-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:1.6rem; transition:border-color .2s,transform .2s;
+  }
+  .deploy-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+  .deploy-icon { font-size:1.6rem; margin-bottom:.9rem; }
+  .deploy-name { font-family:var(--font-display); font-size:1rem; font-weight:700; margin-bottom:.5rem; }
+  .deploy-desc { color:var(--text2); font-size:.85rem; line-height:1.65; }
+
+  /* ── WHAT'S NEW ── */
+  #whatsnew { background:var(--bg2); }
+  .release-banner {
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:10px; padding:1.5rem 1.8rem;
+    display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem;
+    flex-wrap:wrap;
+  }
+  .release-ver {
+    font-family:var(--font-mono); font-size:1.4rem; font-weight:700;
+    color:var(--accent); white-space:nowrap;
+  }
+  .release-date { font-family:var(--font-mono); font-size:.68rem; color:var(--text3); margin-top:.2rem; }
+  .release-divider { width:1px; height:48px; background:var(--border); flex-shrink:0; }
+  .release-summary { color:var(--text2); font-size:.9rem; line-height:1.65; }
+  .changelog-list { display:flex; flex-direction:column; gap:.75rem; }
+  .cl-item {
+    display:flex; gap:1rem; align-items:flex-start;
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:.9rem 1.1rem;
+  }
+  .cl-type {
+    font-family:var(--font-mono); font-size:.58rem; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; padding:2px 7px;
+    border-radius:3px; white-space:nowrap; flex-shrink:0;
+  }
+  .cl-type.new  { background:rgba(45,212,191,.1);  color:var(--accent);  border:1px solid rgba(45,212,191,.2); }
+  .cl-type.beta { background:rgba(251,146,60,.1);  color:var(--accent4); border:1px solid rgba(251,146,60,.2); }
+  .cl-type.fix  { background:rgba(129,140,248,.1); color:var(--accent2); border:1px solid rgba(129,140,248,.2); }
+  .cl-text { color:var(--text2); font-size:.85rem; line-height:1.6; }
+  .cl-text strong { color:var(--text); font-weight:600; }
+
+  /* ── MODELS ── */
+  #models { background:var(--bg); }
+  .models-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:.85rem; }
+  .model-chip {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:.9rem 1.1rem; text-align:center; transition:border-color .2s,transform .2s;
+  }
+  .model-chip:hover { border-color:var(--border2); transform:translateY(-2px); }
+  .model-name { font-family:var(--font-mono); font-size:.78rem; font-weight:600; color:var(--text); }
+  .model-family { font-size:.68rem; color:var(--text3); margin-top:.25rem; letter-spacing:.05em; }
+  .model-instances { display:flex; justify-content:center; gap:.4rem; margin-top:.5rem; flex-wrap:wrap; }
+  .model-inst {
+    font-family:var(--font-mono); font-size:.55rem;
+    color:var(--accent); background:rgba(45,212,191,.07);
+    border:1px solid rgba(45,212,191,.18); border-radius:3px; padding:1px 6px;
+  }
+
+  /* ── RESOURCES ── */
+  #resources { background:var(--bg2); }
+  .res-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; }
+  .res-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:1.4rem; text-decoration:none; color:inherit;
+    display:flex; flex-direction:column; gap:.45rem;
+    transition:border-color .2s,transform .2s;
+  }
+  .res-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .res-type {
+    font-family:var(--font-mono); font-size:.6rem; letter-spacing:.15em;
+    color:var(--accent); text-transform:uppercase;
+  }
+  .res-title { font-size:.88rem; font-weight:600; color:var(--text); }
+  .res-arrow { color:var(--text3); font-size:.75rem; margin-top:auto; padding-top:.5rem; }
+
+  /* ── FOOTER ── */
+  footer {
+    background:var(--bg2); border-top:1px solid var(--border);
+    padding:2.5rem 2rem; text-align:center;
+  }
+  .footer-logo { font-family:var(--font-mono); font-size:.85rem; color:var(--accent); font-weight:700; letter-spacing:.08em; margin-bottom:1rem; }
+  .footer-links { display:flex; gap:1.5rem; justify-content:center; flex-wrap:wrap; margin-bottom:1.5rem; }
+  .footer-links a { font-family:var(--font-mono); font-size:.7rem; color:var(--text3); text-decoration:none; transition:color .2s; }
+  .footer-links a:hover { color:var(--accent); }
+  .footer-note { font-size:.7rem; color:var(--text3); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse  { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+  @media(max-width:768px){
+    .nav-links{ display:none; }
+    .comp-grid,.fw-grid,.deploy-grid,.samples-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span>⬡</span>
+    <span class="nav-badge">AWS</span>
+    <span style="color:var(--text3);font-weight:300">Neuron SDK</span>
+    <span class="nav-version">v2.28.1</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#what">Overview</a></li>
+    <li><a href="#components">Components</a></li>
+    <li><a href="#nki">NKI</a></li>
+    <li><a href="#frameworks">Frameworks</a></li>
+    <li><a href="#samples">Samples</a></li>
+    <li><a href="#deploy">Deploy</a></li>
+    <li><a href="#whatsnew">What's New</a></li>
+    <li><a href="#models">Models</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-circuit">
+    <svg viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0"/>
+          <stop offset="50%" stop-color="#2dd4bf" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="lg2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#818cf8" stop-opacity="0"/>
+          <stop offset="50%" stop-color="#818cf8" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- horizontal traces -->
+      <line x1="0" y1="200" x2="1200" y2="200" stroke="url(#lg1)" stroke-width="1"/>
+      <line x1="0" y1="350" x2="1200" y2="350" stroke="url(#lg1)" stroke-width="1"/>
+      <line x1="0" y1="500" x2="1200" y2="500" stroke="url(#lg1)" stroke-width="1"/>
+      <!-- vertical traces -->
+      <line x1="150" y1="0" x2="150" y2="700" stroke="url(#lg2)" stroke-width="1"/>
+      <line x1="400" y1="0" x2="400" y2="700" stroke="url(#lg2)" stroke-width="1"/>
+      <line x1="800" y1="0" x2="800" y2="700" stroke="url(#lg2)" stroke-width="1"/>
+      <line x1="1050" y1="0" x2="1050" y2="700" stroke="url(#lg2)" stroke-width="1"/>
+      <!-- nodes -->
+      <circle cx="150" cy="200" r="4" fill="#2dd4bf" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite"/></circle>
+      <circle cx="400" cy="350" r="4" fill="#818cf8" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="3.2s" repeatCount="indefinite"/></circle>
+      <circle cx="800" cy="200" r="4" fill="#34d399" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.1s" repeatCount="indefinite"/></circle>
+      <circle cx="1050" cy="500" r="4" fill="#2dd4bf" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="3.8s" repeatCount="indefinite"/></circle>
+      <circle cx="150" cy="500" r="4" fill="#fb923c" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.9s" repeatCount="indefinite"/></circle>
+      <circle cx="800" cy="500" r="4" fill="#818cf8" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+    </svg>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">AWS Custom Silicon <span>·</span> Developer SDK <span>·</span> Open Source · v2.28.1</div>
+    <h1>The Developer Stack for<br><em>AI on AWS Silicon</em></h1>
+    <p class="hero-sub">AWS Neuron is the complete SDK for running deep learning and generative AI on AWS Trainium and Inferentia. Built on an open-source foundation, it provides compiler, runtime, training libraries, inference serving, and low-level kernel tooling — all with native PyTorch and JAX integration, zero code changes required.</p>
+    <div class="hero-ctas">
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" class="btn-primary" target="_blank">Get Started →</a>
+      <a href="https://github.com/aws-neuron/aws-neuron-samples" class="btn-secondary" target="_blank">Code Samples ↗</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-val">2.28.1</span>
+        <div class="hero-stat-label">Latest release</div>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">3</span>
+        <div class="hero-stat-label">Chip generations supported</div>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">Apache 2</span>
+        <div class="hero-stat-label">Open-source license</div>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">0</span>
+        <div class="hero-stat-label">Code changes for most workloads</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IS NEURON -->
+<section id="what">
+  <div class="container">
+    <div class="what-grid">
+      <div class="what-text">
+        <div class="section-label">Overview</div>
+        <h2 class="section-title">What is <em>AWS Neuron?</em></h2>
+        <p style="margin-top:1rem">AWS Neuron is a software development kit (SDK) enabling high-performance deep learning and generative AI on AWS Inferentia and Trainium — AWS's purpose-built ML accelerator chips.</p>
+        <p>It covers the complete ML development lifecycle: build, train, optimize, and deploy. Whether you're a researcher experimenting with novel architectures, an ML engineer scaling production inference, or a performance engineer squeezing every FLOP, Neuron has a path for you.</p>
+        <p>Built on an open-source foundation under Apache 2.0, Neuron integrates natively with PyTorch, JAX, and TensorFlow. Frameworks like Hugging Face Transformers, vLLM, PyTorch Lightning, and TorchTitan work directly on Trainium without modification.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem;">
+          <span class="pill">PyTorch native</span>
+          <span class="pill">JAX support</span>
+          <span class="pill">vLLM V1 API</span>
+          <span class="pill">Apache 2.0</span>
+          <span class="pill">Trn1 · Trn2 · Trn3</span>
+          <span class="pill">Inf1 · Inf2</span>
+        </div>
+      </div>
+
+      <div class="stack-visual">
+        <div class="stack-header"><div class="stack-dot"></div>Neuron Full Stack</div>
+        <div class="stack-layers">
+          <div class="sl">
+            <div class="sl-icon">🔷</div>
+            <div>
+              <div class="sl-name">PyTorch · JAX · TensorFlow</div>
+              <div class="sl-sub">Unchanged user code · standard APIs</div>
+            </div>
+          </div>
+          <div class="sl-arrow">↓</div>
+          <div class="sl">
+            <div class="sl-icon">🔌</div>
+            <div>
+              <div class="sl-name">TorchNeuron / torch-neuronx / jax-neuronx</div>
+              <div class="sl-sub">Framework backends · native device registration</div>
+            </div>
+          </div>
+          <div class="sl-arrow">↓</div>
+          <div class="sl">
+            <div class="sl-icon">⚡</div>
+            <div>
+              <div class="sl-name">NxD Training · NxD Inference · transformers-neuronx</div>
+              <div class="sl-sub">Distributed training and serving libraries</div>
+            </div>
+          </div>
+          <div class="sl-arrow">↓</div>
+          <div class="sl">
+            <div class="sl-icon">🧠</div>
+            <div>
+              <div class="sl-name">neuronx-cc (Graph Compiler)</div>
+              <div class="sl-sub">XLA / MLIR → NEFF hardware executables</div>
+            </div>
+          </div>
+          <div class="sl-arrow">↓</div>
+          <div class="sl">
+            <div class="sl-icon">🔬</div>
+            <div>
+              <div class="sl-name">NKI · NKI Compiler (MLIR) · NKI Library</div>
+              <div class="sl-sub">Low-level ISA access · optimized kernels</div>
+            </div>
+          </div>
+          <div class="sl-arrow">↓</div>
+          <div class="sl">
+            <div class="sl-icon">🔩</div>
+            <div>
+              <div class="sl-name">Neuron Runtime (NRT) · Neuron Driver</div>
+              <div class="sl-sub">Hardware abstraction · chip communication</div>
+            </div>
+          </div>
+          <div class="sl-arrow">↓</div>
+          <div class="sl" style="border-color:rgba(45,212,191,.25);">
+            <div class="sl-icon">💎</div>
+            <div>
+              <div class="sl-name" style="color:var(--accent)">Trainium3 · Trainium2 · Trainium1 · Inferentia2 · Inferentia</div>
+              <div class="sl-sub">AWS custom AI silicon</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section id="components">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Architecture</div>
+      <h2 class="section-title">SDK <em>Components</em></h2>
+      <p class="section-desc">Every layer of the Neuron stack, from high-level distributed training libraries to bare-metal hardware access.</p>
+    </div>
+    <div class="comp-grid">
+
+      <div class="comp-card" data-c="compiler">
+        <div class="comp-icon">🧠</div>
+        <div class="comp-name">neuronx-cc</div>
+        <div class="comp-tag">Graph Compiler</div>
+        <p>Converts XLA and MLIR computation graphs into NEFF (Neuron Executable File Format) binaries optimized for Trainium/Inferentia. Handles operator fusion, tiling, memory layout, and mixed-precision lowering automatically.</p>
+        <div class="comp-pills">
+          <span class="pill">XLA → NEFF</span>
+          <span class="pill">Op fusion</span>
+          <span class="pill">MLIR pipeline</span>
+          <span class="pill">BF16/FP8/MXFP8</span>
+        </div>
+      </div>
+
+      <div class="comp-card" data-c="runtime">
+        <div class="comp-icon">🔩</div>
+        <div class="comp-name">Neuron Runtime</div>
+        <div class="comp-tag">Hardware Abstraction</div>
+        <p>The NRT layer executes NEFF executables on Trainium and Inferentia chips, managing memory allocation, DMA transfers, and kernel dispatch. Exposed through the Neuron Driver kernel module for EC2 integration.</p>
+        <div class="comp-pills">
+          <span class="pill">NEFF execution</span>
+          <span class="pill">DMA management</span>
+          <span class="pill">Multi-device</span>
+          <span class="pill">Neuron Driver</span>
+        </div>
+      </div>
+
+      <div class="comp-card" data-c="nkd">
+        <div class="comp-icon">🔬</div>
+        <div class="comp-name">NKI / NKI Compiler</div>
+        <div class="comp-tag">Kernel Interface · Open Source</div>
+        <p>Neuron Kernel Interface exposes the full Trainium ISA for instruction-level programming. APIs for memory allocation, execution scheduling, and direct hardware control. NKI Compiler (MLIR, Apache 2.0) gives visibility into the complete compilation pipeline.</p>
+        <div class="comp-pills">
+          <span class="pill">Full ISA access</span>
+          <span class="pill">MLIR open source</span>
+          <span class="pill">nki.* namespace</span>
+          <span class="pill">NKI Library</span>
+        </div>
+      </div>
+
+      <div class="comp-card" data-c="training">
+        <div class="comp-icon">⚡</div>
+        <div class="comp-name">NxD Training / NxD Core</div>
+        <div class="comp-tag">Distributed Training</div>
+        <p>First-class support for Data Parallel (DDP, FSDP), Tensor Parallel, Pipeline Parallel, and ZeRO-1 optimizer sharding. Enables multi-trillion parameter model training on Trn2/Trn3 UltraServers via NeuronLink.</p>
+        <div class="comp-pills">
+          <span class="pill">FSDP · DDP</span>
+          <span class="pill">Tensor Parallel</span>
+          <span class="pill">Pipeline Parallel</span>
+          <span class="pill">ZeRO-1</span>
+          <span class="pill">DTensor</span>
+        </div>
+      </div>
+
+      <div class="comp-card" data-c="inference">
+        <div class="comp-icon">🚀</div>
+        <div class="comp-name">NxD Inference / vLLM</div>
+        <div class="comp-tag">Production Inference</div>
+        <p>vLLM V1 API compatibility on Trainium and Inferentia — zero code changes. Supports Expert Parallelism for MoE models, disaggregated inference, speculative decoding, and continuous batching. Optimized kernels from the NKI Library maximize token economics at scale.</p>
+        <div class="comp-pills">
+          <span class="pill">vLLM V1 API</span>
+          <span class="pill">Expert Parallelism</span>
+          <span class="pill">Speculative decode</span>
+          <span class="pill">PagedAttention</span>
+        </div>
+      </div>
+
+      <div class="comp-card" data-c="tools">
+        <div class="comp-icon">🔭</div>
+        <div class="comp-name">Neuron Explorer / Profiler</div>
+        <div class="comp-tag">Developer Tools</div>
+        <p>Neuron Explorer provides four integrated viewers: Hierarchy Viewer, AI Recommendation Viewer, Source Code Viewer, and Summary Viewer. Available via UI, CLI, and VSCode IDE integration. Full stack visibility from user code down to hardware engines.</p>
+        <div class="comp-pills">
+          <span class="pill">VSCode plugin</span>
+          <span class="pill">AI recommendations</span>
+          <span class="pill">Source mapping</span>
+          <span class="pill">TensorBoard</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- NKI DEEP DIVE -->
+<section id="nki">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Low-Level Access</div>
+      <h2 class="section-title">Neuron Kernel <em>Interface (NKI)</em></h2>
+      <p class="section-desc">For performance engineers who need full hardware control. NKI exposes the complete Trainium ISA with APIs for memory, scheduling, and instruction-level kernel development.</p>
+    </div>
+    <div class="nki-cols">
+      <div class="nki-features">
+        <div class="nki-feature">
+          <div class="nki-feat-icon">🏗️</div>
+          <div>
+            <div class="nki-feat-name">Full ISA Access</div>
+            <div class="nki-feat-desc">Direct access to Trainium instruction set architecture. Control instruction-level programming, memory allocation, and execution scheduling without abstraction overhead.</div>
+          </div>
+        </div>
+        <div class="nki-feature">
+          <div class="nki-feat-icon">🧱</div>
+          <div>
+            <div class="nki-feat-name">NKI Compiler (MLIR · Open Source)</div>
+            <div class="nki-feat-desc">Built on MLIR, the open-source NKI Compiler gives full visibility into the complete compilation pipeline from high-level operations to hardware instructions. Apache 2.0 licensed.</div>
+          </div>
+        </div>
+        <div class="nki-feature">
+          <div class="nki-feat-icon">📦</div>
+          <div>
+            <div class="nki-feat-name">NKI Library (NKILib)</div>
+            <div class="nki-feat-desc">Open-source library of pre-optimized kernel implementations for attention, MLP, and normalization operations. Ships with source code, documentation, and benchmarks.</div>
+          </div>
+        </div>
+        <div class="nki-feature">
+          <div class="nki-feat-icon">🔁</div>
+          <div>
+            <div class="nki-feat-name">nki.* API Namespace</div>
+            <div class="nki-feat-desc">Structured API namespace with updated language constructs introduced in Neuron 2.27. Cleaner ergonomics for custom kernel authoring, with direct hardware intrinsics available.</div>
+          </div>
+        </div>
+        <div class="nki-feature">
+          <div class="nki-feat-icon">🔭</div>
+          <div>
+            <div class="nki-feat-name">Neuron Explorer Integration</div>
+            <div class="nki-feat-desc">Profile NKI kernels directly with Neuron Explorer. AI-driven recommendations, source-to-hardware mapping, and hierarchy view connect your kernel code to device-level execution.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="code-block">
+          <div class="code-tabs">
+            <div class="code-tab active" onclick="switchTab(this,'nki-basic')">NKI Kernel</div>
+            <div class="code-tab" onclick="switchTab(this,'nki-training')">Training (PyTorch)</div>
+            <div class="code-tab" onclick="switchTab(this,'nki-inference')">Inference (vLLM)</div>
+          </div>
+          <div class="code-pane active" id="nki-basic">
+<pre><span class="c"># Example NKI custom kernel (nki.* namespace)</span>
+<span class="k">import</span> neuronxcc.nki <span class="k">as</span> nki
+<span class="k">import</span> neuronxcc.nki.language <span class="k">as</span> nl
+<span class="k">import</span> neuronxcc.nki.isa <span class="k">as</span> nisa
+
+<span class="k">@nki</span>.jit
+<span class="k">def</span> <span class="f">fused_rmsnorm</span>(x, weight, eps<span class="v">=1e-6</span>):
+    <span class="c"># Allocate SBUF (on-chip SRAM) tiles</span>
+    x_tile  = nl.<span class="f">load</span>(x)
+    w_tile  = nl.<span class="f">load</span>(weight)
+
+    <span class="c"># Compute RMS norm on Tensor Engine</span>
+    sq_mean = nl.<span class="f">mean</span>(
+        nisa.<span class="f">tensor_scalar</span>(x_tile, x_tile, <span class="s">"mul"</span>),
+        axis<span class="v">=[-1]</span>
+    )
+    rstd    = nisa.<span class="f">rsqrt</span>(sq_mean + eps)
+    normed  = nisa.<span class="f">tensor_scalar</span>(x_tile, rstd, <span class="s">"mul"</span>)
+    out     = nisa.<span class="f">tensor_tensor</span>(normed, w_tile, <span class="s">"mul"</span>)
+
+    <span class="c"># Store result from SBUF to HBM</span>
+    nl.<span class="f">store</span>(out_ref, out)
+    <span class="k">return</span> out_ref</pre>
+          </div>
+          <div class="code-pane" id="nki-training">
+<pre><span class="c"># Native PyTorch training on Trainium (TorchNeuron)</span>
+<span class="k">import</span> torch
+<span class="k">import</span> torch_neuronx
+
+<span class="c"># Trainium registers as a native device</span>
+<span class="v">device</span> = torch.<span class="f">device</span>(<span class="s">"xla"</span>)  <span class="c"># → neuron device</span>
+
+<span class="c"># FSDP distributed training — unchanged from GPU</span>
+<span class="k">from</span> torch.distributed.fsdp <span class="k">import</span> FullyShardedDataParallel
+<span class="v">model</span> = FullyShardedDataParallel(
+    <span class="f">MyLlamaModel</span>().<span class="f">to</span>(device)
+)
+
+<span class="c"># torch.compile works directly</span>
+<span class="v">model</span> = torch.<span class="f">compile</span>(model, backend<span class="v">=</span><span class="s">"neuron"</span>)
+
+<span class="k">for</span> batch <span class="k">in</span> dataloader:
+    tokens = batch[<span class="s">"input_ids"</span>].<span class="f">to</span>(device)
+    loss   = <span class="f">model</span>(tokens).loss
+    loss.<span class="f">backward</span>()
+    optimizer.<span class="f">step</span>()</pre>
+          </div>
+          <div class="code-pane" id="nki-inference">
+<pre><span class="c"># Serve LLMs with vLLM on Trainium — zero changes</span>
+<span class="c"># $ pip install vllm-neuronx</span>
+
+<span class="k">from</span> vllm <span class="k">import</span> LLM, SamplingParams
+
+<span class="c"># Standard vLLM V1 API — runs on Trainium/Inferentia</span>
+<span class="v">llm</span> = <span class="f">LLM</span>(
+    model<span class="v">=</span><span class="s">"meta-llama/Llama-3.1-70B-Instruct"</span>,
+    device<span class="v">=</span><span class="s">"neuron"</span>,
+    tensor_parallel_size<span class="v">=32</span>,  <span class="c"># NeuronCores</span>
+    max_model_len<span class="v">=8192</span>,
+)
+
+<span class="v">params</span> = <span class="f">SamplingParams</span>(
+    temperature<span class="v">=0.7</span>, top_p<span class="v">=0.95</span>, max_tokens<span class="v">=512</span>
+)
+
+<span class="c"># Expert Parallelism for MoE models (e.g. Llama 4)</span>
+<span class="v">llm_moe</span> = <span class="f">LLM</span>(
+    model<span class="v">=</span><span class="s">"meta-llama/Llama-4-Scout-17B"</span>,
+    device<span class="v">=</span><span class="s">"neuron"</span>,
+    expert_parallel_size<span class="v">=4</span>,
+)</pre>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;">
+          <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.85rem;">Supported Precision Formats</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;">
+            <div style="background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent);">BF16</div>
+            <div style="background:rgba(129,140,248,.07);border:1px solid rgba(129,140,248,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent2);">FP16</div>
+            <div style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent3);">FP8</div>
+            <div style="background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent4);">FP32</div>
+            <div style="background:rgba(244,114,182,.07);border:1px solid rgba(244,114,182,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent5);">MXFP8</div>
+            <div style="background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent4);">MXFP4</div>
+            <div style="background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent);">INT8</div>
+            <div style="background:rgba(129,140,248,.07);border:1px solid rgba(129,140,248,.18);border-radius:5px;padding:.5rem;text-align:center;font-family:var(--font-mono);font-size:.72rem;color:var(--accent2);">TF32</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FRAMEWORKS -->
+<section id="frameworks">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Ecosystem</div>
+      <h2 class="section-title">Framework & Library <em>Integrations</em></h2>
+      <p class="section-desc">Neuron integrates natively across the modern ML ecosystem — use what you know, on AWS silicon.</p>
+    </div>
+    <div class="fw-grid">
+      <div class="fw-card">
+        <div class="fw-logo">🔥</div>
+        <div class="fw-name">PyTorch</div>
+        <div class="fw-badge"><span>●</span> Native support · TorchNeuron</div>
+        <div class="fw-desc">TorchNeuron registers Trainium as a native PyTorch device. Eager mode, <code>torch.compile</code>, FSDP, DDP, DTensor, and TorchTitan all work without code changes. Migrating to PyTorch 2.10+ native backend (XLA phase-out).</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">🔷</div>
+        <div class="fw-name">JAX</div>
+        <div class="fw-badge"><span>●</span> jax-neuronx</div>
+        <div class="fw-desc">JAX developers use jax-neuronx to develop, optimize, and deploy models to both Inferentia and Trainium with familiar JAX workflows. Supports JIT compilation and distributed JAX patterns.</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">🤗</div>
+        <div class="fw-name">Hugging Face</div>
+        <div class="fw-badge"><span>●</span> Optimum Neuron</div>
+        <div class="fw-desc">Optimum Neuron bridges Hugging Face Transformers and the Neuron SDK, providing standard HF APIs on Trainium and Inferentia. Supports training, fine-tuning, and inference pipelines.</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">⚡</div>
+        <div class="fw-name">vLLM</div>
+        <div class="fw-badge"><span>●</span> vLLM V1 API</div>
+        <div class="fw-desc">Full vLLM V1 API compatibility on Trainium and Inferentia. Expert Parallelism for MoE, disaggregated inference, speculative decoding, continuous batching, and PagedAttention out of the box.</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">⛓️</div>
+        <div class="fw-name">PyTorch Lightning</div>
+        <div class="fw-badge"><span>●</span> Integrated</div>
+        <div class="fw-desc">PyTorch Lightning callbacks and trainers work with Trainium for distributed training. Multi-node setups with Lightning + NxD Training provide clean abstractions without sacrificing hardware performance.</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">🔗</div>
+        <div class="fw-name">TorchTitan</div>
+        <div class="fw-badge"><span>●</span> Zero modifications</div>
+        <div class="fw-desc">TorchTitan, Meta's LLM training framework, runs directly on Trainium via TorchNeuron — no fork, no patch. Production-ready Llama pre-training workflows translate without changes.</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">🌐</div>
+        <div class="fw-name">TensorFlow</div>
+        <div class="fw-badge"><span>●</span> tensorflow-neuron</div>
+        <div class="fw-desc">tensorflow-neuron provides Inferentia support for TensorFlow models. Compile and serve TF SavedModels with Neuron runtime for low-latency production inference workloads.</div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-logo">🎛️</div>
+        <div class="fw-name">Anyscale Ray</div>
+        <div class="fw-badge"><span>●</span> Third-party</div>
+        <div class="fw-desc">Ray clusters on Trainium instances enable distributed training and inference orchestration at scale, with Neuron device management handled transparently by the Neuron device plugin.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE SAMPLES -->
+<section id="samples">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">GitHub · aws-neuron/aws-neuron-samples</div>
+      <h2 class="section-title">Code <em>Samples</em></h2>
+      <p class="section-desc">Practical examples organized by use case and framework. All samples are open source and cover training, inference, and deployment patterns.</p>
+    </div>
+    <div class="samples-grid">
+
+      <div class="sample-card">
+        <div class="sample-header">
+          <div class="sample-type-dot" style="background:#fb923c"></div>
+          <div class="sample-header-text">Training · torch-neuronx</div>
+          <div class="sample-instance-badge">Trn1 · Trn2</div>
+        </div>
+        <div class="sample-body">
+          <div class="sample-title">PyTorch NeuronX Training Samples</div>
+          <div class="sample-desc">Sample training scripts for PyTorch models on AWS Trainium. Covers BERT, GPT, Llama 2, and custom transformer architectures with distributed training patterns.</div>
+          <div class="sample-tags">
+            <span class="sample-tag">BERT</span>
+            <span class="sample-tag">Llama 2</span>
+            <span class="sample-tag">GPT</span>
+            <span class="sample-tag">FSDP</span>
+          </div>
+        </div>
+        <a href="https://github.com/aws-neuron/aws-neuron-samples/blob/master/torch-neuronx/README.md#training" class="sample-link" target="_blank">View on GitHub →</a>
+      </div>
+
+      <div class="sample-card">
+        <div class="sample-header">
+          <div class="sample-type-dot" style="background:#2dd4bf"></div>
+          <div class="sample-header-text">Inference · torch-neuronx</div>
+          <div class="sample-instance-badge">Inf2 · Trn1</div>
+        </div>
+        <div class="sample-body">
+          <div class="sample-title">NeuronX Inference Notebooks</div>
+          <div class="sample-desc">Jupyter notebooks demonstrating model compilation and inference for PyTorch vision and language models on AWS Inferentia2 and Trainium instances.</div>
+          <div class="sample-tags">
+            <span class="sample-tag">ResNet</span>
+            <span class="sample-tag">CLIP</span>
+            <span class="sample-tag">Whisper</span>
+            <span class="sample-tag">Jupyter</span>
+          </div>
+        </div>
+        <a href="https://github.com/aws-neuron/aws-neuron-samples/blob/master/torch-neuronx/README.md#inference" class="sample-link" target="_blank">View on GitHub →</a>
+      </div>
+
+      <div class="sample-card">
+        <div class="sample-header">
+          <div class="sample-type-dot" style="background:#818cf8"></div>
+          <div class="sample-header-text">Inference · transformers-neuronx</div>
+          <div class="sample-instance-badge">Inf2 · Trn1</div>
+        </div>
+        <div class="sample-body">
+          <div class="sample-title">Tensor Parallel LLM Inference</div>
+          <div class="sample-desc">Jupyter notebooks for tensor-parallel inference of large language models including Llama 2, Mistral, and Mixtral on Inferentia2 and Trainium using transformers-neuronx.</div>
+          <div class="sample-tags">
+            <span class="sample-tag">Llama 2</span>
+            <span class="sample-tag">Mistral</span>
+            <span class="sample-tag">Tensor Parallel</span>
+            <span class="sample-tag">LLM</span>
+          </div>
+        </div>
+        <a href="https://github.com/aws-neuron/aws-neuron-samples/tree/master/torch-neuronx/transformers-neuronx" class="sample-link" target="_blank">View on GitHub →</a>
+      </div>
+
+      <div class="sample-card">
+        <div class="sample-header">
+          <div class="sample-type-dot" style="background:#34d399"></div>
+          <div class="sample-header-text">Distributed · ParallelCluster</div>
+          <div class="sample-instance-badge">Trn1 · Trn1n</div>
+        </div>
+        <div class="sample-body">
+          <div class="sample-title">HPC Cluster Training (ParallelCluster)</div>
+          <div class="sample-desc">Build HPC compute clusters with AWS ParallelCluster using Trn1 compute nodes. Multi-node distributed ML training job patterns with Slurm integration.</div>
+          <div class="sample-tags">
+            <span class="sample-tag">ParallelCluster</span>
+            <span class="sample-tag">Slurm</span>
+            <span class="sample-tag">Multi-node</span>
+            <span class="sample-tag">HPC</span>
+          </div>
+        </div>
+        <a href="https://github.com/aws-neuron/aws-neuron-parallelcluster-samples" class="sample-link" target="_blank">View on GitHub →</a>
+      </div>
+
+      <div class="sample-card">
+        <div class="sample-header">
+          <div class="sample-type-dot" style="background:#fbbf24"></div>
+          <div class="sample-header-text">Kubernetes · EKS</div>
+          <div class="sample-instance-badge">Trn1 · Inf2</div>
+        </div>
+        <div class="sample-body">
+          <div class="sample-title">EKS Inference & Training Patterns</div>
+          <div class="sample-desc">Patterns for distributed training and inference on Amazon EKS using Inferentia and Trainium. Includes Neuron Device Plugin, Scheduler Extension, and Helm Charts.</div>
+          <div class="sample-tags">
+            <span class="sample-tag">EKS</span>
+            <span class="sample-tag">Helm</span>
+            <span class="sample-tag">Neuron DRA</span>
+            <span class="sample-tag">K8s</span>
+          </div>
+        </div>
+        <a href="https://github.com/aws-neuron/aws-neuron-eks-samples" class="sample-link" target="_blank">View on GitHub →</a>
+      </div>
+
+      <div class="sample-card">
+        <div class="sample-header">
+          <div class="sample-type-dot" style="background:#f472b6"></div>
+          <div class="sample-header-text">SageMaker · Training &amp; Inference</div>
+          <div class="sample-instance-badge">ml.trn1 · ml.inf2</div>
+        </div>
+        <div class="sample-body">
+          <div class="sample-title">SageMaker Neuron Samples</div>
+          <div class="sample-desc">Train and deploy models on SageMaker using ml.trn1 and ml.inf2 instances. Covers SageMaker Training Jobs, HyperPod, and Inference Endpoints with Neuron-optimized containers.</div>
+          <div class="sample-tags">
+            <span class="sample-tag">SageMaker</span>
+            <span class="sample-tag">HyperPod</span>
+            <span class="sample-tag">DLCs</span>
+            <span class="sample-tag">ml.trn1</span>
+          </div>
+        </div>
+        <a href="https://github.com/aws-neuron/aws-neuron-sagemaker-samples" class="sample-link" target="_blank">View on GitHub →</a>
+      </div>
+
+    </div>
+
+    <div style="margin-top:1.5rem;text-align:center;">
+      <a href="https://github.com/aws-neuron/aws-neuron-samples" class="btn-secondary" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;">
+        View All Samples on GitHub ↗
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- DEPLOYMENT -->
+<section id="deploy">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Deployment</div>
+      <h2 class="section-title">Deploy <em>Anywhere</em></h2>
+      <p class="section-desc">Pre-configured images, containers, and integrations to get from model to production on Trainium and Inferentia with minimal friction.</p>
+    </div>
+    <div class="deploy-grid">
+      <div class="deploy-card">
+        <div class="deploy-icon">💿</div>
+        <div class="deploy-name">Neuron DLAMIs</div>
+        <div class="deploy-desc">Neuron Deep Learning AMIs come pre-configured with the full SDK, popular frameworks, and libraries. Launch, train, and run inference immediately — no manual setup.</div>
+      </div>
+      <div class="deploy-card">
+        <div class="deploy-icon">📦</div>
+        <div class="deploy-name">Neuron DLCs</div>
+        <div class="deploy-desc">Pre-built Docker containers optimized for Trainium and Inferentia. Use as-is or as a base for custom containers. Seamless EKS, ECS, and SageMaker deployment.</div>
+      </div>
+      <div class="deploy-card">
+        <div class="deploy-icon">☸️</div>
+        <div class="deploy-name">Kubernetes / EKS</div>
+        <div class="deploy-desc">Neuron Device Plugin exposes NeuronCores as schedulable K8s resources. Neuron Scheduler Extension enables topology-aware placement. Neuron DRA for native K8s resource management (beta).</div>
+      </div>
+      <div class="deploy-card">
+        <div class="deploy-icon">🧪</div>
+        <div class="deploy-name">SageMaker HyperPod</div>
+        <div class="deploy-desc">Resilient distributed training on SageMaker HyperPod with automatic checkpoint and recovery. Scales to Trn2 UltraServer clusters for frontier model pretraining.</div>
+      </div>
+      <div class="deploy-card">
+        <div class="deploy-icon">⚙️</div>
+        <div class="deploy-name">AWS Batch & ECS</div>
+        <div class="deploy-desc">Schedule batch inference and training jobs at scale with AWS Batch using Trn1/Trn2 instances. ECS task definitions with Neuron container support for always-on inference services.</div>
+      </div>
+      <div class="deploy-card">
+        <div class="deploy-icon">🌐</div>
+        <div class="deploy-name">Third-Party Services</div>
+        <div class="deploy-desc">Native integrations with Ray (Anyscale) for distributed orchestration, Domino Data Lab for MLOps workflows, and Datadog for observability and Neuron hardware metrics.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT'S NEW -->
+<section id="whatsnew">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Release Notes</div>
+      <h2 class="section-title">What's <em>New</em></h2>
+      <p class="section-desc">Latest changes across the Neuron SDK — from Trainium3 support to the new open-source NKI compiler and native PyTorch backend.</p>
+    </div>
+
+    <div class="release-banner">
+      <div>
+        <div class="release-ver">Neuron 2.28.1</div>
+        <div class="release-date">Released March 13, 2026</div>
+      </div>
+      <div class="release-divider"></div>
+      <div class="release-summary">Transition to native PyTorch support (TorchNeuron). PyTorch 2.9 is the last release using PyTorch/XLA — upgrading to PyTorch 2.10+ will use the new native backend. End-of-support notices for NxDT/NxD Core training APIs starting PyTorch 2.10.</div>
+    </div>
+
+    <div class="changelog-list">
+      <div class="cl-item">
+        <div class="cl-type new">NEW</div>
+        <div class="cl-text"><strong>Trainium3 UltraServer support</strong> — Full Trn3 instance and UltraServer support with NeuronSwitch-v1 for all-to-all collectives across 144 chips (Neuron 2.27.0+).</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type new">NEW</div>
+        <div class="cl-text"><strong>TorchNeuron (Native PyTorch backend)</strong> — Registers Trainium as a PrivateUse1 native device. Run PyTorch code unchanged. Open source, Apache 2.0 (private beta → GA in 2.29).</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type new">NEW</div>
+        <div class="cl-text"><strong>NKI Compiler open-sourced (MLIR)</strong> — Full compiler pipeline visibility from high-level ops to hardware instructions. New <code>nki.*</code> namespace with updated APIs and language constructs.</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type new">NEW</div>
+        <div class="cl-text"><strong>NKI Library</strong> — Open-source library of production-optimized kernels for attention, MLP, and normalization with benchmarks and source code.</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type new">NEW</div>
+        <div class="cl-text"><strong>Neuron Explorer v2</strong> — Four-viewer profiling suite (Hierarchy, AI Recommendations, Source Code, Summary). Available via UI, CLI, and VSCode IDE.</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type beta">BETA</div>
+        <div class="cl-text"><strong>Neuron DRA (Dynamic Resource Allocation)</strong> — Kubernetes-native resource management for NeuronCores. Replaces static device plugin allocation for fine-grained workload scheduling.</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type beta">BETA</div>
+        <div class="cl-text"><strong>Expert Parallelism for MoE models</strong> — Efficient distribution of MoE experts across NeuronCores. Supports Llama 4 Scout and Maverick on Trn2 instances.</div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-type new">NEW</div>
+        <div class="cl-text"><strong>PyTorch 2.9 / JAX 0.6.2 support</strong> — Latest framework support with improved inference capabilities on Trn2 instances. FLUX.1-dev image generation supported on Trn2.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SUPPORTED MODELS -->
+<section id="models">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Model Zoo</div>
+      <h2 class="section-title">Supported <em>Models</em></h2>
+      <p class="section-desc">A growing library of validated models spanning language, vision, audio, and generative AI — available across Trainium and Inferentia instances.</p>
+    </div>
+    <div class="models-grid">
+      <div class="model-chip">
+        <div class="model-name">Llama 3.1 / 3.2</div>
+        <div class="model-family">Meta · LLM</div>
+        <div class="model-instances"><span class="model-inst">Trn1</span><span class="model-inst">Trn2</span><span class="model-inst">Inf2</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">Llama 4 Scout/Maverick</div>
+        <div class="model-family">Meta · MoE LLM</div>
+        <div class="model-instances"><span class="model-inst">Trn2</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">Mistral 7B</div>
+        <div class="model-family">Mistral AI · LLM</div>
+        <div class="model-instances"><span class="model-inst">Inf2</span><span class="model-inst">Trn1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">Mixtral 8×7B</div>
+        <div class="model-family">Mistral AI · MoE</div>
+        <div class="model-instances"><span class="model-inst">Inf2</span><span class="model-inst">Trn1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">BERT Large</div>
+        <div class="model-family">Google · Encoder</div>
+        <div class="model-instances"><span class="model-inst">Trn1</span><span class="model-inst">Inf1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">GPT-NeoX / Pythia</div>
+        <div class="model-family">EleutherAI · LLM</div>
+        <div class="model-instances"><span class="model-inst">Trn1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">FLUX.1-dev</div>
+        <div class="model-family">Black Forest Labs · Diffusion</div>
+        <div class="model-instances"><span class="model-inst">Trn2</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">Stable Diffusion</div>
+        <div class="model-family">Stability AI · Diffusion</div>
+        <div class="model-instances"><span class="model-inst">Inf2</span><span class="model-inst">Trn1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">Whisper</div>
+        <div class="model-family">OpenAI · ASR</div>
+        <div class="model-instances"><span class="model-inst">Inf2</span><span class="model-inst">Trn1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">CLIP</div>
+        <div class="model-family">OpenAI · Multimodal</div>
+        <div class="model-instances"><span class="model-inst">Inf2</span><span class="model-inst">Trn1</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">ResNet / ViT</div>
+        <div class="model-family">Vision · Classification</div>
+        <div class="model-instances"><span class="model-inst">Inf1</span><span class="model-inst">Inf2</span></div>
+      </div>
+      <div class="model-chip">
+        <div class="model-name">Phi-3 / Phi-4</div>
+        <div class="model-family">Microsoft · SLM</div>
+        <div class="model-instances"><span class="model-inst">Trn2</span><span class="model-inst">Inf2</span></div>
+      </div>
+    </div>
+    <p style="margin-top:1.5rem;font-size:.82rem;color:var(--text3);font-family:var(--font-mono);">This is not an exhaustive list. See <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" style="color:var(--accent);text-decoration:none;">Neuron docs</a> for the full Model Architecture Fit Guidelines.</p>
+  </div>
+</section>
+
+<!-- RESOURCES -->
+<section id="resources">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Get Started</div>
+      <h2 class="section-title">Developer <em>Resources</em></h2>
+    </div>
+    <div class="res-grid">
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" class="res-card" target="_blank">
+        <div class="res-type">Documentation</div>
+        <div class="res-title">AWS Neuron SDK Docs</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://github.com/aws-neuron/aws-neuron-samples" class="res-card" target="_blank">
+        <div class="res-type">GitHub</div>
+        <div class="res-title">Neuron Samples Repository</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://github.com/aws-neuron/aws-neuron-sdk" class="res-card" target="_blank">
+        <div class="res-type">GitHub</div>
+        <div class="res-title">Neuron SDK Repository</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/models/training-trn1-samples.html" class="res-card" target="_blank">
+        <div class="res-type">Tutorials</div>
+        <div class="res-title">Training Samples & Tutorials</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://aws.amazon.com/ai/machine-learning/neuron/" class="res-card" target="_blank">
+        <div class="res-type">Product</div>
+        <div class="res-title">Neuron Product Page</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://aws.amazon.com/ai/machine-learning/trainium/" class="res-card" target="_blank">
+        <div class="res-type">Silicon</div>
+        <div class="res-title">AWS Trainium Chips</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://github.com/aws-neuron/aws-neuron-eks-samples" class="res-card" target="_blank">
+        <div class="res-type">Kubernetes</div>
+        <div class="res-title">Neuron EKS Samples</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://github.com/aws-neuron/aws-neuron-sagemaker-samples" class="res-card" target="_blank">
+        <div class="res-type">SageMaker</div>
+        <div class="res-title">SageMaker Neuron Samples</div>
+        <div class="res-arrow">→</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">⬡ AWS Neuron SDK</div>
+  <div class="footer-links">
+    <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" target="_blank">Neuron Docs</a>
+    <a href="https://github.com/aws-neuron/aws-neuron-samples" target="_blank">Code Samples</a>
+    <a href="https://github.com/aws-neuron/aws-neuron-sdk" target="_blank">SDK GitHub</a>
+    <a href="https://aws.amazon.com/ai/machine-learning/trainium/" target="_blank">Trainium</a>
+    <a href="https://aws.amazon.com/ai/machine-learning/inferentia/" target="_blank">Inferentia</a>
+    <a href="https://repost.aws/" target="_blank">Support Forum</a>
+  </div>
+  <div class="footer-note">Based on AWS Neuron Documentation · Current release 2.28.1 (March 13, 2026) · Not an official AWS page</div>
+</footer>
+
+<script>
+  function switchTab(el, paneId) {
+    // deactivate all tabs and panes in the same code-block
+    const block = el.closest('.code-block');
+    block.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+    block.querySelectorAll('.code-pane').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    block.querySelector('#' + paneId).classList.add('active');
+  }
+</script>
+</body>
+</html>
