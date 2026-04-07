@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Trainium — Purpose-Built AI Accelerators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #0d1117;
+    --bg3: #111827;
+    --surface: #161b27;
+    --surface2: #1c2333;
+    --border: rgba(99,140,255,0.13);
+    --border2: rgba(99,140,255,0.22);
+    --accent: #638cff;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --glow: 0 0 40px rgba(99,140,255,0.15);
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 58px;
+    background: rgba(10,12,16,0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .nav-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text2);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 100px 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 900px 600px at 50% 40%, rgba(99,140,255,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 20% 80%, rgba(167,139,250,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 500px 300px at 80% 20%, rgba(52,211,153,0.04) 0%, transparent 60%);
+    z-index: 0;
+  }
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,140,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,140,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    z-index: 0;
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 860px; }
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 1.4rem;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.1s forwards;
+  }
+  .hero-eyebrow span { color: var(--text3); margin: 0 0.5em; }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.25s forwards;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--text2);
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.4s forwards;
+  }
+  .hero-ctas {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.55s forwards;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.8rem;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(99,140,255,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,140,255,0.45); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    padding: 0.75rem 1.8rem;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* hero stats */
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid var(--border);
+    opacity: 0;
+    animation: fadeUp 0.7s 0.7s forwards;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat-val {
+    font-family: var(--font-mono);
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+    line-height: 1;
+  }
+  .hero-stat-label {
+    font-size: 0.72rem;
+    color: var(--text3);
+    margin-top: 0.4rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ─── SECTION ─── */
+  section { padding: 5rem 2rem; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .section-header { margin-bottom: 3.5rem; }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    max-width: 60px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .section-title em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .section-desc { color: var(--text2); margin-top: 0.75rem; max-width: 600px; font-size: 1.05rem; }
+
+  /* ─── GENERATION CARDS ─── */
+  #generations { background: var(--bg2); }
+  .gen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .gen-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  }
+  .gen-card:hover {
+    border-color: var(--card-accent, var(--accent));
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  }
+  .gen-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent)), transparent);
+  }
+  .gen-card-glow {
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--card-accent, var(--accent)) 0%, transparent 70%);
+    opacity: 0.06;
+    pointer-events: none;
+  }
+  .gen-card[data-gen="1"] { --card-accent: #638cff; }
+  .gen-card[data-gen="2"] { --card-accent: #a78bfa; }
+  .gen-card[data-gen="3"] { --card-accent: #34d399; }
+
+  .gen-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--card-accent, var(--accent));
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+  }
+  .gen-badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--card-accent, var(--accent));
+  }
+  .gen-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+  .gen-card .gen-subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    margin-bottom: 1.2rem;
+  }
+  .gen-card p {
+    color: var(--text2);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+  .gen-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .gen-spec {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+  }
+  .gen-spec-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+  .gen-spec-val {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--card-accent, var(--accent));
+  }
+  .gen-link {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--card-accent, var(--accent));
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: gap 0.2s;
+  }
+  .gen-link:hover { gap: 0.55rem; }
+
+  /* Current label */
+  .gen-current-label {
+    position: absolute;
+    top: 1.2rem; right: 1.2rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+
+  /* ─── COMPARISON TABLE ─── */
+  #compare { background: var(--bg); }
+  .compare-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .compare-table th {
+    background: var(--surface);
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .compare-table th.col-trn1 { color: #638cff; }
+  .compare-table th.col-trn2 { color: #a78bfa; }
+  .compare-table th.col-trn3 { color: #34d399; }
+  .compare-table td {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:hover td { background: rgba(99,140,255,0.03); }
+  .compare-table td:first-child { color: var(--text3); font-size: 0.75rem; letter-spacing: 0.05em; }
+  .val-highlight { color: var(--text); font-weight: 600; }
+  .val-best { color: var(--accent3); font-weight: 700; }
+
+  /* ─── WHY TRAINIUM ─── */
+  #why { background: var(--bg2); }
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+  .benefit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.75rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .benefit-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .benefit-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    background: rgba(99,140,255,0.1);
+    border: 1px solid rgba(99,140,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+  .benefit-card h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .benefit-card p { color: var(--text2); font-size: 0.875rem; line-height: 1.65; }
+
+  /* ─── INSTANCES ─── */
+  #instances { background: var(--bg); }
+  .instance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+  .instance-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .instance-card.featured {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(99,140,255,0.2), var(--glow);
+  }
+  .instance-card.featured::before {
+    content: 'Most Popular';
+    position: absolute;
+    top: -11px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .instance-name {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .instance-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+  .instance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .instance-row:last-child { border-bottom: none; }
+  .instance-row-key { color: var(--text3); font-family: var(--font-mono); font-size: 0.7rem; }
+  .instance-row-val { color: var(--text); font-family: var(--font-mono); font-weight: 600; }
+
+  /* ─── NEURON SDK ─── */
+  #sdk { background: var(--bg2); }
+  .sdk-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  @media (max-width: 768px) { .sdk-cols { grid-template-columns: 1fr; } }
+  .sdk-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+  .sdk-layer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color 0.2s;
+  }
+  .sdk-layer:hover { border-color: var(--border2); }
+  .sdk-layer-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: rgba(99,140,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .sdk-layer-name {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .sdk-layer-desc { font-size: 0.75rem; color: var(--text3); }
+  .sdk-arrow {
+    text-align: center;
+    color: var(--text3);
+    font-size: 0.75rem;
+    padding: 0.1rem 0;
+  }
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .code-block-header {
+    background: var(--surface);
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+  }
+  .code-block-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-block-dot:nth-child(1) { background: #ff5f57; }
+  .code-block-dot:nth-child(2) { background: #febc2e; }
+  .code-block-dot:nth-child(3) { background: #28c840; }
+  .code-block pre {
+    padding: 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text2);
+  }
+  .code-block pre .c { color: #4b6380; }
+  .code-block pre .k { color: #a78bfa; }
+  .code-block pre .f { color: #638cff; }
+  .code-block pre .s { color: #34d399; }
+  .code-block pre .v { color: #fb923c; }
+
+  /* ─── CUSTOMERS ─── */
+  #customers { background: var(--bg); }
+  .customer-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+  }
+  .customer-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .customer-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .customer-highlight {
+    margin-top: 3rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  @media (max-width: 600px) { .customer-highlight { grid-template-columns: 1fr; } }
+  .cust-metric-val {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--accent);
+    display: block;
+  }
+  .cust-metric-label { color: var(--text2); font-size: 0.82rem; margin-top: 0.3rem; }
+
+  /* ─── ROADMAP ─── */
+  #roadmap { background: var(--bg2); }
+  .timeline { position: relative; padding-left: 2rem; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    opacity: 0.4;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 1.5rem;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -2rem;
+    top: 0.35rem;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--tl-color, var(--accent));
+    box-shadow: 0 0 12px var(--tl-color, var(--accent));
+  }
+  .tl-item[data-tl="1"] { --tl-color: #638cff; }
+  .tl-item[data-tl="2"] { --tl-color: #a78bfa; }
+  .tl-item[data-tl="3"] { --tl-color: #34d399; }
+  .tl-item[data-tl="4"] { --tl-color: #fb923c; }
+  .tl-year {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--tl-color, var(--accent));
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+  }
+  .tl-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .tl-desc { color: var(--text2); font-size: 0.875rem; line-height: 1.7; max-width: 680px; }
+  .tl-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+  .tl-tag {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 9px;
+    font-family: var(--font-mono);
+    font-size: 0.63rem;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+
+  /* ─── RESOURCES ─── */
+  #resources { background: var(--bg); }
+  .res-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .res-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.4rem;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .res-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .res-type {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .res-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  .res-arrow { color: var(--text3); font-size: 0.8rem; margin-top: auto; padding-top: 0.5rem; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  .footer-logo {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .footer-links a {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text3);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+  .footer-note { font-size: 0.72rem; color: var(--text3); }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* floating chip decoration */
+  .chip-deco {
+    position: absolute;
+    width: 180px; height: 180px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 16px;
+    opacity: 0.35;
+    animation: float 7s ease-in-out infinite;
+  }
+  .chip-deco-left { left: 4%; top: 50%; transform: translateY(-50%) rotate(-8deg); }
+  .chip-deco-right { right: 4%; top: 40%; transform: translateY(-50%) rotate(8deg); }
+  .chip-core {
+    width: 100%;
+    aspect-ratio: 1;
+    background: rgba(99,140,255,0.15);
+    border: 1px solid rgba(99,140,255,0.25);
+    border-radius: 3px;
+  }
+  .chip-core:nth-child(odd) { background: rgba(167,139,250,0.1); }
+  @keyframes float {
+    0%, 100% { transform: translateY(-50%) rotate(-8deg); }
+    50% { transform: translateY(calc(-50% - 12px)) rotate(-8deg); }
+  }
+  .chip-deco-right { animation-name: floatRight; }
+  @keyframes floatRight {
+    0%, 100% { transform: translateY(-50%) rotate(8deg); }
+    50% { transform: translateY(calc(-50% - 12px)) rotate(8deg); }
+  }
+
+  @media (max-width: 768px) {
+    .chip-deco { display: none; }
+    .nav-links { display: none; }
+    .gen-grid, .instance-grid, .benefits-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span>TRN</span>
+    <span class="nav-badge">AWS</span>
+    <span style="color:var(--text3);font-weight:300">Trainium</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#generations">Generations</a></li>
+    <li><a href="#compare">Compare</a></li>
+    <li><a href="#why">Benefits</a></li>
+    <li><a href="#instances">Instances</a></li>
+    <li><a href="#sdk">Neuron SDK</a></li>
+    <li><a href="#customers">Customers</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+
+  <!-- decorative chips -->
+  <div class="chip-deco chip-deco-left">
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+  </div>
+  <div class="chip-deco chip-deco-right">
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+    <div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div><div class="chip-core"></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">AWS Custom Silicon <span>·</span> AI Accelerator Family <span>·</span> 2021 → Now</div>
+    <h1>Purpose-Built for<br><em>AI at Scale</em></h1>
+    <p class="hero-sub">AWS Trainium is a family of purpose-built AI accelerators — Trainium1, Trainium2, and Trainium3 — designed to deliver scalable performance and cost efficiency for training and inference across generative AI workloads.</p>
+    <div class="hero-ctas">
+      <a href="#generations" class="btn-primary">Explore Generations →</a>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" class="btn-secondary" target="_blank">Neuron SDK ↗</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-val">50%</span>
+        <div class="hero-stat-label">Lower training cost vs GPU</div>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">3nm</span>
+        <div class="hero-stat-label">Trainium3 process node</div>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">4×</span>
+        <div class="hero-stat-label">Trn2 performance over Trn1</div>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">362</span>
+        <div class="hero-stat-label">MXFP8 PFLOPs (Trn3 UltraServer)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GENERATIONS -->
+<section id="generations">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Chip Family</div>
+      <h2 class="section-title">The AWS <em>Trainium</em> Family</h2>
+      <p class="section-desc">Three generations of purpose-built silicon, each advancing compute, memory, and energy efficiency for the most demanding AI workloads.</p>
+    </div>
+
+    <div class="gen-grid">
+      <!-- TRN1 -->
+      <div class="gen-card" data-gen="1">
+        <div class="gen-card-glow"></div>
+        <div class="gen-badge"><div class="gen-badge-dot"></div>First Generation</div>
+        <h3>Trainium1</h3>
+        <div class="gen-subtitle">Trn1 · Trn1n &nbsp;|&nbsp; Launched 2022</div>
+        <p>The first AWS custom ML training chip, powering Amazon EC2 Trn1 instances. Delivers up to 50% lower training costs than comparable GPU instances via NeuronCore v2 and HBM.</p>
+        <div class="gen-specs">
+          <div class="gen-spec">
+            <div class="gen-spec-label">FP8 Compute</div>
+            <div class="gen-spec-val">3 PFLOPs</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">HBM (Trn1.32xl)</div>
+            <div class="gen-spec-val">512 GB</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">Memory BW</div>
+            <div class="gen-spec-val">9.8 TB/s</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">EFA Network</div>
+            <div class="gen-spec-val">1.6 Tbps</div>
+          </div>
+        </div>
+        <a href="https://aws.amazon.com/ec2/instance-types/trn1/" class="gen-link" target="_blank">View Trn1 Instances →</a>
+      </div>
+
+      <!-- TRN2 -->
+      <div class="gen-card" data-gen="2">
+        <div class="gen-card-glow"></div>
+        <div class="gen-current-label">Current</div>
+        <div class="gen-badge"><div class="gen-badge-dot"></div>Second Generation</div>
+        <h3>Trainium2</h3>
+        <div class="gen-subtitle">Trn2 · Trn2 UltraServer &nbsp;|&nbsp; 2024</div>
+        <p>4× the performance of Trainium1. Trn2 UltraServers feature up to 64 chips with NeuronLink interconnect. 30–40% better price performance vs GPU-based P5e/P5en instances.</p>
+        <div class="gen-specs">
+          <div class="gen-spec">
+            <div class="gen-spec-label">Performance</div>
+            <div class="gen-spec-val">4× vs Trn1</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">UltraServer Chips</div>
+            <div class="gen-spec-val">64 chips</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">Interconnect</div>
+            <div class="gen-spec-val">NeuronLink</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">Model Support</div>
+            <div class="gen-spec-val">Up to 1T params</div>
+          </div>
+        </div>
+        <a href="https://aws.amazon.com/ec2/instance-types/trn2/" class="gen-link" target="_blank">View Trn2 Instances →</a>
+      </div>
+
+      <!-- TRN3 -->
+      <div class="gen-card" data-gen="3">
+        <div class="gen-card-glow"></div>
+        <div class="gen-badge"><div class="gen-badge-dot"></div>Third Generation</div>
+        <h3>Trainium3</h3>
+        <div class="gen-subtitle">Trn3 UltraServer &nbsp;|&nbsp; 2025 · 3nm</div>
+        <p>AWS's first 3nm AI chip — built for next-generation agentic, reasoning, and video generation apps. Features MXFP8/MXFP4 data types and NeuronSwitch-v1 for all-to-all collectives.</p>
+        <div class="gen-specs">
+          <div class="gen-spec">
+            <div class="gen-spec-label">FP8 Compute</div>
+            <div class="gen-spec-val">2.52 PFLOPs/chip</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">HBM3e per chip</div>
+            <div class="gen-spec-val">144 GB</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">Memory BW</div>
+            <div class="gen-spec-val">4.9 TB/s/chip</div>
+          </div>
+          <div class="gen-spec">
+            <div class="gen-spec-label">Energy Efficiency</div>
+            <div class="gen-spec-val">4× vs Trn2</div>
+          </div>
+        </div>
+        <a href="https://aws.amazon.com/ec2/instance-types/trn3/" class="gen-link" target="_blank">View Trn3 UltraServers →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE TABLE -->
+<section id="compare">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Side by Side</div>
+      <h2 class="section-title">Generation <em>Comparison</em></h2>
+      <p class="section-desc">Detailed spec comparison across all three Trainium generations to help you choose the right platform.</p>
+    </div>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Specification</th>
+            <th class="col-trn1">Trainium1 (Trn1)</th>
+            <th class="col-trn2">Trainium2 (Trn2)</th>
+            <th class="col-trn3">Trainium3 (Trn3)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Process Node</td>
+            <td>7nm</td>
+            <td>7nm (2nd gen)</td>
+            <td class="val-best">3nm</td>
+          </tr>
+          <tr>
+            <td>NeuronCore Gen</td>
+            <td>NeuronCore v2</td>
+            <td>NeuronCore v3</td>
+            <td class="val-best">NeuronCore v4</td>
+          </tr>
+          <tr>
+            <td>FP8 PFLOPs (chip)</td>
+            <td>~0.19</td>
+            <td>~0.63</td>
+            <td class="val-best">2.52</td>
+          </tr>
+          <tr>
+            <td>HBM per chip</td>
+            <td>32 GB</td>
+            <td>96 GB</td>
+            <td class="val-best">144 GB HBM3e</td>
+          </tr>
+          <tr>
+            <td>Memory Bandwidth</td>
+            <td>~0.6 TB/s</td>
+            <td>~2.9 TB/s</td>
+            <td class="val-best">4.9 TB/s</td>
+          </tr>
+          <tr>
+            <td>UltraServer Chips</td>
+            <td>Up to 16</td>
+            <td>Up to 64</td>
+            <td class="val-best">Up to 144</td>
+          </tr>
+          <tr>
+            <td>UltraServer MXFP8 PFLOPs</td>
+            <td>~3 (Trn1.32xl)</td>
+            <td>~40</td>
+            <td class="val-best">362</td>
+          </tr>
+          <tr>
+            <td>UltraServer Memory BW</td>
+            <td>9.8 TB/s</td>
+            <td>~180 TB/s</td>
+            <td class="val-best">706 TB/s</td>
+          </tr>
+          <tr>
+            <td>Interconnect</td>
+            <td>NeuronLink v1 / EFA</td>
+            <td>NeuronLink v2 / EFA</td>
+            <td class="val-best">NeuronSwitch-v1 / EFA</td>
+          </tr>
+          <tr>
+            <td>Data Types</td>
+            <td>BF16, FP16, FP8, INT8</td>
+            <td>BF16, FP16, FP8, MXFP8</td>
+            <td class="val-best">BF16, FP8, MXFP8, MXFP4</td>
+          </tr>
+          <tr>
+            <td>Sparsity Support</td>
+            <td>—</td>
+            <td>4× (16:4)</td>
+            <td class="val-best">4× (16:4)</td>
+          </tr>
+          <tr>
+            <td>Collective Engines</td>
+            <td>—</td>
+            <td>Dedicated</td>
+            <td class="val-best">NeuronSwitch (all-to-all)</td>
+          </tr>
+          <tr>
+            <td>Best Use Case</td>
+            <td>LLM fine-tuning / training</td>
+            <td>Gen AI up to 1T params</td>
+            <td class="val-best">Reasoning, agentic, 1T+ MoE</td>
+          </tr>
+          <tr>
+            <td>Cost vs GPU</td>
+            <td class="val-highlight">Up to 50% lower</td>
+            <td class="val-highlight">30–40% better price-perf</td>
+            <td class="val-best">Best token economics</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- WHY TRAINIUM -->
+<section id="why">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Advantages</div>
+      <h2 class="section-title">Why <em>Trainium?</em></h2>
+      <p class="section-desc">Purpose-built silicon with a full-stack software approach enables developers to ship faster at lower cost.</p>
+    </div>
+    <div class="benefits-grid">
+      <div class="benefit-card">
+        <div class="benefit-icon">⚡</div>
+        <h4>High Performance, Low Cost</h4>
+        <p>Trn3 UltraServers deliver 362 MXFP8 PFLOPs with 4× better energy efficiency than Trn2. Up to 50% lower training costs on Trn1 vs comparable GPU instances.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🔧</div>
+        <h4>Native Framework Support</h4>
+        <p>AWS Neuron integrates natively with PyTorch, JAX, Hugging Face, vLLM, and PyTorch Lightning. No code changes required for most workloads.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🧮</div>
+        <h4>State-of-the-Art Precisions</h4>
+        <p>Full support for BF16, FP16, FP8, MXFP8, and MXFP4 mixed-precision training. Hardware-accelerated stochastic rounding and micro-scaling for accuracy.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🔗</div>
+        <h4>Scale-Up Interconnect</h4>
+        <p>NeuronLink and NeuronSwitch-v1 enable ultra-low-latency all-to-all collectives across 144 chips in a single UltraServer, delivering 706 TB/s memory bandwidth.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🔍</div>
+        <h4>Deep Developer Access</h4>
+        <p>Neuron Kernel Interface (NKI) exposes the full Trainium ISA for instruction-level programming. Neuron Explore provides full stack visibility from code to hardware engines.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">☁️</div>
+        <h4>AWS Ecosystem Integration</h4>
+        <p>Works seamlessly with SageMaker, SageMaker HyperPod, EKS, ECS, ParallelCluster, AWS Batch, and third-party tools like Ray, Domino Data Lab, and Datadog.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTANCES -->
+<section id="instances">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">EC2 Instances</div>
+      <h2 class="section-title">Instance <em>Family</em></h2>
+      <p class="section-desc">From single-chip dev environments to multi-node 144-chip UltraServer clusters.</p>
+    </div>
+    <div class="instance-grid">
+      <div class="instance-card">
+        <div class="instance-name">trn1.2xlarge</div>
+        <div class="instance-rows">
+          <div class="instance-row"><span class="instance-row-key">Chips</span><span class="instance-row-val">1</span></div>
+          <div class="instance-row"><span class="instance-row-key">HBM</span><span class="instance-row-val">32 GB</span></div>
+          <div class="instance-row"><span class="instance-row-key">vCPUs</span><span class="instance-row-val">8</span></div>
+          <div class="instance-row"><span class="instance-row-key">Network</span><span class="instance-row-val">12.5 Gbps</span></div>
+          <div class="instance-row"><span class="instance-row-key">Best for</span><span class="instance-row-val">Dev & test</span></div>
+        </div>
+      </div>
+      <div class="instance-card featured">
+        <div class="instance-name">trn1.32xlarge</div>
+        <div class="instance-rows">
+          <div class="instance-row"><span class="instance-row-key">Chips</span><span class="instance-row-val">16</span></div>
+          <div class="instance-row"><span class="instance-row-key">HBM</span><span class="instance-row-val">512 GB</span></div>
+          <div class="instance-row"><span class="instance-row-key">vCPUs</span><span class="instance-row-val">128</span></div>
+          <div class="instance-row"><span class="instance-row-key">EFA</span><span class="instance-row-val">800 Gbps</span></div>
+          <div class="instance-row"><span class="instance-row-key">Best for</span><span class="instance-row-val">LLM pretraining</span></div>
+        </div>
+      </div>
+      <div class="instance-card">
+        <div class="instance-name">trn1n.32xlarge</div>
+        <div class="instance-rows">
+          <div class="instance-row"><span class="instance-row-key">Chips</span><span class="instance-row-val">16</span></div>
+          <div class="instance-row"><span class="instance-row-key">HBM</span><span class="instance-row-val">512 GB</span></div>
+          <div class="instance-row"><span class="instance-row-key">vCPUs</span><span class="instance-row-val">128</span></div>
+          <div class="instance-row"><span class="instance-row-key">EFA</span><span class="instance-row-val">1,600 Gbps</span></div>
+          <div class="instance-row"><span class="instance-row-key">Best for</span><span class="instance-row-val">Multi-node cluster</span></div>
+        </div>
+      </div>
+      <div class="instance-card">
+        <div class="instance-name">trn2.48xlarge</div>
+        <div class="instance-rows">
+          <div class="instance-row"><span class="instance-row-key">Chips</span><span class="instance-row-val">16 Trn2</span></div>
+          <div class="instance-row"><span class="instance-row-key">NeuronCore</span><span class="instance-row-val">v3</span></div>
+          <div class="instance-row"><span class="instance-row-key">Performance</span><span class="instance-row-val">4× vs Trn1</span></div>
+          <div class="instance-row"><span class="instance-row-key">Interconnect</span><span class="instance-row-val">NeuronLink v2</span></div>
+          <div class="instance-row"><span class="instance-row-key">Best for</span><span class="instance-row-val">Gen AI / LLMs</span></div>
+        </div>
+      </div>
+      <div class="instance-card">
+        <div class="instance-name" style="color: var(--accent2);">Trn2 UltraServer</div>
+        <div class="instance-rows">
+          <div class="instance-row"><span class="instance-row-key">Chips</span><span class="instance-row-val">Up to 64</span></div>
+          <div class="instance-row"><span class="instance-row-key">Models</span><span class="instance-row-val">Up to 1T params</span></div>
+          <div class="instance-row"><span class="instance-row-key">Interconnect</span><span class="instance-row-val">NeuronLink</span></div>
+          <div class="instance-row"><span class="instance-row-key">Cost savings</span><span class="instance-row-val">30–40% vs P5e</span></div>
+          <div class="instance-row"><span class="instance-row-key">Best for</span><span class="instance-row-val">Scale-up training</span></div>
+        </div>
+      </div>
+      <div class="instance-card" style="border-color: rgba(52,211,153,0.25);">
+        <div class="instance-name" style="color: var(--accent3);">Trn3 UltraServer</div>
+        <div class="instance-rows">
+          <div class="instance-row"><span class="instance-row-key">Chips</span><span class="instance-row-val">Up to 144</span></div>
+          <div class="instance-row"><span class="instance-row-key">MXFP8 PFLOPs</span><span class="instance-row-val">362</span></div>
+          <div class="instance-row"><span class="instance-row-key">HBM3e Total</span><span class="instance-row-val">20.7 TB</span></div>
+          <div class="instance-row"><span class="instance-row-key">vs Trn2 UltraServer</span><span class="instance-row-val">4.4× perf</span></div>
+          <div class="instance-row"><span class="instance-row-key">Best for</span><span class="instance-row-val">1T+ MoE, reasoning</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEURON SDK -->
+<section id="sdk">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Software Stack</div>
+      <h2 class="section-title">AWS <em>Neuron SDK</em></h2>
+      <p class="section-desc">A complete ML SDK that extracts full performance from Trainium hardware, with native framework integration and zero code changes for most workflows.</p>
+    </div>
+    <div class="sdk-cols">
+      <div>
+        <div class="sdk-stack">
+          <div class="sdk-layer">
+            <div class="sdk-layer-icon">🔷</div>
+            <div>
+              <div class="sdk-layer-name">PyTorch · JAX · TensorFlow</div>
+              <div class="sdk-layer-desc">ML Frameworks — native integration</div>
+            </div>
+          </div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer">
+            <div class="sdk-layer-icon">🔌</div>
+            <div>
+              <div class="sdk-layer-name">torch-neuronx / jax-neuronx</div>
+              <div class="sdk-layer-desc">Framework plugins for Trainium</div>
+            </div>
+          </div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer">
+            <div class="sdk-layer-icon">⚡</div>
+            <div>
+              <div class="sdk-layer-name">NxD Training / NxD Inference</div>
+              <div class="sdk-layer-desc">Distributed training + inference libs</div>
+            </div>
+          </div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer">
+            <div class="sdk-layer-icon">🧠</div>
+            <div>
+              <div class="sdk-layer-name">neuronx-cc (Graph Compiler)</div>
+              <div class="sdk-layer-desc">XLA → NEFF optimized executables</div>
+            </div>
+          </div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer">
+            <div class="sdk-layer-icon">🔩</div>
+            <div>
+              <div class="sdk-layer-name">Neuron Runtime (NRT)</div>
+              <div class="sdk-layer-desc">Hardware abstraction layer</div>
+            </div>
+          </div>
+          <div class="sdk-arrow">↓</div>
+          <div class="sdk-layer">
+            <div class="sdk-layer-icon">💎</div>
+            <div>
+              <div class="sdk-layer-name">Neuron Driver + Trainium Silicon</div>
+              <div class="sdk-layer-desc">Custom AWS accelerator hardware</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="code-block">
+          <div class="code-block-header">
+            <div class="code-block-dot"></div>
+            <div class="code-block-dot"></div>
+            <div class="code-block-dot"></div>
+            <span style="margin-left:0.5rem">train.py</span>
+          </div>
+          <pre><span class="c"># Minimal change from standard PyTorch</span>
+<span class="k">import</span> torch
+<span class="k">import</span> torch_xla.core.xla_model <span class="k">as</span> xm
+
+<span class="c"># Get Trainium device (replaces "cuda")</span>
+<span class="v">device</span> = xm.xla_device()
+
+<span class="v">model</span> = MyTransformerModel().<span class="f">to</span>(device)
+<span class="v">optimizer</span> = torch.optim.<span class="f">AdamW</span>(
+    model.parameters()
+)
+
+<span class="k">for</span> batch <span class="k">in</span> dataloader:
+    x = batch[<span class="v">0</span>].<span class="f">to</span>(device)
+    loss = <span class="f">model</span>(x).loss
+    loss.<span class="f">backward</span>()
+    xm.<span class="f">optimizer_step</span>(optimizer)
+    xm.<span class="f">mark_step</span>()  <span class="c"># triggers XLA compile</span></pre>
+        </div>
+
+        <div style="margin-top:1rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem;">
+          <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--accent);letter-spacing:0.1em;margin-bottom:0.75rem;text-transform:uppercase;">Key Integrations</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">Hugging Face</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">vLLM</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">PyTorch Lightning</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">SageMaker</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">EKS</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">Ray (Anyscale)</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">Datadog</span>
+            <span style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text2);">AWS Batch</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CUSTOMERS -->
+<section id="customers">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Adoption</div>
+      <h2 class="section-title"><em>Customers</em> Building on Trainium</h2>
+      <p class="section-desc">Leading AI companies and enterprises rely on Trainium for frontier model training and production inference.</p>
+    </div>
+    <div class="customer-logos">
+      <div class="customer-chip">Anthropic</div>
+      <div class="customer-chip">Databricks</div>
+      <div class="customer-chip">poolside</div>
+      <div class="customer-chip">Decart</div>
+      <div class="customer-chip">Ricoh</div>
+      <div class="customer-chip">Karakuri</div>
+      <div class="customer-chip">SplashMusic</div>
+      <div class="customer-chip">Arcee AI</div>
+      <div class="customer-chip">Amazon Search M5</div>
+    </div>
+    <div class="customer-highlight">
+      <div>
+        <span class="cust-metric-val">30%</span>
+        <div class="cust-metric-label">LLM training cost savings at Amazon Search M5</div>
+      </div>
+      <div>
+        <span class="cust-metric-val">50%</span>
+        <div class="cust-metric-label">Lower training costs vs comparable GPU on Trn1</div>
+      </div>
+      <div>
+        <span class="cust-metric-val">4.4×</span>
+        <div class="cust-metric-label">Higher performance of Trn3 vs Trn2 UltraServer</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP / TIMELINE -->
+<section id="roadmap">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Evolution</div>
+      <h2 class="section-title">The <em>Trainium</em> Arc</h2>
+      <p class="section-desc">From first silicon to 3nm frontier AI accelerators — an unbroken line of purpose-built innovation.</p>
+    </div>
+    <div class="timeline">
+      <div class="tl-item" data-tl="1">
+        <div class="tl-year">2021 — Announced · 2022 — GA</div>
+        <div class="tl-title">Trainium1 · Trn1 Launch</div>
+        <p class="tl-desc">AWS's first custom ML training chip enters general availability. Trn1.32xlarge features 16 NeuronCore v2 chips, 512 GB HBM, and 800 Gbps EFA networking. Delivers up to 50% lower training costs than comparable GPU instances. Customers including Ricoh, Karakuri, and Arcee AI adopt early.</p>
+        <div class="tl-tags">
+          <span class="tl-tag">NeuronCore v2</span>
+          <span class="tl-tag">32 GB HBM / chip</span>
+          <span class="tl-tag">BF16 · FP16 · FP8</span>
+          <span class="tl-tag">Neuron SDK v2</span>
+        </div>
+      </div>
+      <div class="tl-item" data-tl="1">
+        <div class="tl-year">2022 — Launch</div>
+        <div class="tl-title">trn1n.32xlarge — High-Bandwidth Variant</div>
+        <p class="tl-desc">The trn1n variant doubles EFA bandwidth to 1,600 Gbps via 16 × 100 Gbps NIC interfaces, optimizing multi-node distributed training across large clusters.</p>
+        <div class="tl-tags">
+          <span class="tl-tag">1,600 Gbps EFA</span>
+          <span class="tl-tag">16 × 100 Gbps NICs</span>
+          <span class="tl-tag">Multi-node scale-out</span>
+        </div>
+      </div>
+      <div class="tl-item" data-tl="2">
+        <div class="tl-year">2023–2024</div>
+        <div class="tl-title">Trainium2 · Trn2 & UltraServers</div>
+        <p class="tl-desc">NeuronCore v3 delivers 4× the performance of Trainium1. Trn2 UltraServers scale to 64 chips with NeuronLink proprietary interconnect, enabling training of 1T+ parameter models. 30–40% better price performance than GPU-based P5e and P5en instances. Anthropic, Databricks, and poolside among early adopters.</p>
+        <div class="tl-tags">
+          <span class="tl-tag">NeuronCore v3</span>
+          <span class="tl-tag">4× vs Trn1</span>
+          <span class="tl-tag">64-chip UltraServer</span>
+          <span class="tl-tag">MXFP8</span>
+          <span class="tl-tag">4× Sparsity (16:4)</span>
+        </div>
+      </div>
+      <div class="tl-item" data-tl="3">
+        <div class="tl-year">2025 — re:Invent Announced &amp; GA</div>
+        <div class="tl-title">Trainium3 · 3nm · NeuronCore v4</div>
+        <p class="tl-desc">AWS's first 3nm AI chip — purpose-built for agentic, reasoning, and video generation workloads. 2× higher compute performance at 2.52 PFLOPs FP8 per chip, 1.5× more memory (144 GB HBM3e), 1.7× memory bandwidth (4.9 TB/s). Trn3 UltraServers scale to 144 chips with NeuronSwitch-v1, delivering 362 MXFP8 PFLOPs and 4× better energy efficiency vs Trn2 UltraServers.</p>
+        <div class="tl-tags">
+          <span class="tl-tag">3nm process</span>
+          <span class="tl-tag">NeuronCore v4</span>
+          <span class="tl-tag">144-chip UltraServer</span>
+          <span class="tl-tag">MXFP8 · MXFP4</span>
+          <span class="tl-tag">NeuronSwitch-v1</span>
+          <span class="tl-tag">4× energy efficiency</span>
+        </div>
+      </div>
+      <div class="tl-item" data-tl="4">
+        <div class="tl-year">Ongoing</div>
+        <div class="tl-title">Open Innovation &amp; Neuron NKI</div>
+        <p class="tl-desc">AWS deepens developer access with Neuron Kernel Interface (NKI), exposing the full Trainium ISA for instruction-level kernel development. Open-sourced Neuron Kernel Library provides ready-to-deploy optimized kernels. Neuron Explore connects developer code to hardware-level engine visibility.</p>
+        <div class="tl-tags">
+          <span class="tl-tag">NKI</span>
+          <span class="tl-tag">Open-source kernels</span>
+          <span class="tl-tag">Neuron Explore</span>
+          <span class="tl-tag">Full ISA access</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESOURCES -->
+<section id="resources">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Get Started</div>
+      <h2 class="section-title">Deep <em>Dive</em> Resources</h2>
+    </div>
+    <div class="res-grid">
+      <a href="https://gyaneshhere.github.io/trainium1-deep-dive.html" class="res-card" target="_blank">
+        <div class="res-type">Deep Dive</div>
+        <div class="res-title">Trainium1 Architecture Deep Dive</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" class="res-card" target="_blank">
+        <div class="res-type">Documentation</div>
+        <div class="res-title">AWS Neuron SDK Docs</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://aws.amazon.com/ec2/instance-types/trn1/" class="res-card" target="_blank">
+        <div class="res-type">EC2</div>
+        <div class="res-title">Trn1 Instance Types</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://aws.amazon.com/ec2/instance-types/trn2/" class="res-card" target="_blank">
+        <div class="res-type">EC2</div>
+        <div class="res-title">Trn2 Instances & UltraServers</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://aws.amazon.com/ec2/instance-types/trn3/" class="res-card" target="_blank">
+        <div class="res-type">EC2</div>
+        <div class="res-title">Trn3 UltraServers</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://github.com/aws-neuron/aws-neuron-samples" class="res-card" target="_blank">
+        <div class="res-type">GitHub</div>
+        <div class="res-title">AWS Neuron Code Samples</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/general/models/training-trn1-samples.html" class="res-card" target="_blank">
+        <div class="res-type">Tutorials</div>
+        <div class="res-title">Training Samples & Tutorials</div>
+        <div class="res-arrow">→</div>
+      </a>
+      <a href="https://aws.amazon.com/ai/machine-learning/trainium/" class="res-card" target="_blank">
+        <div class="res-type">Product</div>
+        <div class="res-title">Official Trainium Product Page</div>
+        <div class="res-arrow">→</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">TRN · AWS Trainium</div>
+  <div class="footer-links">
+    <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/" target="_blank">Neuron SDK Docs</a>
+    <a href="https://aws.amazon.com/ec2/instance-types/trn1/" target="_blank">Trn1 Instances</a>
+    <a href="https://aws.amazon.com/ec2/instance-types/trn2/" target="_blank">Trn2 Instances</a>
+    <a href="https://aws.amazon.com/ec2/instance-types/trn3/" target="_blank">Trn3 UltraServers</a>
+    <a href="https://github.com/aws-neuron/aws-neuron-samples" target="_blank">Code Samples</a>
+    <a href="https://gyaneshhere.github.io/trainium1-deep-dive.html" target="_blank">Trn1 Deep Dive</a>
+  </div>
+  <div class="footer-note">Based on AWS Documentation &amp; Public Product Information · Not an official AWS page</div>
+</footer>
+
+</body>
+</html>
