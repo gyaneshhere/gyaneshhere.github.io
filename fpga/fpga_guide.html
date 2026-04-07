@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FPGA — The Reconfigurable Computing Revolution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#0A84FF;--accent2:#30D158;--accent3:#FF9F0A;--accent4:#BF5AF2;--accent5:#FF453A;
+  --bg:#0D0D0F;--bg2:#111114;--bg3:#18181C;--surface:#1E1E23;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#F2F2F7;--muted:#8E8E99;--muted2:#5C5C6B;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);line-height:1.65}
+.page{display:none}
+.page.active{display:block}
+
+/* NAV */
+.nav{
+  display:flex;align-items:center;position:sticky;top:0;z-index:100;
+  background:rgba(13,13,15,0.92);backdrop-filter:blur(16px);
+  border-bottom:0.5px solid var(--border);overflow-x:auto;scrollbar-width:none;
+}
+.nav::-webkit-scrollbar{display:none}
+.nav-brand{
+  font-size:12px;font-weight:600;color:var(--accent);
+  padding:12px 20px;border-right:0.5px solid var(--border);
+  letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;
+}
+.nav-brand span{font-family:'DM Mono',monospace}
+.nav-btn{
+  font-size:12px;font-weight:400;color:var(--muted);
+  padding:12px 16px;border:none;background:none;cursor:pointer;
+  white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s;
+}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+
+/* HERO */
+.hero{padding:56px 40px 40px;border-bottom:0.5px solid var(--border);position:relative;overflow:hidden}
+.hero::before{
+  content:'';position:absolute;top:-120px;right:-80px;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(10,132,255,0.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-block;font-size:10px;font-weight:600;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--accent);
+  background:rgba(10,132,255,0.1);border:0.5px solid rgba(10,132,255,0.35);
+  border-radius:20px;padding:4px 12px;margin-bottom:20px;
+}
+.hero h1{font-size:42px;font-weight:600;line-height:1.15;margin-bottom:14px;letter-spacing:-0.02em}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:15px;color:var(--muted);max-width:640px;line-height:1.75}
+.hero-stats{display:flex;gap:0;margin-top:32px;flex-wrap:wrap;border:0.5px solid var(--border);border-radius:12px;overflow:hidden;width:fit-content}
+.hero-stat{padding:14px 24px;text-align:center;border-right:0.5px solid var(--border)}
+.hero-stat:last-child{border-right:none}
+.hero-stat .num{font-size:22px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;font-family:'DM Mono',monospace}
+.hero-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:3px}
+
+/* SECTION */
+.section{padding:40px;border-bottom:0.5px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-label{font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
+.section h2{font-size:26px;font-weight:600;margin-bottom:14px;letter-spacing:-0.01em}
+.section h3{font-size:18px;font-weight:500;margin-bottom:10px}
+.section p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:14px}
+.section p:last-child{margin-bottom:0}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:20px}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:20px;transition:border-color .15s}
+.card:hover{border-color:var(--border2)}
+.card h4{font-size:14px;font-weight:500;margin-bottom:8px;color:var(--text)}
+.card p{font-size:13px;color:var(--muted);line-height:1.7}
+.card.accent{border-color:rgba(10,132,255,0.3)}
+.card.green{border-color:rgba(48,209,88,0.3)}
+.card.orange{border-color:rgba(255,159,10,0.3)}
+.card.purple{border-color:rgba(191,90,242,0.3)}
+.card.red{border-color:rgba(255,69,58,0.3)}
+.card-dot{width:8px;height:8px;border-radius:50%;margin-bottom:12px}
+.dot-blue{background:var(--accent)}
+.dot-green{background:var(--accent2)}
+.dot-orange{background:var(--accent3)}
+.dot-purple{background:var(--accent4)}
+.dot-red{background:var(--accent5)}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;margin-top:20px;border-radius:12px;border:0.5px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--surface);font-weight:500;text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);border-bottom:0.5px solid var(--border)}
+td{padding:11px 16px;border-bottom:0.5px solid var(--border);color:var(--text);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
+.b-blue{background:rgba(10,132,255,0.15);color:#5AB9FF}
+.b-green{background:rgba(48,209,88,0.15);color:#5ED483}
+.b-orange{background:rgba(255,159,10,0.15);color:#FFB84A}
+.b-purple{background:rgba(191,90,242,0.15);color:#CE88F7}
+.b-red{background:rgba(255,69,58,0.15);color:#FF756E}
+.b-gray{background:rgba(255,255,255,0.07);color:var(--muted)}
+
+/* TIMELINE */
+.timeline{margin-top:20px;position:relative;padding-left:32px}
+.timeline::before{content:'';position:absolute;left:10px;top:8px;bottom:8px;width:0.5px;background:var(--border2)}
+.tl-item{position:relative;margin-bottom:28px}
+.tl-dot{position:absolute;left:-26px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.tl-item.g .tl-dot{background:var(--accent2)}
+.tl-item.o .tl-dot{background:var(--accent3)}
+.tl-item.p .tl-dot{background:var(--accent4)}
+.tl-year{font-size:11px;color:var(--accent);font-weight:500;font-family:'DM Mono',monospace;margin-bottom:4px}
+.tl-title{font-size:14px;font-weight:500;margin-bottom:5px;color:var(--text)}
+.tl-desc{font-size:13px;color:var(--muted);line-height:1.7}
+
+/* PULLQUOTE */
+.pullquote{border-left:3px solid var(--accent);padding:14px 20px;background:rgba(10,132,255,0.06);border-radius:0 10px 10px 0;margin:20px 0;font-size:14px;color:var(--text);font-style:italic;line-height:1.7}
+.pullquote cite{display:block;margin-top:8px;font-size:12px;color:var(--muted);font-style:normal}
+
+/* HIGHLIGHT */
+.hl{background:rgba(10,132,255,0.07);border:0.5px solid rgba(10,132,255,0.2);border-radius:12px;padding:18px 22px;margin:20px 0}
+.hl h4{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px}
+.hl p{font-size:13px;color:var(--text);margin:0;line-height:1.75}
+.hl.green{background:rgba(48,209,88,0.07);border-color:rgba(48,209,88,0.2)}
+.hl.green h4{color:var(--accent2)}
+.hl.orange{background:rgba(255,159,10,0.07);border-color:rgba(255,159,10,0.2)}
+.hl.orange h4{color:var(--accent3)}
+
+/* FLOW */
+.flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.flow-chip{font-size:12px;padding:8px 16px;border-radius:20px;border:0.5px solid var(--border2);background:var(--surface);font-weight:500;color:var(--text)}
+.flow-chip.blue{border-color:rgba(10,132,255,0.4);background:rgba(10,132,255,0.08);color:#5AB9FF}
+.flow-chip.green{border-color:rgba(48,209,88,0.4);background:rgba(48,209,88,0.08);color:#5ED483}
+.flow-chip.orange{border-color:rgba(255,159,10,0.4);background:rgba(255,159,10,0.08);color:#FFB84A}
+.flow-chip.purple{border-color:rgba(191,90,242,0.4);background:rgba(191,90,242,0.08);color:#CE88F7}
+.flow-arr{color:var(--muted2);font-size:16px}
+
+/* CASE CARDS */
+.case-card{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:22px;margin-top:14px;transition:border-color .15s}
+.case-card:hover{border-color:var(--border2)}
+.case-company{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.case-title{font-size:15px;font-weight:500;margin-bottom:10px;color:var(--text)}
+.case-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px}
+.case-metric{display:inline-block;background:rgba(48,209,88,0.12);border:0.5px solid rgba(48,209,88,0.25);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500;color:#5ED483;margin:4px 4px 0 0}
+
+/* INFRA */
+.infra-row{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;align-items:flex-start}
+.infra-box{flex:1;min-width:160px;border:0.5px solid var(--border);border-radius:12px;padding:20px}
+.infra-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px}
+.infra-name{font-size:16px;font-weight:600;margin-bottom:8px}
+.infra-desc{font-size:12px;color:var(--muted);line-height:1.7}
+.infra-arrow{color:var(--muted2);font-size:24px;padding-top:40px;flex-shrink:0}
+
+/* SVG ARCH */
+.arch-svg-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:24px;margin-top:20px;overflow:hidden}
+
+/* CTA */
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.cta-btn{font-size:13px;font-weight:500;padding:11px 22px;border-radius:10px;cursor:pointer;border:none;transition:opacity .15s,transform .1s;text-decoration:none;display:inline-block}
+.cta-btn:active{transform:scale(0.98)}
+.cta-primary{background:var(--accent);color:#fff}
+.cta-secondary{background:var(--surface);color:var(--text);border:0.5px solid var(--border2)}
+.cta-btn:hover{opacity:0.85}
+
+/* LINKS */
+.ext-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--accent);padding:7px 14px;border:0.5px solid rgba(10,132,255,0.35);border-radius:20px;background:rgba(10,132,255,0.07);text-decoration:none;transition:background .15s}
+.ext-link:hover{background:rgba(10,132,255,0.15)}
+
+/* CODE */
+code{font-family:'DM Mono',monospace;font-size:12px;background:var(--surface);padding:2px 7px;border-radius:5px;color:#CE88F7}
+
+/* WINNER/LOSER */
+.win{color:#5ED483;font-weight:500}
+.lose{color:var(--muted)}
+
+/* FOOTER */
+.footer{padding:28px 40px;border-top:0.5px solid var(--border);font-size:12px;color:var(--muted2);line-height:1.8}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+  <div class="nav-brand"><span>◈</span> FPGA</div>
+  <button class="nav-btn active"  onclick="go('home')">Overview</button>
+  <button class="nav-btn"         onclick="go('arch')">Architecture</button>
+  <button class="nav-btn"         onclick="go('sdh')">Software-Defined HW</button>
+  <button class="nav-btn"         onclick="go('ai')">AI Inference</button>
+  <button class="nav-btn"         onclick="go('compare')">FPGA vs GPU</button>
+  <button class="nav-btn"         onclick="go('aws')">AWS Instances</button>
+  <button class="nav-btn"         onclick="go('advanced')">Advanced Cases</button>
+  <button class="nav-btn"         onclick="go('conclusion')">Conclusion</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════ HOME ══ -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-badge">Field-Programmable Gate Array</div>
+    <h1>The Reconfigurable<br><span>Computing Revolution</span></h1>
+    <p>From Ross Freeman's 1985 invention to the foundation of elastic AI inference — FPGAs are the programmable silicon layer that bridges software flexibility with hardware performance. One chip. Infinite architectures.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">1985</div><div class="lbl">Invented</div></div>
+      <div class="hero-stat"><div class="num">~5 ns</div><div class="lbl">Min inference latency</div></div>
+      <div class="hero-stat"><div class="num">10–25×</div><div class="lbl">Power efficiency vs GPU</div></div>
+      <div class="hero-stat"><div class="num">60%</div><div class="lbl">F2 price-perf gain over F1</div></div>
+    </div>
+  </div>
+
+  <!-- What is FPGA -->
+  <div class="section">
+    <div class="section-label">Definition</div>
+    <h2>What is an FPGA?</h2>
+    <p>A <strong>Field-Programmable Gate Array</strong> is an integrated circuit containing an array of configurable logic blocks (CLBs) connected through programmable interconnects. Unlike a fixed ASIC or a general-purpose CPU, an FPGA can be reprogrammed after manufacture — <em>in the field</em> — to implement any digital circuit the silicon resources allow.</p>
+    <p>The core insight: instead of hardwiring logic gates, you configure a fabric of lookup tables (LUTs), flip-flops, DSP slices, and on-chip memory, then route signals between them using a software toolchain. The configuration is stored in SRAM and can be reloaded in milliseconds, turning a single chip into a bespoke hardware accelerator for any workload.</p>
+    <div class="pullquote">
+      "An FPGA is a chip full of open gates that engineers can reprogram as much as needed to add new functionality, adapt to changing protocols, or accelerate algorithms in hardware."
+      <cite>— National Inventors Hall of Fame (on Ross Freeman's invention)</cite>
+    </div>
+  </div>
+
+  <!-- Origin / Timeline -->
+  <div class="section">
+    <div class="section-label">History</div>
+    <h2>Origin, inventor, and evolution</h2>
+    <p>The FPGA was invented by <strong>Ross Freeman</strong>, who co-founded Xilinx in 1984 and filed U.S. Patent No. 4,870,302 in 1985. Freeman was born July 26, 1948 and died October 22, 1989 — just as his invention was beginning to reshape the electronics industry. He was inducted into the National Inventors Hall of Fame in 2009.</p>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">1984–1985</div>
+        <div class="tl-title">Ross Freeman co-founds Xilinx; patents the FPGA concept</div>
+        <div class="tl-desc">Freeman and co-founder Bernard Vonderschmitt establish Xilinx. The XC2064, the world's first commercial FPGA with 64 CLBs and 58 I/Os, launches. The industry of reconfigurable computing is born.</div>
+      </div>
+      <div class="tl-item g">
+        <div class="tl-dot"></div>
+        <div class="tl-year">1987</div>
+        <div class="tl-title">Altera launches competing FPGA product line</div>
+        <div class="tl-desc">Competition between Xilinx and Altera drives rapid innovation: finer geometries, more logic cells, embedded hard IP. Military, aerospace, and telecom become primary markets.</div>
+      </div>
+      <div class="tl-item o">
+        <div class="tl-dot"></div>
+        <div class="tl-year">2009</div>
+        <div class="tl-title">Ross Freeman inducted into the National Inventors Hall of Fame</div>
+        <div class="tl-desc">Posthumously recognized, Freeman's legacy is cemented. FPGAs by this point are standard in telecom base stations, military radar, financial trading systems, and networking gear.</div>
+      </div>
+      <div class="tl-item p">
+        <div class="tl-dot"></div>
+        <div class="tl-year">2015–2016</div>
+        <div class="tl-title">Intel acquires Altera for $16.7B; AWS launches F1 FPGA instances</div>
+        <div class="tl-desc">Intel bets FPGAs will power the data-center edge. AWS launches EC2 F1 instances with Xilinx UltraScale+ VU9P FPGAs, making cloud FPGA acceleration available to any developer.</div>
+      </div>
+      <div class="tl-item g">
+        <div class="tl-dot"></div>
+        <div class="tl-year">2022</div>
+        <div class="tl-title">AMD acquires Xilinx for $49B; Altera spun off from Intel</div>
+        <div class="tl-desc">The two FPGA giants consolidate under new owners. AMD-Xilinx introduces Versal AI with embedded AI Tensor Blocks. Altera (rebranded from Intel PSG) launches Agilex 9 with hardened AI compute.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">2024–2025</div>
+        <div class="tl-title">AWS launches F2 instances with HBM-equipped AMD VU47P FPGAs</div>
+        <div class="tl-desc">F2 delivers 60% better price-performance vs F1. First cloud FPGA with 16 GiB HBM at 460 GB/s per chip. Available in three sizes (f2.6xl, f2.12xl, f2.48xl) across 8 global AWS regions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Triangle positioning -->
+  <div class="section">
+    <div class="section-label">Positioning</div>
+    <h2>FPGA as custom ASIC — and how it differs from a GPU</h2>
+    <p>An FPGA occupies a unique position in the compute hierarchy. For any given workload, it behaves like a custom ASIC: optimized datapath, custom bit-widths, deterministic timing. But unlike an ASIC, the "design" is a software bitstream that can be rewritten in hours. And unlike a GPU, the hardware topology itself changes per workload — not just the software running on fixed cores.</p>
+
+    <div class="cards">
+      <div class="card accent">
+        <div class="card-dot dot-blue"></div>
+        <h4>FPGA — Reconfigurable custom silicon</h4>
+        <p>Behaves like a custom ASIC for each workload. Reload a bitstream → become a different accelerator. Zero NRE cost, full hardware control, sub-microsecond deterministic latency. The datapath is tuned to the algorithm.</p>
+      </div>
+      <div class="card green">
+        <div class="card-dot dot-green"></div>
+        <h4>ASIC — Fixed-function chip</h4>
+        <p>Maximum efficiency for one workload in high volume. Optimal power, smallest die — but $10M–$100M NRE, 18-month tape-out cycles, zero post-manufacture flexibility. Model changes require a new chip.</p>
+      </div>
+      <div class="card orange">
+        <div class="card-dot dot-orange"></div>
+        <h4>GPU — Programmable throughput engine</h4>
+        <p>Thousands of fixed SIMD CUDA cores running software kernels. Excellent for dense matrix training. High idle power, fixed memory hierarchy, requires large batches for efficiency. Logic topology never changes.</p>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Attribute</th><th>FPGA</th><th>ASIC</th><th>GPU</th></tr></thead>
+        <tbody>
+          <tr><td>Hardware flexibility</td><td><span class="badge b-blue">Full reprogrammability</span></td><td><span class="badge b-red">Fixed at tape-out</span></td><td><span class="badge b-orange">Software-only changes</span></td></tr>
+          <tr><td>Inference latency</td><td>5–50 ns deterministic</td><td>1–10 ns</td><td>1–10 µs (batch overhead)</td></tr>
+          <tr><td>Power efficiency (inference)</td><td>High — custom datapath</td><td>Highest</td><td>Low — fixed idle overhead</td></tr>
+          <tr><td>NRE / design cost</td><td>$0 (bitstream only)</td><td>$10M–$100M</td><td>$0 (CUDA kernels)</td></tr>
+          <tr><td>Custom precision support</td><td>Any bit-width (2, 3, 4-bit…)</td><td>Fixed at design</td><td>FP8 minimum; no sub-8-bit</td></tr>
+          <tr><td>Batch size requirement</td><td>Optimal at batch=1</td><td>None</td><td>Needs large batches</td></tr>
+          <tr><td>Time to deploy changes</td><td>Hours (bitstream recompile)</td><td>18+ months (new chip)</td><td>Hours (kernel recompile)</td></tr>
+          <tr><td>Model update agility</td><td>Instant bitstream hot-swap</td><td>New chip required</td><td>Redeploy container</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cta-row">
+      <button class="cta-btn cta-primary" onclick="go('arch')">Explore Architecture →</button>
+      <button class="cta-btn cta-secondary" onclick="go('sdh')">Software-Defined Hardware →</button>
+      <button class="cta-btn cta-secondary" onclick="go('ai')">AI Inference →</button>
+      <button class="cta-btn cta-secondary" onclick="go('aws')">AWS Instances →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ ARCHITECTURE ══ -->
+<div id="page-arch" class="page">
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>Inside the<br><span>FPGA Fabric</span></h1>
+    <p>FPGAs are hierarchical arrays of configurable primitives — from individual lookup tables up to hard processor cores and AI tensor engines — all connected by a sea of programmable routing fabric.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Core primitives</div>
+    <h2>The four architectural pillars</h2>
+    <div class="cards">
+      <div class="card accent">
+        <div class="card-dot dot-blue"></div>
+        <h4>Configurable Logic Block (CLB)</h4>
+        <p>The fundamental compute unit. Each CLB contains 4–8 Look-Up Tables (LUTs) implementing arbitrary Boolean functions, flip-flops for state storage, carry chains for fast arithmetic, and multiplexer trees. Modern FPGAs contain millions of CLBs.</p>
+      </div>
+      <div class="card green">
+        <div class="card-dot dot-green"></div>
+        <h4>Programmable Interconnect</h4>
+        <p>A hierarchical grid of metal wires and switch matrices spanning the die. Short wires connect adjacent tiles; long lines cross half or the full die. The toolchain's place-and-route algorithm determines every connection at compile time — no runtime overhead.</p>
+      </div>
+      <div class="card orange">
+        <div class="card-dot dot-orange"></div>
+        <h4>Block RAM (BRAM)</h4>
+        <p>Dual-port SRAM macros embedded throughout the fabric in columns — typically 18 Kb or 36 Kb each. Used for FIFOs, coefficient tables, line buffers, and custom on-chip memory hierarchies. Eliminates off-chip memory latency for working datasets.</p>
+      </div>
+      <div class="card purple">
+        <div class="card-dot dot-purple"></div>
+        <h4>DSP Slices</h4>
+        <p>Hard-wired multiply-accumulate (MAC) units running at 500–900 MHz. The AMD VU47P in AWS F2 contains 9,024 DSP slices delivering up to 28 TOPS of INT8 compute performance. The backbone of FPGA neural network acceleration.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Structural diagram</div>
+    <h2>FPGA tile array — top-level view</h2>
+    <p>Each column in the FPGA die is specialized: CLB columns for logic, BRAM columns for memory, DSP columns for arithmetic. The programmable routing fabric wraps every column, enabling any output to connect to any input across the die. I/O and hard-IP blocks ring the periphery.</p>
+
+    <div class="arch-svg-wrap">
+      <svg width="100%" viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" style="font-family:'Space Grotesk',sans-serif">
+        <!-- Outer die -->
+        <rect x="30" y="20" width="620" height="370" rx="16" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <text x="340" y="48" text-anchor="middle" font-size="12" font-weight="500" fill="#8E8E99" letter-spacing="0.08em">AMD VU47P FPGA (AWS F2)</text>
+
+        <!-- CLB col 1 -->
+        <rect x="55" y="65" width="95" height="190" rx="8" fill="rgba(10,132,255,0.15)" stroke="rgba(10,132,255,0.4)" stroke-width="0.5"/>
+        <text x="102" y="155" text-anchor="middle" font-size="13" font-weight="500" fill="#5AB9FF">CLB</text>
+        <text x="102" y="173" text-anchor="middle" font-size="11" fill="rgba(90,185,255,0.7)">LUTs + FF</text>
+
+        <!-- BRAM col 1 -->
+        <rect x="165" y="65" width="55" height="190" rx="8" fill="rgba(255,159,10,0.15)" stroke="rgba(255,159,10,0.4)" stroke-width="0.5"/>
+        <text x="192" y="155" text-anchor="middle" font-size="11" font-weight="500" fill="#FFB84A" transform="rotate(-90,192,155)">BRAM</text>
+
+        <!-- CLB col 2 -->
+        <rect x="235" y="65" width="95" height="190" rx="8" fill="rgba(10,132,255,0.15)" stroke="rgba(10,132,255,0.4)" stroke-width="0.5"/>
+        <text x="282" y="155" text-anchor="middle" font-size="13" font-weight="500" fill="#5AB9FF">CLB</text>
+        <text x="282" y="173" text-anchor="middle" font-size="11" fill="rgba(90,185,255,0.7)">LUTs + FF</text>
+
+        <!-- DSP col -->
+        <rect x="345" y="65" width="55" height="190" rx="8" fill="rgba(48,209,88,0.15)" stroke="rgba(48,209,88,0.4)" stroke-width="0.5"/>
+        <text x="372" y="155" text-anchor="middle" font-size="11" font-weight="500" fill="#5ED483" transform="rotate(-90,372,155)">DSP × 9024</text>
+
+        <!-- CLB col 3 -->
+        <rect x="415" y="65" width="95" height="190" rx="8" fill="rgba(10,132,255,0.15)" stroke="rgba(10,132,255,0.4)" stroke-width="0.5"/>
+        <text x="462" y="155" text-anchor="middle" font-size="13" font-weight="500" fill="#5AB9FF">CLB</text>
+        <text x="462" y="173" text-anchor="middle" font-size="11" fill="rgba(90,185,255,0.7)">LUTs + FF</text>
+
+        <!-- BRAM col 2 -->
+        <rect x="525" y="65" width="55" height="190" rx="8" fill="rgba(255,159,10,0.15)" stroke="rgba(255,159,10,0.4)" stroke-width="0.5"/>
+        <text x="552" y="155" text-anchor="middle" font-size="11" font-weight="500" fill="#FFB84A" transform="rotate(-90,552,155)">BRAM</text>
+
+        <!-- CLB col 4 -->
+        <rect x="595" y="65" width="50" height="190" rx="8" fill="rgba(10,132,255,0.15)" stroke="rgba(10,132,255,0.4)" stroke-width="0.5"/>
+        <text x="620" y="160" text-anchor="middle" font-size="11" font-weight="500" fill="#5AB9FF">CLB</text>
+
+        <!-- Routing arrows -->
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M2 2L8 5L2 8" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+          </marker>
+        </defs>
+        <text x="340" y="118" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.3)">← programmable routing fabric →</text>
+        <line x1="150" y1="125" x2="165" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+        <line x1="220" y1="125" x2="235" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+        <line x1="330" y1="125" x2="345" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+        <line x1="400" y1="125" x2="415" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+        <line x1="510" y1="125" x2="525" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+
+        <!-- Hard PCIe / IO ring -->
+        <rect x="45" y="270" width="590" height="32" rx="8" fill="rgba(191,90,242,0.15)" stroke="rgba(191,90,242,0.4)" stroke-width="0.5"/>
+        <text x="340" y="291" text-anchor="middle" font-size="12" font-weight="500" fill="#CE88F7">I/O Pins + SerDes + PCIe Gen4 hard blocks</text>
+
+        <!-- HBM -->
+        <rect x="45" y="315" width="590" height="32" rx="8" fill="rgba(48,209,88,0.15)" stroke="rgba(48,209,88,0.4)" stroke-width="0.5"/>
+        <text x="340" y="336" text-anchor="middle" font-size="12" font-weight="500" fill="#5ED483">HBM — 16 GiB at 460 GB/s bandwidth (F2 VU47P)</text>
+
+        <!-- Legend -->
+        <rect x="45" y="363" width="10" height="10" rx="2" fill="rgba(10,132,255,0.5)"/>
+        <text x="60" y="373" font-size="11" fill="#8E8E99">CLB (logic)</text>
+        <rect x="135" y="363" width="10" height="10" rx="2" fill="rgba(255,159,10,0.5)"/>
+        <text x="150" y="373" font-size="11" fill="#8E8E99">BRAM (memory)</text>
+        <rect x="250" y="363" width="10" height="10" rx="2" fill="rgba(48,209,88,0.5)"/>
+        <text x="265" y="373" font-size="11" fill="#8E8E99">DSP (MAC units)</text>
+        <rect x="360" y="363" width="10" height="10" rx="2" fill="rgba(191,90,242,0.5)"/>
+        <text x="375" y="373" font-size="11" fill="#8E8E99">Hard IP / I/O</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Modern FPGA enhancements</div>
+    <h2>Hard blocks, AI engines, and HBM</h2>
+    <p>Modern high-end FPGAs embed far more than soft logic. Hard IP blocks provide ASIC-efficiency for common functions without consuming soft-logic resources, while AI Tensor Blocks bring fixed-function matrix accelerators onto the FPGA die itself — blending reconfigurability with hard-IP efficiency.</p>
+
+    <div class="cards">
+      <div class="card accent">
+        <h4>AI Tensor Blocks</h4>
+        <p>Hard INT8/INT4 multiply-accumulate arrays embedded alongside the LUT fabric. AMD Versal AI and Altera Agilex 9 embed dedicated neural-network engines achieving hundreds of TOPS without consuming soft DSP slices — FPGA + ASIC in one chip.</p>
+      </div>
+      <div class="card green">
+        <h4>High Bandwidth Memory (HBM)</h4>
+        <p>Stacked DRAM physically bonded to the FPGA package. AMD VU47P: 16 GiB at 460 GB/s per chip. Eliminates memory bandwidth as the inference bottleneck for large activation tensors and KV-caches.</p>
+      </div>
+      <div class="card orange">
+        <h4>Hard ARM processor cores</h4>
+        <p>Xilinx Zynq UltraScale+ embeds quad-core Cortex-A53 and dual Cortex-R5 CPUs in the same package. Enables fully standalone FPGA inference systems with hardware Linux running the control plane.</p>
+      </div>
+      <div class="card purple">
+        <h4>Partial reconfiguration</h4>
+        <p>Reload a section of the FPGA fabric while the rest continues operating. Deploy multiple inference models simultaneously on one chip, switching between them at microsecond granularity without system downtime.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Toolchain</div>
+    <h2>From algorithm to bitstream</h2>
+    <div class="flow-row">
+      <div class="flow-chip blue">RTL (Verilog / VHDL)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Synthesis</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Technology mapping</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Place &amp; Route</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip green">Bitstream (.xclbin / .bit)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip blue">FPGA programmed</div>
+    </div>
+    <p style="margin-top:16px">Higher-level flows bypass RTL entirely: Vitis HLS compiles C/C++/OpenCL to RTL; FPGA AI Suite compiles ONNX models directly. The AWS FPGA Developer AMI pre-installs all tooling at no additional software charge.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ SDH ══ -->
+<div id="page-sdh" class="page">
+  <div class="hero">
+    <div class="hero-badge">Software-Defined Hardware</div>
+    <h1>Elastic Silicon:<br><span>The SDH Paradigm</span></h1>
+    <p>Software-Defined Hardware treats the FPGA not as a static accelerator, but as a continuously reconfigurable compute substrate co-designed with its ML algorithms and system software as one unified architecture.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Core concept</div>
+    <h2>What is Software-Defined Hardware?</h2>
+    <p>SDH is the philosophy of co-designing ML algorithms, system software stack, and reconfigurable hardware as a single unified system. Instead of mapping a neural network onto fixed GPU cores, SDH allows the hardware datapath itself — bit widths, pipeline depth, memory topology, operator fusion — to be tuned for each model and updated as models evolve.</p>
+    <p>Concretely: a PyTorch model is compiled not just to a software binary, but to a <em>bitstream</em> that restructures the FPGA's logic fabric for that exact model's compute graph. Change the model → recompile the bitstream → reload the chip in milliseconds. The hardware IS the software.</p>
+
+    <div class="hl">
+      <h4>Key principle</h4>
+      <p>SDH collapses the traditional hardware/software boundary. The FPGA becomes an execution substrate as mutable as software but as efficient as custom silicon. Co-designing ML, OS, and hardware as one system — not three separate stacks — is what delivers 10–100× efficiency gains.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Detailed comparison</div>
+    <h2>Software-Defined Hardware vs GPU — key differences</h2>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Dimension</th><th>FPGA (SDH)</th><th>GPU</th></tr></thead>
+        <tbody>
+          <tr><td>Hardware mutability</td><td class="win">Fully reconfigurable per model; hardware topology changes</td><td class="lose">Fixed SIMD architecture; only software changes</td></tr>
+          <tr><td>Datapath precision</td><td class="win">Any bit-width: 2, 3, 4-bit, INT8, FP16, custom formats</td><td class="lose">Discrete modes: FP8, INT8, FP16, BF16, FP32</td></tr>
+          <tr><td>Operator fusion</td><td class="win">Fuse any operators in hardware at compile time — zero inter-op memory</td><td class="lose">CUDA kernel fusion, constrained by warp geometry</td></tr>
+          <tr><td>On-chip memory topology</td><td class="win">Custom SRAM layout per algorithm (sliding windows, custom caches)</td><td class="lose">Fixed L1/L2/HBM hierarchy shared across all threads</td></tr>
+          <tr><td>Latency</td><td class="win">Deterministic sub-microsecond; no kernel launch overhead</td><td class="lose">Microseconds+ (CUDA launch + batch accumulation)</td></tr>
+          <tr><td>Power at inference</td><td class="win">10–25W per FPGA; only active logic draws power</td><td class="lose">300–700W TDP; idle power is significant at low utilization</td></tr>
+          <tr><td>Batch size dependency</td><td class="win">Optimal at batch=1 (streaming, real-time)</td><td class="lose">Needs large batches to amortize fixed-core overhead</td></tr>
+          <tr><td>Model update cycle</td><td class="win">Bitstream reload: milliseconds</td><td class="lose">Kernel recompile + redeploy: minutes to hours</td></tr>
+          <tr><td>Training</td><td class="lose">Not competitive; niche use cases only</td><td class="win">Native; best-in-class for large-scale training</td></tr>
+          <tr><td>Developer ecosystem</td><td class="lose">Vitis, HLS, OpenCL — steeper learning curve</td><td class="win">CUDA, PyTorch, Triton — massive, mature ecosystem</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="hl green">
+      <h4>Strategic summary</h4>
+      <p>FPGAs as SDH dominate inference scenarios requiring deterministic latency, custom quantization, high power efficiency, or low batch sizes. GPUs dominate training and high-throughput batch inference. The highest-performing AI infrastructure deploys both in their respective sweet spots.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Co-design pipeline</div>
+    <h2>The unified ML + software + hardware compile flow</h2>
+    <div class="flow-row">
+      <div class="flow-chip blue">ML model (PyTorch / ONNX)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Quantization / pruning</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip orange">FPGA compiler (Vitis / HLS / TVM)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Bitstream (custom datapath)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip green">FPGA fabric (live silicon)</div>
+    </div>
+    <p style="margin-top:16px">This co-design loop means that changing quantization strategy (INT8 → INT4) restructures the hardware datapath — multiplier bit-width, accumulator depth, and memory layout all change simultaneously. The result is hardware precisely sized to the model, with no wasted silicon or power budget.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ AI INFERENCE ══ -->
+<div id="page-ai" class="page">
+  <div class="hero">
+    <div class="hero-badge">AI Inference</div>
+    <h1>FPGA as an<br><span>Elastic AI Inference Engine</span></h1>
+    <p>FPGAs deliver cost-efficient, deterministic AI inference by co-designing ML, system software, and reconfigurable hardware as a single unified architecture — eliminating the overhead, idle power, and fixed-topology constraints of GPU-centric inference.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">The inference advantage</div>
+    <h2>Why FPGAs excel at AI inference</h2>
+    <p>GPU inference efficiency depends on batch size: large batches amortize fixed-core overhead, but latency grows. Real-world production systems — trading, fraud detection, medical imaging, real-time recommendations — frequently operate at batch=1 or very small batches. FPGAs are natively optimal here: their pipelined architectures process tokens as streaming data with no batch accumulation, no kernel launch latency, no idle power drain.</p>
+
+    <div class="cards">
+      <div class="card accent">
+        <h4>Custom quantization</h4>
+        <p>Implement 3-bit, 4-bit, or mixed-precision arithmetic natively. A 4-bit LLM requires 4-bit multipliers — FPGA implements exactly that. GPU wastes bits by packing into INT8 containers, burning 2× more compute and memory bandwidth than necessary.</p>
+      </div>
+      <div class="card green">
+        <h4>Operator fusion in silicon</h4>
+        <p>Fuse LayerNorm + Attention + Softmax + FFN into a single hardware pipeline. No off-chip memory round-trips between operators. Latency collapses from tens of microseconds on GPU to nanoseconds on FPGA.</p>
+      </div>
+      <div class="card orange">
+        <h4>Deterministic SLA</h4>
+        <p>Hardware pipelines have fixed, clock-cycle-accurate latency. No scheduler jitter, no GC pauses, no CUDA launch overhead. Critical for financial trading, autonomous vehicles, and medical devices with hard latency budgets.</p>
+      </div>
+      <div class="card purple">
+        <h4>Elastic capacity</h4>
+        <p>AWS F2 instances scale from 1 FPGA (f2.6xlarge) to 8 FPGAs (f2.48xlarge). Hot-swap a new bitstream to switch models in milliseconds. Pay for exactly the compute you need with per-second billing.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Altera FPGA AI Suite</div>
+    <h2>Intel / Altera: FPGA AI Suite toolchain</h2>
+    <p>The Altera FPGA AI Suite provides a complete inference pipeline from trained model to running silicon. It supports PyTorch, TensorFlow, and ONNX models, compiles them to optimized RTL via OpenCL/HLS, and targets Agilex-series FPGAs with embedded AI Tensor Blocks. The suite intelligently partitions inference: attention on Tensor Blocks, custom ops on soft CLBs, data movement via DMA to HBM.</p>
+
+    <div class="flow-row">
+      <div class="flow-chip blue">ONNX / PyTorch</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">OpenVINO IR</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip orange">FPGA Compiler (HLS)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Bitstream (.rbf)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip green">Agilex FPGA inference</div>
+    </div>
+
+    <a href="https://www.altera.com/products/development-tools/fpga-ai-suite" target="_blank" class="ext-link" style="margin-top:16px;display:inline-flex">↗ Altera FPGA AI Suite</a>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Deployment spectrum</div>
+    <h2>Where FPGA AI inference is deployed today</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Domain</th><th>Workload</th><th>FPGA advantage</th></tr></thead>
+        <tbody>
+          <tr><td>Financial services</td><td>Real-time risk models, HFT scoring</td><td>Sub-microsecond deterministic latency</td></tr>
+          <tr><td>5G / Telecom</td><td>Beamforming, LDPC/Polar channel decoding</td><td>Custom datapath, real-time DSP at line rate</td></tr>
+          <tr><td>Medical imaging</td><td>CT reconstruction, retinal OCT, MRI pre-processing</td><td>Custom precision, low power, edge deployment</td></tr>
+          <tr><td>Video / broadcast</td><td>Real-time H.265/AV1 encoding, CDI uncompressed transport</td><td>Hardwired codec pipelines, 8ms inter-instance latency</td></tr>
+          <tr><td>Genomics</td><td>DRAGEN secondary analysis (AstraZeneca, Illumina)</td><td>10× faster than CPU; FPGA-accelerated alignment</td></tr>
+          <tr><td>Network security</td><td>Deep packet inspection, encryption offload</td><td>100 Gbps line-rate hardware processing</td></tr>
+          <tr><td>LLM inference</td><td>Prefill acceleration, speculative decoding, expert routing</td><td>Custom attention, disaggregated prefill/decode pipeline</td></tr>
+          <tr><td>Data analytics</td><td>SQL acceleration (NeuroBlade SPU)</td><td>95× faster graph analysis vs CPU on AWS F2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ COMPARE ══ -->
+<div id="page-compare" class="page">
+  <div class="hero">
+    <div class="hero-badge">Head-to-Head</div>
+    <h1>FPGA vs GPU<br><span>Inference: The Full Picture</span></h1>
+    <p>The right accelerator depends entirely on the workload. This section provides a rigorous, dimension-by-dimension comparison and a decision framework for when FPGAs win — and when GPUs do.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Full comparison</div>
+    <h2>FPGA-powered inference vs GPU-powered inference</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>FPGA (e.g. AWS F2 VU47P)</th><th>GPU (e.g. NVIDIA H100 SXM5)</th><th>Winner</th></tr></thead>
+        <tbody>
+          <tr><td>Latency (batch=1)</td><td>5–50 ns pipelined</td><td>50–500 µs (kernel launch overhead)</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Throughput (large batch)</td><td>Moderate (pipeline width limited)</td><td>Very high (tensor core saturation)</td><td><span class="badge b-orange">GPU</span></td></tr>
+          <tr><td>Power per inference</td><td>10–25W per FPGA chip</td><td>300–700W full GPU TDP</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Custom bit precision</td><td>Any bit-width (2, 3, 4, custom)</td><td>FP8 minimum; no sub-8-bit native</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Operator fusion depth</td><td>Unlimited — entire model = one pipeline</td><td>Limited by kernel granularity</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Latency determinism</td><td>±1 clock cycle (nanosecond precision)</td><td>Variable (scheduler jitter, GC pauses)</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Model size capacity</td><td>Limited by on-chip HBM (~80 GiB max)</td><td>80 GiB HBM per H100; multi-GPU possible</td><td><span class="badge b-orange">GPU</span></td></tr>
+          <tr><td>Training</td><td>Not competitive for large-scale training</td><td>Best-in-class; CUDA ecosystem dominant</td><td><span class="badge b-orange">GPU</span></td></tr>
+          <tr><td>Cost at low utilization</td><td>Low — idle FPGA draws ~5W</td><td>High — idle GPU draws 100W+</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Model update agility</td><td>Bitstream hot-swap in milliseconds</td><td>Kernel recompile + container redeploy</td><td><span class="badge b-blue">FPGA</span></td></tr>
+          <tr><td>Developer experience</td><td>Vitis, HLS, Quartus — specialist skillset</td><td>CUDA, PyTorch, Triton — huge community</td><td><span class="badge b-orange">GPU</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Decision guide</div>
+    <h2>When FPGAs win at inference</h2>
+    <div class="cards">
+      <div class="card accent">
+        <h4>Latency-critical real-time applications</h4>
+        <p>When SLA demands sub-millisecond response: HFT, fraud scoring at transaction time, autonomous vehicle perception, real-time sensor fusion. GPUs cannot match FPGA pipeline latency at batch=1.</p>
+      </div>
+      <div class="card green">
+        <h4>Power-constrained environments</h4>
+        <p>Edge deployments, satellite computing, dense inference racks where per-inference watt budget is critical. FPGA: 10–25W total. H100 GPU: 700W. 28–70× power difference at comparable throughput for specific workloads.</p>
+      </div>
+      <div class="card orange">
+        <h4>Non-standard model precision</h4>
+        <p>Ternary networks, 4-bit LLMs, 2-bit activations. GPU packs sub-8-bit values into INT8 containers, wasting half the compute. FPGA implements the exact arithmetic natively — 2× to 4× efficiency gain.</p>
+      </div>
+      <div class="card purple">
+        <h4>Streaming / continuous data</h4>
+        <p>Video streams at 60fps, 100 Gbps packet flows, continuous genomics pipeline. FPGA processes each sample as it arrives — no batch accumulation, no head-of-line blocking, no latency variance.</p>
+      </div>
+      <div class="card red">
+        <h4>Frequent model updates in production</h4>
+        <p>A/B testing hardware-level inference logic, regulatory-driven model changes, rapid iteration cycles. FPGA bitstream hot-swap requires no system restart — update the accelerator logic in milliseconds.</p>
+      </div>
+    </div>
+
+    <div class="hl orange">
+      <h4>When to prefer GPU</h4>
+      <p>High-throughput batch inference (&gt;128 batch size), models larger than ~80 GiB, large-scale training, teams without FPGA expertise, and rapid prototyping without FPGA toolchain setup. GPU's CUDA ecosystem is unmatched for development velocity.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ AWS ══ -->
+<div id="page-aws" class="page">
+  <div class="hero">
+    <div class="hero-badge">Cloud Deployment</div>
+    <h1>FPGA on AWS:<br><span>F1 &amp; F2 Instances</span></h1>
+    <p>AWS offers two generations of FPGA-powered EC2 instances — F1 (Xilinx UltraScale+) and F2 (AMD VU47P with HBM) — making enterprise-grade reconfigurable computing available to any developer, on demand, with per-second billing.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Generation comparison</div>
+    <h2>F1 vs F2 — what changed</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Spec</th><th>F1 (Gen 1, 2017)</th><th>F2 (Gen 2, 2024–2025)</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>FPGA chip</td><td>Xilinx VU9P UltraScale+</td><td>AMD VU47P UltraScale+ HBM</td><td><span class="badge b-green">Newer arch</span></td></tr>
+          <tr><td>On-chip HBM</td><td>None</td><td>16 GiB at 460 GB/s per FPGA</td><td><span class="badge b-green">New tier</span></td></tr>
+          <tr><td>DDR4 per FPGA</td><td>64 GiB</td><td>64 GiB</td><td>—</td></tr>
+          <tr><td>DSP slices per FPGA</td><td>6,840</td><td>9,024</td><td><span class="badge b-blue">+32%</span></td></tr>
+          <tr><td>System logic cells</td><td>~2.5M (VU9P)</td><td>2.85M (VU47P)</td><td><span class="badge b-blue">+14%</span></td></tr>
+          <tr><td>Max vCPUs (largest)</td><td>64 (Broadwell E5-2686)</td><td>192 (AMD EPYC Milan)</td><td><span class="badge b-green">3×</span></td></tr>
+          <tr><td>Max system memory</td><td>976 GiB</td><td>2 TiB</td><td><span class="badge b-green">2×</span></td></tr>
+          <tr><td>Max network BW</td><td>25 Gbps</td><td>100 Gbps</td><td><span class="badge b-green">4×</span></td></tr>
+          <tr><td>Max NVMe SSD</td><td>4 TiB</td><td>7.6 TiB</td><td><span class="badge b-green">2×</span></td></tr>
+          <tr><td>Price / performance</td><td>Baseline</td><td>Up to 60% better</td><td><span class="badge b-green">60% ↑</span></td></tr>
+          <tr><td>Max FPGAs per instance</td><td>8</td><td>8</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">F2 instance sizes</div>
+    <h2>Amazon EC2 F2 instance specifications (2025)</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Instance</th><th>FPGAs</th><th>vCPUs</th><th>System RAM</th><th>NVMe SSD</th><th>Network BW</th><th>HBM / FPGA</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>f2.6xlarge</code></td>
+            <td><span class="badge b-gray">1</span></td>
+            <td>24</td><td>256 GiB</td><td>950 GiB</td><td>12.5 Gbps</td><td>16 GiB</td>
+            <td>Single-model dev, cost-entry point, prototyping</td>
+          </tr>
+          <tr>
+            <td><code>f2.12xlarge</code></td>
+            <td><span class="badge b-blue">4</span></td>
+            <td>48</td><td>768 GiB</td><td>3.8 TiB</td><td>25 Gbps</td><td>16 GiB</td>
+            <td>Multi-model inference, analytics, genomics</td>
+          </tr>
+          <tr>
+            <td><code>f2.48xlarge</code></td>
+            <td><span class="badge b-green">8</span></td>
+            <td>192</td><td>2 TiB</td><td>7.6 TiB</td><td>100 Gbps</td><td>16 GiB</td>
+            <td>Max throughput, CDI live video, LLM prefill, satellite</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hl">
+      <h4>F2 notable: AWS Cloud Digital Interface (CDI)</h4>
+      <p>The f2.48xlarge supports CDI for uncompressed live video transport between AWS instances with instance-to-instance latency as low as 8 milliseconds — enabling broadcast-quality real-time video pipelines at cloud scale.</p>
+    </div>
+    <div class="hl green" style="margin-top:12px">
+      <h4>Regional availability (as of Nov 2025)</h4>
+      <p>US East (N. Virginia), US West (Oregon), Europe (London), Europe (Frankfurt), Asia Pacific (Sydney), Asia Pacific (Tokyo), Asia Pacific (Seoul), Canada (Central).</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Case studies</div>
+    <h2>AWS FPGA customer deployments</h2>
+
+    <div class="case-card">
+      <div class="case-company">Xilinx / AMD — Software testing</div>
+      <div class="case-title">Scalable FPGA regression testing with F1 + Auto Scaling</div>
+      <p class="case-desc">Xilinx migrated its entire software testing platform to AWS EC2, using F1 instances with Auto Scaling to add capacity dynamically based on test queue depth. DynamoDB backs the testing metadata; S3, EBS, and EFS handle storage. Migration completed with zero business disruption.</p>
+      <span class="case-metric">Zero-disruption migration</span><span class="case-metric">Dynamic Auto Scaling</span>
+    </div>
+
+    <div class="case-card">
+      <div class="case-company">AstraZeneca — Genomics bioinformatics</div>
+      <div class="case-title">World's fastest genomics pipeline — thousands of F1 instances</div>
+      <p class="case-desc">AstraZeneca deployed the DRAGEN Bio-IT Platform on F1 instances, achieving real-time whole-genome sequencing. FPGA-accelerated read alignment delivered 10× acceleration over CPU-only analysis, processing a full 30× coverage human genome in minutes.</p>
+      <span class="case-metric">10× faster than CPU</span><span class="case-metric">Real-time WGS at scale</span>
+    </div>
+
+    <div class="case-card">
+      <div class="case-company">Illumina — Genomics (F2 migration)</div>
+      <div class="case-title">DRAGEN secondary analysis on F2 — expanded capacity</div>
+      <p class="case-desc">Building on the F1 DRAGEN success, Illumina is deploying DRAGEN on F2 via Illumina Connected Analytics on AWS. The VU47P's additional DSP slices and HBM bandwidth enable higher-throughput genomic analysis pipelines with hardware-accelerated algorithm implementations.</p>
+      <span class="case-metric">HBM-accelerated alignment</span><span class="case-metric">F1 → F2 migration path</span>
+    </div>
+
+    <div class="case-card">
+      <div class="case-company">NeuroBlade — Data analytics (F2)</div>
+      <div class="case-title">SQL Processing Unit on F2 — 95× faster graph database analysis</div>
+      <p class="case-desc">NeuroBlade's FPGA-based SQL Processing Unit (SPU) integrates with Presto and Apache Spark on F2 instances. The SPU leverages FPGA programmable logic to accelerate query processing, achieving breakthrough query throughput efficiency — 95× faster graph analysis and market-leading QpH/$ vs CPU-only.</p>
+      <span class="case-metric">95× faster graph analytics</span><span class="case-metric">Presto + Spark native</span>
+    </div>
+
+    <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+      <a href="https://aws.amazon.com/ec2/instance-types/f2/" target="_blank" class="ext-link">↗ AWS F2 instance page</a>
+      <a href="https://aws.amazon.com/solutions/case-studies/xilinx/" target="_blank" class="ext-link">↗ Xilinx on AWS case study</a>
+      <a href="https://www.altera.com/" target="_blank" class="ext-link">↗ Altera.com</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Developer tooling</div>
+    <h2>Getting started: AWS FPGA development kit</h2>
+    <p>AWS provides a complete end-to-end development environment. The FPGA Developer AMI pre-installs Xilinx Vivado and Vitis at no additional software charge. Developers build Custom Logic (CL) and combine it with the AWS Shell (SH) to create an Amazon FPGA Image (AFI), which can be deployed to any number of F2 instances — or published on AWS Marketplace.</p>
+    <div class="flow-row">
+      <div class="flow-chip blue">FPGA Developer AMI</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">RTL / HLS / C++</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip orange">Build AFI (Custom Logic + Shell)</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip">Load on F2 instance</div>
+      <div class="flow-arr">→</div>
+      <div class="flow-chip green">Deploy / publish on Marketplace</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ ADVANCED ══ -->
+<div id="page-advanced" class="page">
+  <div class="hero">
+    <div class="hero-badge">Advanced Architecture Patterns</div>
+    <h1>Next-Generation<br><span>Disaggregated AI Inference</span></h1>
+    <p>Beyond single-chip deployments, the frontier of FPGA AI inference uses disaggregated architectures — splitting different inference phases across specialized hardware to extract maximum efficiency from each component.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Disaggregated inference</div>
+    <h2>FPGA for Prefill + Trainium for Decode</h2>
+    <p>Large language model inference has two phases with fundamentally different compute profiles. <strong>Prefill</strong> processes the input prompt — highly parallel, compute-bound, with variable-length inputs. <strong>Decode</strong> generates tokens autoregressively — memory-bandwidth-bound, sequential, highly regular. Disaggregating these phases onto purpose-built hardware maximizes efficiency for each.</p>
+
+    <div class="infra-row">
+      <div class="infra-box" style="border-color:rgba(10,132,255,0.45)">
+        <div class="infra-label">Phase 1 — Compute-bound</div>
+        <div class="infra-name" style="color:#5AB9FF">FPGA Prefill</div>
+        <p class="infra-desc">Custom attention pipelines on VU47P HBM fabric. Processes full prompt in parallel with bespoke datapath optimized for variable-length inputs. HBM at 460 GB/s eliminates KV-cache bandwidth bottleneck. Deterministic latency regardless of prompt length variance.</p>
+      </div>
+      <div class="infra-arrow">→</div>
+      <div class="infra-box" style="border-color:rgba(255,255,255,0.2)">
+        <div class="infra-label">KV Cache transfer</div>
+        <div class="infra-name" style="color:var(--muted)">High-Speed Fabric</div>
+        <p class="infra-desc">RDMA / PCIe Gen4 or AWS EFA moves KV-cache tensors from FPGA prefill nodes to decode accelerator. AWS F2 inter-FPGA ring: 400 Gbps bidirectional bandwidth at 12 Gbps per FPGA pair.</p>
+      </div>
+      <div class="infra-arrow">→</div>
+      <div class="infra-box" style="border-color:rgba(191,90,242,0.45)">
+        <div class="infra-label">Phase 2 — Bandwidth-bound</div>
+        <div class="infra-name" style="color:#CE88F7">Trainium / Inferentia Decode</div>
+        <p class="infra-desc">AWS Trainium NeuronCore architecture is purpose-built for memory-bandwidth-bound autoregressive generation. Large HBM pool holds full model weights; decode proceeds at maximum memory bandwidth efficiency.</p>
+      </div>
+    </div>
+
+    <div class="hl">
+      <h4>Why disaggregation wins</h4>
+      <p>Prefill is arithmetic-intense with irregular parallelism — FPGA custom attention handles variable-length prompts without batch-padding waste. Decode is memory-bandwidth-limited with regular patterns — Trainium's NeuronCore is purpose-built for this. Combining both achieves lower total cost of ownership than running H100s for the entire pipeline, with no compromise on latency or throughput.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Advanced patterns</div>
+    <h2>Emerging FPGA AI architectures</h2>
+    <div class="cards">
+      <div class="card accent">
+        <h4>Inline data-path acceleration</h4>
+        <p>FPGA placed directly in the data stream — between network ingress and CPU/GPU. Pre-processes, filters, and infers at line rate (100 Gbps) before data touches a general-purpose processor. Eliminates memory bandwidth pressure on expensive downstream compute.</p>
+      </div>
+      <div class="card green">
+        <h4>Speculative decoding offload</h4>
+        <p>Small FPGA-accelerated draft model speculatively generates token candidates (microseconds/token). GPU verifier model accepts valid sequences in batches. Result: 3–5× decode throughput improvement for LLMs without accuracy loss.</p>
+      </div>
+      <div class="card orange">
+        <h4>Mixture-of-Experts routing</h4>
+        <p>FPGA implements the MoE expert router in hardware: each token triggers a sub-microsecond lookup table dispatch to the correct expert shard on the GPU cluster. Eliminates routing overhead that bottlenecks CPU-based MoE systems.</p>
+      </div>
+      <div class="card purple">
+        <h4>Chiplet-integrated FPGA</h4>
+        <p>FPGA reconfigurable fabric as a chiplet co-packaged with a CPU die via UCIe or EMIB. Sub-nanosecond die-to-die latency, cache coherence with CPU. Merges FPGA flexibility with CPU memory hierarchy — the next frontier of adaptive compute.</p>
+      </div>
+      <div class="card red">
+        <h4>Smart NIC / DPU-FPGA hybrid</h4>
+        <p>FPGA fabric embedded in the network interface card handles encryption, compression, and ML inference at line rate before data reaches the server. Effectively moves AI to the network edge — zero additional data-center floor space.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Altera applications</div>
+    <h2>Altera: FPGA for telecommunications and data-center AI</h2>
+    <p>Altera FPGAs (formerly Intel PSG, now spun off) power high-volume FPGA deployments in 5G base stations, data-center SmartNICs, and embedded AI. The Agilex 9 series introduces hardened AI Tensor Blocks achieving hundreds of TOPS for INT8 inference, combined with the full reconfigurability of traditional FPGA fabric. OneAPI provides a unified software abstraction across FPGAs, GPUs, and CPUs — reducing ecosystem fragmentation.</p>
+    <a href="https://www.altera.com/" target="_blank" class="ext-link">↗ Altera FPGA portfolio</a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ CONCLUSION ══ -->
+<div id="page-conclusion" class="page">
+  <div class="hero">
+    <div class="hero-badge">Open-Minded AI Infrastructure</div>
+    <h1>AI Inference is<br><span>Not GPU-Only</span></h1>
+    <p>The dominant narrative equates AI inference with GPU inference. This is historically contingent — shaped by CUDA's developer momentum and the training era's needs — not technically inevitable. The future of AI infrastructure is heterogeneous.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">The case for heterogeneity</div>
+    <h2>Why the GPU monoculture has limits</h2>
+    <p>GPUs won the training era because deep learning maps well onto SIMD parallelism, and NVIDIA's CUDA ecosystem created deep lock-in. But production inference is a different problem: latency matters more than peak throughput, batch sizes are often small, power budgets are tight, models update frequently, and many workloads require custom precision formats that don't fit cleanly into INT8 containers.</p>
+    <p>An infrastructure optimized purely for training throughput is not automatically optimal for inference efficiency. The first-principles question is always: <em>what hardware topology — pipeline depth, memory hierarchy, compute precision, datapath width — best matches this workload's compute graph?</em></p>
+
+    <div class="pullquote">
+      "The history of compute is the history of specialization. CPUs begat GPUs begat TPUs begat FPGAs in the data center. Each wave did not replace the last — it found the workload it was built for."
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">The optimal stack</div>
+    <h2>A heterogeneous AI inference architecture</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Workload phase</th><th>Optimal hardware</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td>LLM / diffusion training</td><td><span class="badge b-orange">GPU (H100/A100)</span></td><td>Dense matrix math, large batch, mature CUDA ecosystem</td></tr>
+          <tr><td>LLM prefill (prompt processing)</td><td><span class="badge b-blue">FPGA (VU47P)</span></td><td>Custom attention, variable prompt length, low latency, HBM</td></tr>
+          <tr><td>LLM decode (token generation)</td><td><span class="badge b-purple">Trainium / Inferentia</span></td><td>Memory-bandwidth-optimized NeuronCore, purpose-built decode</td></tr>
+          <tr><td>Real-time scoring (batch=1)</td><td><span class="badge b-blue">FPGA</span></td><td>Deterministic sub-microsecond; no batch accumulation</td></tr>
+          <tr><td>High-throughput batch inference</td><td><span class="badge b-orange">GPU</span></td><td>Tensor core throughput at large batch sizes</td></tr>
+          <tr><td>Edge / IoT / power-constrained</td><td><span class="badge b-blue">FPGA</span></td><td>10–25W total; custom datapath at the edge</td></tr>
+          <tr><td>Network processing (DPI, security)</td><td><span class="badge b-blue">FPGA / SmartNIC</span></td><td>100 Gbps line-rate deterministic processing</td></tr>
+          <tr><td>Sub-8-bit quantized models</td><td><span class="badge b-blue">FPGA</span></td><td>Only accelerator natively implementing arbitrary bit-widths</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Key takeaways</div>
+    <h2>What we've learned across this guide</h2>
+    <div class="cards">
+      <div class="card accent">
+        <h4>FPGAs are reconfigurable ASICs</h4>
+        <p>For any given workload, an FPGA can match ASIC-level efficiency without the NRE cost or inflexibility. The bitstream IS the chip design — rewritable in hours, deployable in milliseconds.</p>
+      </div>
+      <div class="card green">
+        <h4>Software-Defined Hardware is real and powerful</h4>
+        <p>Co-designing ML, system software, and hardware as one system — rather than adapting models to fixed GPU cores — yields 10–100× efficiency improvements for specific inference workloads.</p>
+      </div>
+      <div class="card orange">
+        <h4>AWS democratizes FPGA at cloud scale</h4>
+        <p>F1 and F2 instances let any team prototype, validate, and deploy FPGA accelerators without capital expenditure. F2 with HBM delivers 60% better price/performance than F1 — and AWS handles all operational underpinning.</p>
+      </div>
+      <div class="card purple">
+        <h4>Disaggregated inference is the future</h4>
+        <p>FPGA prefill + Trainium decode + GPU training is not a workaround — it is an optimally designed heterogeneous system. Each phase maps to the silicon it was built for. Total cost of ownership drops; performance rises.</p>
+      </div>
+    </div>
+
+    <div class="hl green" style="margin-top:24px">
+      <h4>The bottom line</h4>
+      <p>Open-minded AI infrastructure teams evaluate each workload phase on its own merits — latency requirements, batch size distribution, precision needs, power budget, update frequency — and match each phase to its optimal accelerator. GPU, FPGA, and custom ASIC are complementary tools, not competing choices. The question is never "GPU or FPGA?" — it is "what hardware topology does this compute graph require?"</p>
+    </div>
+
+    <div class="cta-row">
+      <a href="https://aws.amazon.com/ec2/instance-types/f2/" target="_blank" class="cta-btn cta-primary" style="text-decoration:none">Start with AWS F2 →</a>
+      <a href="https://www.altera.com/products/development-tools/fpga-ai-suite" target="_blank" class="cta-btn cta-secondary" style="text-decoration:none">Altera AI Suite →</a>
+      <a href="https://www.eetimes.com/all-about-fpgas/" target="_blank" class="cta-btn cta-secondary" style="text-decoration:none">EE Times FPGA Guide →</a>
+      <button class="cta-btn cta-secondary" onclick="go('home')">← Back to overview</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <strong>Sources &amp; references:</strong> EE Times — All About FPGAs · National Inventors Hall of Fame — Ross Freeman (U.S. Patent 4,870,302) · AWS EC2 F2 Launch Blog (Jeff Barr, Jan 2025) · AWS F2 Instance Types page · Altera FPGA AI Suite · SemiEngineering — FPGAs Find New Workloads In The High-Speed AI Era · AWS ML Blog — Accelerators for Financial Services · GitHub: aws/aws-fpga · AWS What's New: F2.6xlarge (Feb 2025) · AWS What's New: F2 in 4 additional regions (Nov 2025)
+  </div>
+</div>
+
+<script>
+const pageOrder = ['home','arch','sdh','ai','compare','aws','advanced','conclusion'];
+function go(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) { page.classList.add('active'); }
+  const idx = pageOrder.indexOf(id);
+  const btns = document.querySelectorAll('.nav-btn');
+  if (idx >= 0 && btns[idx]) btns[idx].classList.add('active');
+  window.scrollTo({top:0, behavior:'instant'});
+}
+</script>
+</body>
+</html>
