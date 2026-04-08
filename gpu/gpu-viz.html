@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPU Concepts — Visual Learning</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+
+:root {
+  --bg: #ffffff;
+  --surface: #f7f6f3;
+  --border: #e8e4dc;
+  --border2: #d0ccc2;
+  --text: #1a1816;
+  --muted: #6b6762;
+  --faint: #9e9990;
+  --accent: #ff5722;
+  --accent2: #ff8c42;
+  --green: #22c55e;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --serif: 'DM Serif Display', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; overflow-x: hidden; }
+
+/* ── TOPBAR ── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; height: 52px; padding: 0 24px; gap: 0;
+}
+.topbar-brand {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  color: var(--text); letter-spacing: 0.05em; margin-right: 32px; white-space: nowrap;
+}
+.topbar-brand span { color: var(--accent); }
+.main-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+.main-tabs::-webkit-scrollbar { display: none; }
+.main-tab {
+  background: none; border: none; padding: 6px 14px;
+  font-family: var(--sans); font-size: 13px; font-weight: 400;
+  color: var(--muted); cursor: pointer; border-radius: 6px;
+  transition: all 0.15s; white-space: nowrap; position: relative;
+}
+.main-tab:hover { background: var(--surface); color: var(--text); }
+.main-tab.active { background: var(--text); color: #fff; font-weight: 500; }
+.topbar-by {
+  font-size: 12px; color: var(--faint); white-space: nowrap; margin-left: 16px;
+  font-family: var(--mono);
+}
+.topbar-by strong { color: var(--accent); font-weight: 500; }
+
+/* ── LAYOUT ── */
+.app { padding-top: 52px; display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; min-width: 220px; border-right: 0.5px solid var(--border);
+  padding: 20px 12px; position: sticky; top: 52px; height: calc(100vh - 52px);
+  overflow-y: auto; background: var(--bg);
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sidebar-section-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--faint); padding: 6px 10px 4px; margin-top: 8px;
+}
+.sub-tab {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  padding: 7px 10px; font-size: 13px; color: var(--muted); cursor: pointer;
+  border-radius: 6px; transition: all 0.12s; font-family: var(--sans);
+}
+.sub-tab:hover { background: var(--surface); color: var(--text); }
+.sub-tab.active { background: #fff3ee; color: var(--accent); font-weight: 500; }
+
+.content { flex: 1; padding: 32px 40px 80px; max-width: 900px; overflow-x: hidden; }
+
+/* ── SECTION ── */
+.section { display: none; }
+.section.active { display: block; }
+
+.section-hero { margin-bottom: 36px; }
+.section-hero h1 { font-family: var(--serif); font-size: 36px; font-weight: 400; letter-spacing: -0.5px; margin-bottom: 8px; }
+.section-hero p { font-size: 15px; color: var(--muted); max-width: 600px; line-height: 1.75; }
+.hero-tag {
+  display: inline-block; font-family: var(--mono); font-size: 11px;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+  background: #fff3ee; color: var(--accent); border: 0.5px solid #ffd5c2;
+}
+
+/* ── CARDS & COMPONENTS ── */
+.card {
+  border: 0.5px solid var(--border); border-radius: 12px;
+  padding: 20px 24px; background: #fff; margin-bottom: 20px;
+}
+.card h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.card p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+
+.label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
+.code-block {
+  background: #1a1816; color: #e8e4dc; font-family: var(--mono);
+  font-size: 12px; padding: 16px 20px; border-radius: 10px; margin: 12px 0;
+  overflow-x: auto; line-height: 1.7;
+}
+.code-block .kw { color: #ff8c42; }
+.code-block .cm { color: #6b6762; }
+.code-block .str { color: #86efac; }
+.code-block .num { color: #93c5fd; }
+
+/* ── VISUALIZATIONS ── */
+.viz-box {
+  border: 0.5px solid var(--border); border-radius: 12px;
+  background: var(--surface); padding: 24px; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+.viz-box .viz-label {
+  font-family: var(--mono); font-size: 10px; color: var(--faint);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px;
+}
+
+/* ── THE MACHINE ── */
+.gpu-chip-wrap { position: relative; width: 100%; }
+.sm-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-bottom: 20px; }
+.sm-cell {
+  aspect-ratio: 1; border-radius: 5px; background: #e8e4dc;
+  border: 0.5px solid #d0ccc2; transition: all 0.3s; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 7px; color: #9e9990;
+}
+.sm-cell.lit { background: var(--accent); border-color: #e04010; color: #fff; }
+.sm-cell.med { background: var(--accent2); border-color: #e07030; color: #fff; }
+.sm-cell.dim { background: #ffeee8; border-color: #ffd5c2; color: var(--accent); }
+.sm-cell:hover { transform: scale(1.1); z-index: 2; }
+
+.mem-hierarchy { display: flex; gap: 0; flex-direction: column; }
+.mem-row {
+  display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+  border: 0.5px solid var(--border); margin-bottom: 4px; border-radius: 8px;
+  transition: background 0.15s; cursor: pointer;
+}
+.mem-row:hover { background: #fff3ee; }
+.mem-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.mem-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.mem-name { font-family: var(--mono); font-size: 12px; min-width: 100px; }
+.mem-spec { font-size: 11px; color: var(--faint); min-width: 110px; text-align: right; }
+
+/* ── EXECUTION HIERARCHY ── */
+.thread-grid-wrap { overflow-x: auto; }
+.thread-grid {
+  display: grid; grid-template-columns: repeat(32, 1fr); gap: 3px;
+  min-width: 480px;
+}
+.thread-cell {
+  width: 14px; height: 14px; border-radius: 3px; background: var(--border);
+  transition: all 0.2s; cursor: pointer; position: relative;
+}
+.thread-cell.warp0 { background: #dbeafe; }
+.thread-cell.warp1 { background: #ede9fe; }
+.thread-cell.warp2 { background: #dcfce7; }
+.thread-cell.warp3 { background: #fef3c7; }
+.thread-cell.warp4 { background: #fce7f3; }
+.thread-cell.warp5 { background: #e0f2fe; }
+.thread-cell.active { transform: scale(1.2); box-shadow: 0 0 6px rgba(255,87,34,0.4); z-index: 2; }
+.thread-cell:hover { transform: scale(1.3); z-index: 3; }
+
+.hierarchy-steps { display: flex; flex-direction: column; gap: 0; }
+.hier-step {
+  display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+  border-left: 3px solid var(--border); margin-left: 20px; position: relative;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.hier-step::before {
+  content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px; border-radius: 50%; background: var(--border); border: 2px solid #fff;
+}
+.hier-step.active-step { border-left-color: var(--accent); }
+.hier-step.active-step::before { background: var(--accent); }
+.hier-step-num { font-family: var(--mono); font-size: 11px; color: var(--faint); min-width: 40px; }
+.hier-step h4 { font-size: 14px; font-weight: 600; }
+.hier-step p { font-size: 12px; color: var(--muted); }
+
+/* ── MEMORY COALESCING ── */
+.coalesce-demo { display: flex; flex-direction: column; gap: 24px; }
+.thread-access-row { display: flex; align-items: center; gap: 12px; }
+.access-label { font-family: var(--mono); font-size: 11px; min-width: 80px; color: var(--muted); }
+.mem-cells { display: flex; gap: 3px; }
+.mem-cell {
+  width: 22px; height: 22px; border-radius: 4px; background: var(--border);
+  border: 0.5px solid var(--border2); font-family: var(--mono); font-size: 8px;
+  display: flex; align-items: center; justify-content: center; color: var(--faint);
+  transition: all 0.3s;
+}
+.mem-cell.hit { background: #dcfce7; border-color: #86efac; color: #166534; }
+.mem-cell.miss { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.mem-cell.partial { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.transaction-bar {
+  height: 24px; border-radius: 4px; display: flex; align-items: center;
+  padding: 0 10px; font-family: var(--mono); font-size: 11px; font-weight: 500;
+  margin-top: 6px; transition: all 0.5s;
+}
+.transaction-bar.good { background: #dcfce7; color: #166534; }
+.transaction-bar.bad { background: #fee2e2; color: #991b1b; }
+
+/* ── WARP DIVERGENCE ── */
+.warp-sim { display: flex; flex-direction: column; gap: 16px; }
+.warp-lane-row { display: flex; gap: 8px; align-items: center; }
+.warp-lane-label { font-family: var(--mono); font-size: 11px; min-width: 70px; color: var(--muted); }
+.warp-lanes { display: flex; gap: 4px; }
+.lane {
+  width: 22px; height: 30px; border-radius: 4px; border: 0.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 8px; font-weight: 500;
+  transition: all 0.3s; cursor: pointer;
+}
+.lane.if-branch { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+.lane.else-branch { background: #fce7f3; color: #9d174d; border-color: #f9a8d4; }
+.lane.masked { background: #f3f4f6; color: #9ca3af; border-color: #e5e7eb; opacity: 0.5; }
+.lane.active { background: var(--accent); color: #fff; border-color: #e04010; }
+
+.cycle-timeline { display: flex; gap: 6px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
+.cycle-block {
+  min-width: 60px; height: 40px; border-radius: 6px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-size: 10px; font-family: var(--mono);
+  border: 0.5px solid var(--border2); flex-shrink: 0;
+}
+.cycle-block.if-block { background: #dbeafe; color: #1e40af; }
+.cycle-block.else-block { background: #fce7f3; color: #9d174d; }
+.cycle-block.both { background: #f3f4f6; color: #6b7280; }
+.cycle-block.converge { background: #dcfce7; color: #166534; }
+
+/* ── SYNC ── */
+.barrier-viz { position: relative; }
+.thread-prog-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.thread-prog-row { display: flex; align-items: center; gap: 12px; }
+.prog-label { font-family: var(--mono); font-size: 11px; min-width: 60px; color: var(--muted); }
+.prog-track { flex: 1; height: 20px; background: var(--border); border-radius: 4px; position: relative; overflow: hidden; }
+.prog-fill {
+  height: 100%; border-radius: 4px; transition: width 1.2s ease;
+  display: flex; align-items: center; padding-left: 8px;
+  font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.9);
+}
+.barrier-line {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent);
+  right: 30%; transition: right 1s;
+}
+.barrier-label {
+  position: absolute; top: -22px; right: 30%; transform: translateX(50%);
+  font-family: var(--mono); font-size: 10px; color: var(--accent); white-space: nowrap;
+}
+
+/* ── CONTROLS ── */
+.control-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.btn {
+  padding: 6px 16px; border-radius: 20px; border: 0.5px solid var(--border2);
+  background: #fff; font-size: 12px; font-family: var(--sans); cursor: pointer;
+  transition: all 0.15s; color: var(--text); font-weight: 500;
+}
+.btn:hover { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+.btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+.btn.active-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.slider-row label { font-size: 12px; color: var(--muted); min-width: 120px; }
+.slider-row input[type=range] { flex: 1; accent-color: var(--accent); }
+.slider-row .val { font-family: var(--mono); font-size: 12px; min-width: 40px; }
+
+/* ── METRIC CHIPS ── */
+.metric-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px;
+  font-family: var(--mono); font-weight: 500;
+}
+.chip.good { background: #dcfce7; color: #166534; }
+.chip.warn { background: #fef3c7; color: #92400e; }
+.chip.bad { background: #fee2e2; color: #991b1b; }
+.chip.info { background: #dbeafe; color: #1e40af; }
+.chip.neutral { background: var(--surface); color: var(--muted); border: 0.5px solid var(--border); }
+
+/* ── DIVIDER ── */
+.section-divider { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
+
+/* ── TABS WITHIN SECTION ── */
+.sub-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 0.5px solid var(--border); padding-bottom: 0; }
+.sub-nav-btn {
+  padding: 8px 16px; background: none; border: none; font-size: 13px;
+  color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: all 0.15s; font-family: var(--sans);
+}
+.sub-nav-btn:hover { color: var(--text); }
+.sub-nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+/* ── WHO AM I ── */
+.profile-band {
+  display: flex; align-items: flex-start; gap: 24px;
+  padding: 28px; background: var(--surface); border-radius: 14px; margin-bottom: 28px;
+  border: 0.5px solid var(--border);
+}
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%; background: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 600; color: #fff; flex-shrink: 0;
+  font-family: var(--mono);
+}
+.profile-name { font-family: var(--serif); font-size: 26px; font-weight: 400; }
+.profile-role { font-size: 13px; color: var(--accent); font-weight: 500; margin: 3px 0 10px; }
+.profile-bio { font-size: 14px; color: var(--muted); line-height: 1.75; max-width: 520px; }
+
+/* ── TOOLTIP ── */
+.tooltip { position: relative; cursor: help; }
+.tooltip:hover .tooltip-text {
+  opacity: 1; pointer-events: auto; transform: translateY(0);
+}
+.tooltip-text {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+  background: var(--text); color: #fff; font-size: 11px; padding: 6px 10px;
+  border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none;
+  transition: all 0.15s; z-index: 100; font-family: var(--sans);
+}
+
+/* ── PERF GAUGE ── */
+.gauge-row { display: flex; gap: 16px; margin: 12px 0; flex-wrap: wrap; }
+.gauge { text-align: center; }
+.gauge-circle { width: 72px; height: 72px; border-radius: 50%; position: relative; margin: 0 auto 6px; }
+.gauge-svg { transform: rotate(-90deg); }
+.gauge-val { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.gauge-label { font-size: 11px; color: var(--muted); }
+
+/* ── ANIMATION ── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation: fadeIn 0.25s ease forwards; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:760px){
+  .sidebar{display:none}
+  .content{padding:20px 18px 60px}
+  .two-col,.three-col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="topbar-brand">GPU<span>.viz</span></div>
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="showMain('machine')">The Machine</button>
+    <button class="main-tab" onclick="showMain('execution')">Execution Hierarchy</button>
+    <button class="main-tab" onclick="showMain('coalescing')">Memory Coalescing</button>
+    <button class="main-tab" onclick="showMain('divergence')">Warp Divergence</button>
+    <button class="main-tab" onclick="showMain('sync')">Synchronization</button>
+    <button class="main-tab" onclick="showMain('about')">Who Am I</button>
+  </div>
+  <div class="topbar-by">by <strong>Gyanesh Kumar</strong></div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <!-- populated by JS -->
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══════════════ THE MACHINE ══════════════ -->
+    <div id="sec-machine" class="section active fade-in">
+      <div class="section-hero">
+        <div class="hero-tag">Chapter 01</div>
+        <h1>The Machine</h1>
+        <p>A modern GPU is a massively parallel processor built around thousands of small cores organized into Streaming Multiprocessors. Understanding its physical layout is the foundation of everything that follows.</p>
+      </div>
+
+      <!-- sub nav -->
+      <div class="sub-nav">
+        <button class="sub-nav-btn active" onclick="showSub('machine','overview')">Overview</button>
+        <button class="sub-nav-btn" onclick="showSub('machine','sm')">Streaming Multiprocessor</button>
+        <button class="sub-nav-btn" onclick="showSub('machine','memory')">Memory Hierarchy</button>
+      </div>
+
+      <!-- machine-overview -->
+      <div id="sub-machine-overview" class="section active fade-in">
+        <div class="label">GPU chip — live simulation</div>
+        <div class="viz-box">
+          <div class="viz-label">STREAMING MULTIPROCESSORS (128 SMs) — HOVER TO INSPECT</div>
+          <div class="sm-grid" id="smGrid"></div>
+          <div class="control-row">
+            <button class="btn active-btn" onclick="setSMLoad(0.95)">Peak load</button>
+            <button class="btn" onclick="setSMLoad(0.65)">Medium</button>
+            <button class="btn" onclick="setSMLoad(0.3)">Low load</button>
+            <button class="btn" onclick="setSMLoad(0)">Idle</button>
+          </div>
+          <div class="metric-chips" id="smMetrics">
+            <span class="chip good">Active SMs: 122/128</span>
+            <span class="chip info">Throughput: ~95%</span>
+            <span class="chip neutral">TFLOPs: 312</span>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>What is a GPU?</h3>
+            <p>A GPU (Graphics Processing Unit) is optimized for throughput, not latency. While a CPU has a handful of powerful cores that minimize time per operation, a GPU trades latency for massive parallelism — thousands of simpler cores doing the same operation on different data simultaneously.</p>
+          </div>
+          <div class="card">
+            <h3>CPU vs GPU philosophy</h3>
+            <p>A CPU is a Formula 1 car — blazing fast on a single lap. A GPU is a fleet of buses — slower individually, but moving thousands of passengers at once. Deep learning is a traffic problem, not a race.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>NVIDIA H100 — Key Numbers</h3>
+          <div class="three-col" style="margin-top:12px;margin-bottom:0">
+            <div style="text-align:center;padding:12px;background:var(--surface);border-radius:8px">
+              <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent)">132</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Streaming Multiprocessors</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--surface);border-radius:8px">
+              <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent)">16,896</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">CUDA Cores (FP32)</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--surface);border-radius:8px">
+              <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent)">3.35TB/s</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">HBM3 Memory Bandwidth</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- machine-sm -->
+      <div id="sub-machine-sm" class="section fade-in">
+        <div class="card">
+          <h3>The Streaming Multiprocessor (SM)</h3>
+          <p>Every SM is a self-contained processor. It has its own CUDA cores, warp schedulers, register file, and shared memory. Modern SMs contain 64–128 CUDA cores, 4 warp schedulers, 256KB register file, and 64–228KB shared memory / L1 cache per SM.</p>
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">SM INTERNAL LAYOUT</div>
+          <svg width="100%" viewBox="0 0 640 340" style="max-height:340px">
+            <!-- SM outer -->
+            <rect x="20" y="20" width="600" height="300" rx="12" fill="#f7f6f3" stroke="#e8e4dc" stroke-width="1"/>
+            <text x="320" y="44" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1816" font-family="'IBM Plex Mono',monospace">STREAMING MULTIPROCESSOR</text>
+
+            <!-- Warp schedulers -->
+            <rect x="40" y="58" width="120" height="50" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+            <text x="100" y="80" text-anchor="middle" font-size="10" fill="#1e40af" font-family="'IBM Plex Mono',monospace">WARP</text>
+            <text x="100" y="94" text-anchor="middle" font-size="10" fill="#1e40af" font-family="'IBM Plex Mono',monospace">SCHEDULER ×4</text>
+
+            <!-- Register file -->
+            <rect x="180" y="58" width="120" height="50" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="0.5"/>
+            <text x="240" y="80" text-anchor="middle" font-size="10" fill="#5b21b6" font-family="'IBM Plex Mono',monospace">REGISTER</text>
+            <text x="240" y="94" text-anchor="middle" font-size="10" fill="#5b21b6" font-family="'IBM Plex Mono',monospace">FILE 256KB</text>
+
+            <!-- Shared mem -->
+            <rect x="320" y="58" width="120" height="50" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+            <text x="380" y="80" text-anchor="middle" font-size="10" fill="#166534" font-family="'IBM Plex Mono',monospace">SHARED</text>
+            <text x="380" y="94" text-anchor="middle" font-size="10" fill="#166534" font-family="'IBM Plex Mono',monospace">MEM 64KB</text>
+
+            <!-- L1 cache -->
+            <rect x="460" y="58" width="140" height="50" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="0.5"/>
+            <text x="530" y="80" text-anchor="middle" font-size="10" fill="#92400e" font-family="'IBM Plex Mono',monospace">L1 CACHE</text>
+            <text x="530" y="94" text-anchor="middle" font-size="10" fill="#92400e" font-family="'IBM Plex Mono',monospace">128KB</text>
+
+            <!-- CUDA cores grid -->
+            <text x="320" y="134" text-anchor="middle" font-size="10" fill="#6b6762" font-family="'IBM Plex Mono',monospace">CUDA CORES (FP32 / FP64 / INT32 / TENSOR)</text>
+            <!-- core grid -->
+            <g id="smCores"></g>
+
+            <!-- arrows down -->
+            <text x="320" y="300" text-anchor="middle" font-size="10" fill="#9e9990" font-family="'IBM Plex Mono',monospace">↓ L2 Cache (shared across all SMs)  →  Global Memory (HBM)</text>
+          </svg>
+          <script>
+            // render core grid inline
+            (function(){
+              var g = document.getElementById('smCores');
+              var cols = 16, rows = 8, cw = 28, ch = 14, gapx = 4, gapy = 4;
+              var ox = 40, oy = 148;
+              var colors = ['#ff5722','#ff8c42','#fcd34d','#86efac'];
+              for(var r=0;r<rows;r++){
+                for(var c=0;c<cols;c++){
+                  var x = ox + c*(cw+gapx), y = oy + r*(ch+gapy);
+                  var ci = Math.floor((c/4)) % 4;
+                  var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+                  rect.setAttribute('x',x); rect.setAttribute('y',y);
+                  rect.setAttribute('width',cw); rect.setAttribute('height',ch);
+                  rect.setAttribute('rx','2');
+                  rect.setAttribute('fill', ci===0?'#fff3ee':ci===1?'#fffbeb':ci===2?'#ede9fe':'#f0fdf4');
+                  rect.setAttribute('stroke', ci===0?'#ffd5c2':ci===1?'#fde68a':ci===2?'#ddd6fe':'#bbf7d0');
+                  rect.setAttribute('stroke-width','0.5');
+                  g.appendChild(rect);
+                }
+              }
+              // legend
+              var lx = ox, ly = oy + rows*(ch+gapy) + 8;
+              var lbls = ['FP32','INT32','Tensor','FP64'];
+              var lclrs = ['#fff3ee','#fffbeb','#ede9fe','#f0fdf4'];
+              var lbclrs = ['#ffd5c2','#fde68a','#ddd6fe','#bbf7d0'];
+              lbls.forEach(function(l,i){
+                var rx2 = lx + i*100;
+                var rect2 = document.createElementNS('http://www.w3.org/2000/svg','rect');
+                rect2.setAttribute('x',rx2); rect2.setAttribute('y',ly);
+                rect2.setAttribute('width',12); rect2.setAttribute('height',12);
+                rect2.setAttribute('rx','2'); rect2.setAttribute('fill',lclrs[i]);
+                rect2.setAttribute('stroke',lbclrs[i]); rect2.setAttribute('stroke-width','0.5');
+                g.appendChild(rect2);
+                var t = document.createElementNS('http://www.w3.org/2000/svg','text');
+                t.setAttribute('x',rx2+16); t.setAttribute('y',ly+9);
+                t.setAttribute('font-size','9'); t.setAttribute('fill','#6b6762');
+                t.setAttribute('font-family',"'IBM Plex Mono',monospace");
+                t.textContent = l;
+                g.appendChild(t);
+              });
+            })();
+          </script>
+        </div>
+
+        <div class="card">
+          <h3>Warp schedulers — why 4?</h3>
+          <p>Each SM has 4 warp schedulers that can issue instructions every clock cycle. With typical memory latency of 400–800 cycles, the scheduler fills the pipeline by switching to other warps while one waits for memory — a technique called <em>latency hiding</em>. More warps in flight = better latency hiding.</p>
+        </div>
+      </div>
+
+      <!-- machine-memory -->
+      <div id="sub-machine-memory" class="section fade-in">
+        <div class="label">Memory hierarchy — click rows to compare</div>
+        <div class="viz-box">
+          <div class="mem-hierarchy" id="memHier">
+            <div class="mem-row tooltip" onclick="highlightMem(0)" data-info="Zero-latency. ~256KB per SM. Thread-private. Lost when warp ends.">
+              <span class="mem-name">Registers</span>
+              <div class="mem-bar-wrap"><div class="mem-bar" style="width:98%;background:#ff5722"></div></div>
+              <span class="mem-spec">0 cycles · 256KB/SM</span>
+              <span class="tooltip-text">Zero-latency, thread-private</span>
+            </div>
+            <div class="mem-row tooltip" onclick="highlightMem(1)" data-info="~1-2 cycles. Thread-block-private. 48-228KB per SM.">
+              <span class="mem-name">Shared Mem</span>
+              <div class="mem-bar-wrap"><div class="mem-bar" style="width:88%;background:#f59e0b"></div></div>
+              <span class="mem-spec">1–2 cycles · 228KB/SM</span>
+              <span class="tooltip-text">Block-shared, ultra-fast</span>
+            </div>
+            <div class="mem-row tooltip" onclick="highlightMem(2)">
+              <span class="mem-name">L1 / Tex</span>
+              <div class="mem-bar-wrap"><div class="mem-bar" style="width:75%;background:#eab308"></div></div>
+              <span class="mem-spec">~28 cycles · 128KB/SM</span>
+              <span class="tooltip-text">L1 cache, on-chip</span>
+            </div>
+            <div class="mem-row tooltip" onclick="highlightMem(3)">
+              <span class="mem-name">L2 Cache</span>
+              <div class="mem-bar-wrap"><div class="mem-bar" style="width:55%;background:#22c55e"></div></div>
+              <span class="mem-spec">~200 cycles · 50MB</span>
+              <span class="tooltip-text">Shared across all SMs</span>
+            </div>
+            <div class="mem-row tooltip" onclick="highlightMem(4)">
+              <span class="mem-name">HBM (Global)</span>
+              <div class="mem-bar-wrap"><div class="mem-bar" style="width:25%;background:#3b82f6"></div></div>
+              <span class="mem-spec">~600 cycles · 80GB</span>
+              <span class="tooltip-text">Off-chip DRAM — slow but vast</span>
+            </div>
+            <div class="mem-row tooltip" onclick="highlightMem(5)">
+              <span class="mem-name">CPU RAM (PCIe)</span>
+              <div class="mem-bar-wrap"><div class="mem-bar" style="width:8%;background:#8b5cf6"></div></div>
+              <span class="mem-spec">~5000 cycles · TBs</span>
+              <span class="tooltip-text">System memory over PCIe bus</span>
+            </div>
+          </div>
+        </div>
+        <div id="memDetail" class="card" style="display:none"></div>
+
+        <div class="card">
+          <h3>The golden rule of GPU programming</h3>
+          <p>Move data as close to the compute as possible. Every time you spill from registers to shared memory, or from shared memory to L2, you pay a latency and bandwidth tax. The biggest performance wins in CUDA kernels almost always come from reducing trips to global memory — not from making the math faster.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ EXECUTION HIERARCHY ══════════════ -->
+    <div id="sec-execution" class="section fade-in">
+      <div class="section-hero">
+        <div class="hero-tag">Chapter 02</div>
+        <h1>Execution Hierarchy</h1>
+        <p>GPU computation is organized as a nested hierarchy: Grid → Blocks → Warps → Threads. Each level maps to hardware in ways that directly determine performance.</p>
+      </div>
+
+      <div class="sub-nav">
+        <button class="sub-nav-btn active" onclick="showSub('execution','levels')">Hierarchy Levels</button>
+        <button class="sub-nav-btn" onclick="showSub('execution','warps')">Warps & SIMT</button>
+        <button class="sub-nav-btn" onclick="showSub('execution','occupancy')">Occupancy</button>
+      </div>
+
+      <!-- levels -->
+      <div id="sub-execution-levels" class="section active fade-in">
+        <div class="viz-box">
+          <div class="viz-label">EXECUTION HIERARCHY — CLICK LEVEL TO EXPLORE</div>
+          <div class="hierarchy-steps">
+            <div class="hier-step active-step" onclick="setHierLevel(0)">
+              <span class="hier-step-num">Level 4</span>
+              <div><h4>Grid</h4><p>The entire kernel launch — a 3D array of blocks dispatched to the GPU. One kernel call = one grid.</p></div>
+              <div class="chip info" style="margin-left:auto">≤ 2³¹ blocks</div>
+            </div>
+            <div class="hier-step" onclick="setHierLevel(1)">
+              <span class="hier-step-num">Level 3</span>
+              <div><h4>Block (Thread Block)</h4><p>A group of up to 1024 threads that share shared memory and can synchronize with __syncthreads(). All run on one SM.</p></div>
+              <div class="chip warn" style="margin-left:auto">≤ 1024 threads</div>
+            </div>
+            <div class="hier-step" onclick="setHierLevel(2)">
+              <span class="hier-step-num">Level 2</span>
+              <div><h4>Warp</h4><p>32 threads that execute in lockstep on hardware. The fundamental unit of GPU scheduling. Cannot cross block boundaries.</p></div>
+              <div class="chip good" style="margin-left:auto">Exactly 32 threads</div>
+            </div>
+            <div class="hier-step" onclick="setHierLevel(3)">
+              <span class="hier-step-num">Level 1</span>
+              <div><h4>Thread</h4><p>The smallest unit of execution. Has its own registers, program counter, and unique threadIdx/blockIdx to identify its data.</p></div>
+              <div class="chip neutral" style="margin-left:auto">1 register file slot</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="label" style="margin-top:20px">Thread → Block → Grid visualized</div>
+        <div class="viz-box">
+          <div class="viz-label">ONE BLOCK (256 THREADS = 8 WARPS OF 32)</div>
+          <div class="thread-grid-wrap">
+            <div class="thread-grid" id="threadGrid"></div>
+          </div>
+          <div class="metric-chips" style="margin-top:12px" id="warpLegend"></div>
+        </div>
+
+        <div class="code-block">
+<span class="kw">__global__</span> <span class="kw">void</span> myKernel(<span class="kw">float</span>* data) {
+  <span class="cm">// Every thread gets a unique ID</span>
+  <span class="kw">int</span> blockId  = blockIdx.x + blockIdx.y * gridDim.x;
+  <span class="kw">int</span> threadId = blockId * blockDim.x + threadIdx.x;
+  
+  <span class="cm">// Warp ID = threadId / 32</span>
+  <span class="kw">int</span> warpId   = threadId / <span class="num">32</span>;
+  <span class="kw">int</span> laneId   = threadId % <span class="num">32</span>;
+  
+  data[threadId] *= <span class="num">2.0f</span>;
+}
+
+<span class="cm">// Launch: 256 blocks × 256 threads = 65,536 threads total</span>
+myKernel&lt;&lt;&lt;<span class="num">256</span>, <span class="num">256</span>&gt;&gt;&gt;(d_data);
+        </div>
+      </div>
+
+      <!-- warps -->
+      <div id="sub-execution-warps" class="section fade-in">
+        <div class="card">
+          <h3>SIMT — Single Instruction, Multiple Threads</h3>
+          <p>All 32 threads in a warp fetch the same instruction simultaneously. Each has its own register state and can branch independently — but when branches differ, the hardware <em>serializes</em> them. This is warp divergence (covered in detail in Chapter 4).</p>
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">WARP SCHEDULER — LATENCY HIDING IN ACTION</div>
+          <div id="warpSchedulerViz"></div>
+          <div class="control-row">
+            <button class="btn primary" onclick="runWarpSim()">Simulate</button>
+            <button class="btn" onclick="resetWarpSim()">Reset</button>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">When Warp A stalls on memory (yellow), the scheduler instantly switches to Warp B. This is essentially free — each warp's registers stay on the SM the entire time.</p>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>Why 32?</h3>
+            <p>32 threads per warp is an NVIDIA architectural choice dating to the first CUDA GPUs. It balances the cost of the warp state (registers) against the benefit of SIMT execution. AMD uses "wavefronts" of 64 threads.</p>
+          </div>
+          <div class="card">
+            <h3>Warp state is always resident</h3>
+            <p>Unlike CPU context switches, warp switching is zero-cost — the SM keeps ALL active warp registers in its register file simultaneously. Switching is just pointing the scheduler at a different warp's already-loaded registers.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- occupancy -->
+      <div id="sub-execution-occupancy" class="section fade-in">
+        <div class="card">
+          <h3>Occupancy — filling the SM pipeline</h3>
+          <p>Occupancy = (active warps per SM) / (max warps per SM). Higher occupancy means more warps available to hide latency. But maximum occupancy isn't always optimal — sometimes fewer, better-utilizing warps beat many idle ones.</p>
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">OCCUPANCY CALCULATOR</div>
+          <div class="slider-row">
+            <label>Threads per block</label>
+            <input type="range" min="32" max="1024" step="32" value="256" id="occThreads" oninput="calcOccupancy()">
+            <span class="val" id="occThreadsVal">256</span>
+          </div>
+          <div class="slider-row">
+            <label>Registers per thread</label>
+            <input type="range" min="8" max="255" step="1" value="32" id="occRegs" oninput="calcOccupancy()">
+            <span class="val" id="occRegsVal">32</span>
+          </div>
+          <div class="slider-row">
+            <label>Shared mem (bytes)</label>
+            <input type="range" min="0" max="49152" step="512" value="4096" id="occSmem" oninput="calcOccupancy()">
+            <span class="val" id="occSmemVal">4096</span>
+          </div>
+          <div class="metric-chips" id="occResult"></div>
+          <div style="margin-top:12px">
+            <div class="label">Warp slots used / available per SM</div>
+            <div style="height:20px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:8px">
+              <div id="occBar" style="height:100%;background:var(--accent);border-radius:4px;transition:width 0.5s;width:50%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>The occupancy vs IPC tradeoff</h3>
+          <p>Using fewer registers per thread lets more warps co-reside (higher occupancy). But using too few registers forces the compiler to spill to local memory — which is actually global memory in disguise, tanking performance. Profile with nsight-compute, not intuition.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ MEMORY COALESCING ══════════════ -->
+    <div id="sec-coalescing" class="section fade-in">
+      <div class="section-hero">
+        <div class="hero-tag">Chapter 03</div>
+        <h1>Memory Coalescing</h1>
+        <p>When 32 threads in a warp access memory, the hardware tries to merge those 32 individual requests into as few 128-byte cache line transactions as possible. The difference between coalesced and scattered access can be 10–32× in performance.</p>
+      </div>
+
+      <div class="sub-nav">
+        <button class="sub-nav-btn active" onclick="showSub('coalescing','demo')">Interactive Demo</button>
+        <button class="sub-nav-btn" onclick="showSub('coalescing','patterns')">Access Patterns</button>
+        <button class="sub-nav-btn" onclick="showSub('coalescing','sharedmem')">Shared Memory Trick</button>
+      </div>
+
+      <!-- demo -->
+      <div id="sub-coalescing-demo" class="section active fade-in">
+        <div class="viz-box">
+          <div class="viz-label">COALESCING SIMULATOR — 32 THREADS ACCESSING MEMORY</div>
+          <div class="control-row">
+            <button class="btn active-btn" onclick="setCoalesceMode('perfect')">Perfect coalesce</button>
+            <button class="btn" onclick="setCoalesceMode('stride2')">Stride-2</button>
+            <button class="btn" onclick="setCoalesceMode('stride4')">Stride-4</button>
+            <button class="btn" onclick="setCoalesceMode('random')">Random scatter</button>
+          </div>
+          <div style="margin:16px 0">
+            <div class="label">Global memory — 128 cells shown (each = 4 bytes)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:12px" id="memCellsGlobal"></div>
+          </div>
+          <div style="margin:12px 0">
+            <div class="label">Thread access pattern (32 threads → which address?)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px" id="threadAccessPills"></div>
+          </div>
+          <div id="coalesceTxBar" style="margin-top:16px"></div>
+          <div class="metric-chips" id="coalesceMetrics" style="margin-top:12px"></div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>The 128-byte cache line rule</h3>
+            <p>Global memory is served in 128-byte chunks. If all 32 warp threads access addresses within the same 128-byte block, that's 1 transaction. If each thread accesses a completely different cache line, that's up to 32 separate transactions — a 32× bandwidth penalty.</p>
+          </div>
+          <div class="card">
+            <h3>Real-world impact</h3>
+            <p>A matrix transpose naively written causes every warp to read a column (non-coalesced). Rewriting with shared memory tiling as a staging buffer converts it to row-major reads and writes — turning 25 GB/s effective bandwidth into 750+ GB/s on an A100.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- patterns -->
+      <div id="sub-coalescing-patterns" class="section fade-in">
+        <div class="label">Common access patterns and their cost</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+
+          <div class="card" style="border-left:3px solid var(--green)">
+            <h3>✓ Coalesced — row-major matrix read</h3>
+            <p>Threads 0–31 read A[row][0..31]. All within one 128-byte line. 1 transaction for the entire warp.</p>
+            <div class="code-block" style="margin-top:8px">
+<span class="cm">// GOOD: thread i reads element i (consecutive)</span>
+output[tid] = data[tid]; <span class="cm">// 1 transaction</span>
+            </div>
+            <div class="metric-chips"><span class="chip good">1 transaction</span><span class="chip good">100% BW efficiency</span></div>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--amber)">
+            <h3>⚠ Strided — partial coalescing</h3>
+            <p>Threads read every 2nd element. Each pair of threads shares a cache line — 16 transactions instead of 1.</p>
+            <div class="code-block" style="margin-top:8px">
+<span class="cm">// WARN: stride 2 — wastes half the cache line</span>
+output[tid] = data[tid * <span class="num">2</span>]; <span class="cm">// ~16 transactions</span>
+            </div>
+            <div class="metric-chips"><span class="chip warn">16 transactions</span><span class="chip warn">50% BW efficiency</span></div>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--red)">
+            <h3>✗ Column-major — worst case</h3>
+            <p>Classic transpose bug: thread i reads A[i][j], traversing rows. Every thread touches a different 128-byte chunk.</p>
+            <div class="code-block" style="margin-top:8px">
+<span class="cm">// BAD: each thread hits a separate cache line</span>
+output[tid] = data[tid * N]; <span class="cm">// up to 32 transactions</span>
+            </div>
+            <div class="metric-chips"><span class="chip bad">32 transactions</span><span class="chip bad">~3% BW efficiency</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- shared mem trick -->
+      <div id="sub-coalescing-sharedmem" class="section fade-in">
+        <div class="card">
+          <h3>The tiling pattern — shared memory as a staging buffer</h3>
+          <p>Load data from global memory in coalesced chunks into shared memory (fast), then read from shared memory in any pattern you need. This is the foundation of optimized matrix multiplication (GEMM), convolutions, and almost every high-performance CUDA kernel.</p>
+        </div>
+
+        <div class="code-block">
+<span class="kw">__shared__</span> <span class="kw">float</span> tile[<span class="num">32</span>][<span class="num">32</span>];  <span class="cm">// on-chip, 4KB</span>
+
+<span class="cm">// Step 1: coalesced load from global → shared</span>
+tile[threadIdx.y][threadIdx.x] = A[row * N + col];
+<span class="kw">__syncthreads</span>();
+
+<span class="cm">// Step 2: read shared in any order — no global memory cost</span>
+<span class="kw">float</span> val = tile[threadIdx.x][threadIdx.y]; <span class="cm">// transposed!</span>
+
+<span class="cm">// Step 3: coalesced write back to global</span>
+B[col * M + row] = val;
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">MATRIX TRANSPOSE WITH TILING</div>
+          <svg width="100%" viewBox="0 0 600 200" style="max-height:200px">
+            <!-- Matrix A -->
+            <text x="80" y="20" text-anchor="middle" font-size="11" fill="#6b6762" font-family="'IBM Plex Mono',monospace">MATRIX A (global)</text>
+            <g id="matA"></g>
+            <!-- Arrow -->
+            <text x="200" y="105" text-anchor="middle" font-size="18" fill="#ff5722">→</text>
+            <text x="200" y="118" text-anchor="middle" font-size="8" fill="#6b6762" font-family="'IBM Plex Mono',monospace">coalesced</text>
+            <text x="200" y="128" text-anchor="middle" font-size="8" fill="#6b6762" font-family="'IBM Plex Mono',monospace">row load</text>
+            <!-- Shared tile -->
+            <text x="310" y="20" text-anchor="middle" font-size="11" fill="#166534" font-family="'IBM Plex Mono',monospace">SHARED TILE</text>
+            <g id="matTile"></g>
+            <!-- Arrow -->
+            <text x="420" y="105" text-anchor="middle" font-size="18" fill="#ff5722">→</text>
+            <text x="420" y="118" text-anchor="middle" font-size="8" fill="#6b6762" font-family="'IBM Plex Mono',monospace">transposed</text>
+            <text x="420" y="128" text-anchor="middle" font-size="8" fill="#6b6762" font-family="'IBM Plex Mono',monospace">col write</text>
+            <!-- Matrix B -->
+            <text x="530" y="20" text-anchor="middle" font-size="11" fill="#6b6762" font-family="'IBM Plex Mono',monospace">MATRIX B (global)</text>
+            <g id="matB"></g>
+          </svg>
+          <script>
+          (function(){
+            var sz=8,n=8,gap=2;
+            var colors=['#fff3ee','#fffbeb','#ede9fe','#f0fdf4','#dbeafe','#fce7f3','#dcfce7','#fef3c7'];
+            function makeGrid(gid,ox,oy,transpose){
+              var g=document.getElementById(gid);
+              for(var r=0;r<n;r++){
+                for(var c=0;c<n;c++){
+                  var rc=transpose?c:r;
+                  var rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+                  var rx2=ox+c*(sz+gap), ry=oy+r*(sz+gap);
+                  rect.setAttribute('x',rx2); rect.setAttribute('y',ry);
+                  rect.setAttribute('width',sz); rect.setAttribute('height',sz);
+                  rect.setAttribute('rx','1');
+                  rect.setAttribute('fill',colors[rc%8]);
+                  rect.setAttribute('stroke','rgba(0,0,0,0.08)'); rect.setAttribute('stroke-width','0.5');
+                  g.appendChild(rect);
+                }
+              }
+            }
+            makeGrid('matA',30,28,false);
+            makeGrid('matTile',245,28,false);
+            makeGrid('matB',480,28,true);
+          })();
+          </script>
+        </div>
+
+        <div class="card">
+          <h3>Bank conflicts in shared memory</h3>
+          <p>Shared memory is divided into 32 banks (one per warp lane). If two threads in a warp access the same bank (but different addresses), the accesses serialize — a "bank conflict." Classic fix for matrix transpose: pad the shared array by +1 column to offset addresses: <code style="font-family:var(--mono);font-size:12px">float tile[32][33]</code> instead of [32][32].</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ WARP DIVERGENCE ══════════════ -->
+    <div id="sec-divergence" class="section fade-in">
+      <div class="section-hero">
+        <div class="hero-tag">Chapter 04</div>
+        <h1>Warp Divergence</h1>
+        <p>Because all 32 threads in a warp execute the same instruction in lockstep, when they need to take different branches, the hardware must serialize those paths — executing each branch with non-participating threads masked off.</p>
+      </div>
+
+      <div class="sub-nav">
+        <button class="sub-nav-btn active" onclick="showSub('divergence','sim')">Simulator</button>
+        <button class="sub-nav-btn" onclick="showSub('divergence','cost')">Performance Cost</button>
+        <button class="sub-nav-btn" onclick="showSub('divergence','solutions')">Avoiding Divergence</button>
+      </div>
+
+      <!-- sim -->
+      <div id="sub-divergence-sim" class="section active fade-in">
+        <div class="viz-box">
+          <div class="viz-label">WARP DIVERGENCE SIMULATOR</div>
+          <div class="label">Choose a branch condition:</div>
+          <div class="control-row">
+            <button class="btn active-btn" onclick="setDivMode('half')">50/50 split (threadIdx.x &lt; 16)</button>
+            <button class="btn" onclick="setDivMode('quarter')">25% branch (threadIdx.x &lt; 8)</button>
+            <button class="btn" onclick="setDivMode('none')">No divergence</button>
+            <button class="btn" onclick="setDivMode('checker')">Checker pattern (every other)</button>
+          </div>
+
+          <div style="margin:16px 0">
+            <div class="label">Warp lanes (32 threads)</div>
+            <div class="warp-lanes" id="divLanes"></div>
+          </div>
+
+          <div style="margin:16px 0">
+            <div class="label">Execution timeline (clock cycles)</div>
+            <div class="cycle-timeline" id="divTimeline"></div>
+          </div>
+
+          <div class="metric-chips" id="divMetrics"></div>
+        </div>
+
+        <div class="code-block">
+<span class="cm">// Example: 50/50 divergence — SLOW</span>
+<span class="kw">if</span> (threadIdx.x &lt; <span class="num">16</span>) {
+  result = expensive_op_A(data);   <span class="cm">// threads 0-15 active, 16-31 MASKED</span>
+} <span class="kw">else</span> {
+  result = expensive_op_B(data);   <span class="cm">// threads 16-31 active, 0-15 MASKED</span>
+}
+<span class="cm">// Total cycles ≈ cycles_A + cycles_B  (NOT max)</span>
+        </div>
+      </div>
+
+      <!-- cost -->
+      <div id="sub-divergence-cost" class="section fade-in">
+        <div class="viz-box">
+          <div class="viz-label">DIVERGENCE COST — INTERACTIVE</div>
+          <div class="slider-row">
+            <label>Threads diverging</label>
+            <input type="range" min="0" max="32" step="1" value="16" id="divCount" oninput="calcDivCost()">
+            <span class="val" id="divCountVal">16</span>
+          </div>
+          <div class="slider-row">
+            <label>If-branch cycles</label>
+            <input type="range" min="1" max="200" step="1" value="50" id="divCyclesA" oninput="calcDivCost()">
+            <span class="val" id="divCyclesAVal">50</span>
+          </div>
+          <div class="slider-row">
+            <label>Else-branch cycles</label>
+            <input type="range" min="1" max="200" step="1" value="50" id="divCyclesB" oninput="calcDivCost()">
+            <span class="val" id="divCyclesBVal">50</span>
+          </div>
+          <div class="metric-chips" id="divCostMetrics"></div>
+          <div style="margin-top:16px">
+            <div class="label">Cycles breakdown</div>
+            <div style="height:32px;display:flex;gap:4px;border-radius:6px;overflow:hidden;border:0.5px solid var(--border)" id="divCostBar"></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>The hidden cost</h3>
+            <p>Masked threads aren't free — the warp slot stays occupied for the duration of each serialized path. Inactive lanes consume warp scheduler time, register file space, and issue bandwidth. They just don't produce results.</p>
+          </div>
+          <div class="card">
+            <h3>Worst case: checkerboard</h3>
+            <p>If odd threads take branch A and even take B, every other lane is masked for every instruction. A 32-thread warp effectively runs as two back-to-back 16-thread half-warps — 2× the cycles for the same work.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- solutions -->
+      <div id="sub-divergence-solutions" class="section fade-in">
+        <div class="label">Strategies to minimize divergence</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+
+          <div class="card" style="border-left:3px solid var(--green)">
+            <h3>1. Branch on block-level invariants</h3>
+            <p>If all 32 threads in a warp always take the same branch, there's no divergence — even if different warps take different branches. Structure conditionals so the predicate is identical within a warp.</p>
+            <div class="code-block" style="margin-top:8px">
+<span class="cm">// Good: warp-level invariant, blockIdx decides</span>
+<span class="kw">if</span> (blockIdx.x % <span class="num">2</span> == <span class="num">0</span>) { doA(); } <span class="kw">else</span> { doB(); }
+            </div>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--blue)">
+            <h3>2. Predicated execution</h3>
+            <p>For short branches, the compiler uses predication — both paths compile to the same instructions with conditional masks. If both paths are cheap, predication avoids the overhead of serialization entirely.</p>
+            <div class="code-block" style="margin-top:8px">
+<span class="cm">// Compiler may predicate this if bodies are small</span>
+val = (threadIdx.x &lt; <span class="num">16</span>) ? A[tid] : B[tid];
+            </div>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--purple)">
+            <h3>3. Data reorganization (sorting)</h3>
+            <p>Sort input data so threads with similar execution paths end up in the same warp. Used in ray tracing (sort rays by material), sparse operations (sort by sparsity pattern), and BVH traversal.</p>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--amber)">
+            <h3>4. Warp-level primitives (shuffle)</h3>
+            <p>Use <code style="font-family:var(--mono);font-size:12px">__ballot_sync</code> and <code style="font-family:var(--mono);font-size:12px">__shfl_sync</code> to pass data between lanes within a warp without shared memory — reducing branch count by sharing work across lanes.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SYNCHRONIZATION ══════════════ -->
+    <div id="sec-sync" class="section fade-in">
+      <div class="section-hero">
+        <div class="hero-tag">Chapter 05</div>
+        <h1>Synchronization</h1>
+        <p>GPU threads within a block can cooperate through shared memory — but only if they synchronize at barriers. Understanding the levels of synchronization and their costs is essential for correct, high-performance kernels.</p>
+      </div>
+
+      <div class="sub-nav">
+        <button class="sub-nav-btn active" onclick="showSub('sync','barriers')">Barriers</button>
+        <button class="sub-nav-btn" onclick="showSub('sync','atomic')">Atomic Operations</button>
+        <button class="sub-nav-btn" onclick="showSub('sync','patterns')">Reduction Patterns</button>
+      </div>
+
+      <!-- barriers -->
+      <div id="sub-sync-barriers" class="section active fade-in">
+        <div class="card">
+          <h3>__syncthreads() — the block barrier</h3>
+          <p>Every thread in the block must reach <code style="font-family:var(--mono);font-size:12px">__syncthreads()</code> before any can proceed. This ensures shared memory written by one thread is visible to all others. Calling it inside a divergent branch is undefined behavior — all threads must call it or none.</p>
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">BARRIER VISUALIZATION — 8 THREADS, ONE BLOCK</div>
+          <div class="thread-prog-rows" id="barrierThreads"></div>
+          <div style="position:relative;height:4px;background:var(--accent);border-radius:2px;margin:8px 0">
+            <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--accent);white-space:nowrap">__syncthreads() barrier</div>
+          </div>
+          <div class="control-row" style="margin-top:16px">
+            <button class="btn primary" onclick="runBarrierSim()">Simulate</button>
+            <button class="btn" onclick="resetBarrierSim()">Reset</button>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>__syncwarp() — warp barrier</h3>
+            <p>Faster than __syncthreads() — synchronizes only the 32 threads in a warp. Required since Volta (independent thread scheduling) when you need warp-level memory consistency after divergent writes.</p>
+          </div>
+          <div class="card">
+            <h3>cooperative_groups::sync()</h3>
+            <p>CUDA 9+ API for flexible synchronization across arbitrary thread groups — subsets of a block, the entire grid (with caveats), or even multi-GPU. Enables recursive algorithms and producer-consumer patterns.</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+<span class="kw">__shared__</span> <span class="kw">float</span> smem[<span class="num">256</span>];
+
+<span class="cm">// Phase 1: all threads load into shared memory</span>
+smem[threadIdx.x] = globalData[blockIdx.x * <span class="num">256</span> + threadIdx.x];
+
+<span class="kw">__syncthreads</span>();  <span class="cm">// ← BARRIER: wait for ALL threads to finish loading</span>
+
+<span class="cm">// Phase 2: now safe to read smem written by OTHER threads</span>
+<span class="kw">float</span> neighbor = smem[(threadIdx.x + <span class="num">1</span>) % <span class="num">256</span>];
+result[threadIdx.x] = smem[threadIdx.x] + neighbor;
+        </div>
+      </div>
+
+      <!-- atomic -->
+      <div id="sub-sync-atomic" class="section fade-in">
+        <div class="card">
+          <h3>Atomic operations — when threads write the same address</h3>
+          <p>Atomics guarantee read-modify-write operations are indivisible — no two threads can interfere. Used for histograms, counters, and reduction. But atomics to the same address serialize — a counter updated by 10,000 threads becomes a 10,000-step pipeline.</p>
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">ATOMIC VS RACE CONDITION</div>
+          <div class="two-col" style="margin:0">
+            <div>
+              <div class="label" style="color:var(--red)">Without atomics — data race</div>
+              <div class="code-block" style="margin:8px 0;font-size:11px">
+<span class="cm">// Thread A: reads counter=5</span>
+<span class="cm">// Thread B: reads counter=5</span>
+<span class="cm">// Thread A: writes 5+1=6</span>
+<span class="cm">// Thread B: writes 5+1=6 ← LOST!</span>
+counter++;  <span class="cm">// count=6, not 7</span>
+              </div>
+              <span class="chip bad">Undefined behavior</span>
+            </div>
+            <div>
+              <div class="label" style="color:var(--green)">With atomics — safe</div>
+              <div class="code-block" style="margin:8px 0;font-size:11px">
+<span class="cm">// Hardware serializes the RMW:</span>
+<span class="cm">// Thread A atomically: 5→6</span>
+<span class="cm">// Thread B atomically: 6→7</span>
+atomicAdd(&counter, <span class="num">1</span>);  <span class="cm">// count=7 ✓</span>
+              </div>
+              <span class="chip good">Correct result</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Reducing atomic contention</h3>
+          <p>Instead of all threads hitting one global counter, use a two-phase approach: each thread accumulates locally into shared memory using fast atomics (no off-chip traffic), then one thread per block commits a single atomic to global memory. This turns N global atomics into N/blockSize global atomics.</p>
+        </div>
+
+        <div class="code-block">
+<span class="kw">__shared__</span> <span class="kw">int</span> localCount[<span class="num">1</span>];
+
+<span class="kw">if</span> (threadIdx.x == <span class="num">0</span>) localCount[<span class="num">0</span>] = <span class="num">0</span>;
+<span class="kw">__syncthreads</span>();
+
+<span class="cm">// Each thread increments local counter (fast — shared mem atomics)</span>
+atomicAdd(&localCount[<span class="num">0</span>], myContribution);
+<span class="kw">__syncthreads</span>();
+
+<span class="cm">// Only one thread per block hits global memory</span>
+<span class="kw">if</span> (threadIdx.x == <span class="num">0</span>)
+  atomicAdd(globalCounter, localCount[<span class="num">0</span>]);  <span class="cm">// 1 global atomic per block</span>
+        </div>
+      </div>
+
+      <!-- reduction -->
+      <div id="sub-sync-patterns" class="section fade-in">
+        <div class="card">
+          <h3>Parallel reduction — the canonical sync pattern</h3>
+          <p>Sum N numbers using ⌈log₂ N⌉ steps instead of N steps. Each step halves the number of active threads with a barrier in between. This is the foundation of every reduction in deep learning: LayerNorm, Softmax, loss computation.</p>
+        </div>
+
+        <div class="viz-box">
+          <div class="viz-label">TREE REDUCTION (8 values)</div>
+          <div id="reductionViz"></div>
+          <div class="control-row">
+            <button class="btn primary" onclick="stepReduction()">Step →</button>
+            <button class="btn" onclick="resetReduction()">Reset</button>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px" id="reductionCaption">Press Step to simulate each synchronization round.</p>
+        </div>
+
+        <div class="code-block">
+<span class="cm">// Parallel reduction in shared memory</span>
+<span class="kw">for</span> (<span class="kw">int</span> stride = blockDim.x / <span class="num">2</span>; stride > <span class="num">0</span>; stride >>= <span class="num">1</span>) {
+  <span class="kw">if</span> (threadIdx.x &lt; stride) {
+    smem[threadIdx.x] += smem[threadIdx.x + stride];
+  }
+  <span class="kw">__syncthreads</span>();  <span class="cm">// barrier between EVERY step</span>
+}
+<span class="cm">// smem[0] now contains the sum</span>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>Warp-level reduction (no sync needed)</h3>
+            <p>For the final 32 elements (one warp), you can use <code style="font-family:var(--mono);font-size:12px">__shfl_down_sync</code> instead of shared memory — passes data between lanes at register speed, no synchronization needed within a warp.</p>
+          </div>
+          <div class="card">
+            <h3>Grid-level sync (CUDA 9+)</h3>
+            <p><code style="font-family:var(--mono);font-size:12px">cooperative_groups::grid_group</code> allows synchronizing all blocks in a grid — enabling algorithms that previously required kernel re-launches. Used in single-pass LayerNorm and flash attention variants.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ WHO AM I ══════════════ -->
+    <div id="sec-about" class="section fade-in">
+      <div class="section-hero">
+        <div class="hero-tag">Author</div>
+        <h1>Who Am I</h1>
+      </div>
+
+      <div class="profile-band">
+        <div class="profile-avatar">GK</div>
+        <div>
+          <div class="profile-name">Gyanesh Kumar</div>
+          <div class="profile-role">Senior AI/ML Solutions Architect · AWS Boston</div>
+          <div class="profile-bio">
+            I work at AWS with Frontier AI Labs and Startups, driving technology and business decisions for startup founders — making sure they get the best out of their AWS investments. CS Major with an AI minor.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+            <span class="chip info">AWS Boston</span>
+            <span class="chip good">Frontier AI Labs</span>
+            <span class="chip neutral">CS + AI Minor</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>Why I built this</h3>
+          <p>GPU architecture is the foundation of modern AI. Yet most engineers treating GPUs as black boxes are leaving 10–100× performance on the table. This guide makes the concepts visual and interactive — because you understand warp divergence when you see the masked lanes, not just when you read the definition.</p>
+        </div>
+        <div class="card">
+          <h3>What I do at AWS</h3>
+          <p>I help startup founders navigate the AWS AI/ML stack — from picking the right GPU instance type to architecting multi-tenant inference infrastructure. The concepts in this guide directly inform how I advise teams on compute efficiency.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Recommended reading order</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px">
+            <span class="chip info" style="min-width:80px;text-align:center">Chapter 01</span>
+            <span style="font-size:13px">The Machine — understand what hardware you're programming</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px">
+            <span class="chip good" style="min-width:80px;text-align:center">Chapter 02</span>
+            <span style="font-size:13px">Execution Hierarchy — threads, warps, blocks, grids, SIMT</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px">
+            <span class="chip warn" style="min-width:80px;text-align:center">Chapter 03</span>
+            <span style="font-size:13px">Memory Coalescing — the single biggest performance lever</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px">
+            <span class="chip bad" style="min-width:80px;text-align:center">Chapter 04</span>
+            <span style="font-size:13px">Warp Divergence — what kills throughput in conditional code</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px">
+            <span class="chip neutral" style="min-width:80px;text-align:center">Chapter 05</span>
+            <span style="font-size:13px">Synchronization — barriers, atomics, reductions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// NAV SYSTEM
+// ═══════════════════════════════════════════════════
+const sidebarConfig = {
+  machine:    [{id:'overview',label:'Overview'},{id:'sm',label:'Streaming Multiprocessor'},{id:'memory',label:'Memory Hierarchy'}],
+  execution:  [{id:'levels',label:'Hierarchy Levels'},{id:'warps',label:'Warps & SIMT'},{id:'occupancy',label:'Occupancy'}],
+  coalescing: [{id:'demo',label:'Interactive Demo'},{id:'patterns',label:'Access Patterns'},{id:'sharedmem',label:'Shared Memory Trick'}],
+  divergence: [{id:'sim',label:'Simulator'},{id:'cost',label:'Performance Cost'},{id:'solutions',label:'Avoiding Divergence'}],
+  sync:       [{id:'barriers',label:'Barriers'},{id:'atomic',label:'Atomic Operations'},{id:'patterns',label:'Reduction Patterns'}],
+  about:      []
+};
+
+let currentMain = 'machine';
+let currentSubs = {machine:'overview',execution:'levels',coalescing:'demo',divergence:'sim',sync:'barriers',about:''};
+
+function showMain(name) {
+  document.querySelectorAll('.section').forEach(s=>{if(s.id.startsWith('sec-'))s.classList.remove('active')});
+  document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));
+  var sec = document.getElementById('sec-'+name);
+  if(sec){sec.classList.add('active'); sec.classList.add('fade-in');}
+  event.currentTarget.classList.add('active');
+  currentMain = name;
+  buildSidebar(name);
+  // init current sub
+  showSub(name, currentSubs[name]||'', true);
+}
+
+function showSub(main, sub, silent) {
+  var prefix = 'sub-'+main+'-';
+  document.querySelectorAll('[id^="'+prefix+'"]').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sub-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.sub-tab').forEach(b=>b.classList.remove('active'));
+  if(!sub) return;
+  var el = document.getElementById(prefix+sub);
+  if(el){el.classList.add('active'); if(!silent)el.classList.add('fade-in');}
+  // highlight sub-nav btn
+  document.querySelectorAll('.sub-nav-btn').forEach(b=>{
+    if(b.textContent.trim().toLowerCase().replace(/\s+/g,'').includes(sub)||b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+sub+"'"))
+      b.classList.add('active');
+  });
+  document.querySelectorAll('.sub-tab').forEach(b=>{
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+sub+"'"))
+      b.classList.add('active');
+  });
+  currentSubs[main] = sub;
+}
+
+function buildSidebar(name) {
+  var sb = document.getElementById('sidebar');
+  var items = sidebarConfig[name]||[];
+  sb.innerHTML = '';
+  if(!items.length){sb.innerHTML='<div class="sidebar-section-label">Author</div>'; return;}
+  sb.innerHTML = '<div class="sidebar-section-label">Sections</div>';
+  items.forEach(function(item){
+    var btn = document.createElement('button');
+    btn.className = 'sub-tab' + (currentSubs[name]===item.id?' active':'');
+    btn.textContent = item.label;
+    btn.onclick = function(){showSub(name,item.id)};
+    sb.appendChild(btn);
+  });
+}
+buildSidebar('machine');
+
+// ═══════════════════════════════════════════════════
+// THE MACHINE
+// ═══════════════════════════════════════════════════
+
+// SM grid
+(function(){
+  var grid = document.getElementById('smGrid');
+  for(var i=0;i<128;i++){
+    var d=document.createElement('div');
+    d.className='sm-cell lit';
+    d.id='sm'+i; d.textContent='SM';
+    d.title='SM '+i;
+    grid.appendChild(d);
+  }
+})();
+
+function setSMLoad(pct){
+  var n=Math.round(pct*128);
+  for(var i=0;i<128;i++){
+    var el=document.getElementById('sm'+i);
+    if(i<n-10) el.className='sm-cell lit';
+    else if(i<n) el.className='sm-cell med';
+    else if(i<n+6) el.className='sm-cell dim';
+    else el.className='sm-cell';
+  }
+  var m=document.getElementById('smMetrics');
+  m.innerHTML='<span class="chip '+(pct>0.7?'good':pct>0.4?'warn':'bad')+'">Active SMs: '+n+'/128</span>'+
+    '<span class="chip info">Throughput: ~'+Math.round(pct*100)+'%</span>'+
+    '<span class="chip neutral">Est. TFLOP/s: '+Math.round(pct*312)+'</span>';
+}
+
+// SM jitter
+setInterval(function(){
+  var cur = document.querySelectorAll('.sm-cell.lit').length/128;
+  var j = cur+(Math.random()-0.5)*0.06;
+  j=Math.max(0,Math.min(1,j));
+  setSMLoad(j);
+},2000);
+
+// Mem detail
+var memDetails = [
+  {name:'Registers',speed:'0 cycles',size:'256KB per SM',note:'Thread-private. The compiler assigns registers automatically. Spilling to local memory (DRAM) is catastrophic — avoid using too many per thread.'},
+  {name:'Shared Memory',speed:'1–2 cycles',size:'48–228KB per SM (configurable)',note:'Block-shared. Use it as a staging buffer to convert non-coalesced global accesses into coalesced ones. The key to high-performance GEMM, reductions, and transposes.'},
+  {name:'L1 Cache / Texture',speed:'~28 cycles',size:'128KB per SM',note:'Automatic on Volta+. The L1 and shared memory share the same 128KB physical SRAM — you configure the split. Texture cache adds 2D spatial locality.'},
+  {name:'L2 Cache',speed:'~200 cycles',size:'50MB (H100)',note:'Shared across all SMs. A cache miss here goes all the way to HBM. Stream accesses through L2 efficiently using prefetch hints in CUDA 11.2+.'},
+  {name:'HBM3 Global Memory',speed:'~600 cycles',size:'80GB (H100)',note:'Off-chip stacked DRAM. 3.35 TB/s bandwidth on H100. Despite high bandwidth, each individual access has ~600 cycle latency — the GPU hides this by keeping many warps in flight.'},
+  {name:'CPU RAM (PCIe)',speed:'~5000 cycles',size:'Host DRAM',note:'Data must be copied via cudaMemcpy. Use pinned (page-locked) host memory and CUDA streams for async overlap of CPU-GPU transfers with kernel execution.'}
+];
+function highlightMem(i){
+  var rows=document.querySelectorAll('.mem-row');
+  rows.forEach(function(r,j){r.style.background=j===i?'#fff3ee':'';});
+  var d=document.getElementById('memDetail');
+  var m=memDetails[i];
+  d.style.display='block';
+  d.innerHTML='<h3>'+m.name+'</h3><div class="metric-chips"><span class="chip good">'+m.speed+'</span><span class="chip info">'+m.size+'</span></div><p style="margin-top:10px">'+m.note+'</p>';
+}
+
+// ═══════════════════════════════════════════════════
+// EXECUTION HIERARCHY
+// ═══════════════════════════════════════════════════
+
+// Thread grid
+(function(){
+  var grid=document.getElementById('threadGrid');
+  var legend=document.getElementById('warpLegend');
+  var warpc=['warp0','warp1','warp2','warp3','warp4','warp5','warp6','warp7'];
+  var warpn=['Warp 0','Warp 1','Warp 2','Warp 3','Warp 4','Warp 5','Warp 6','Warp 7'];
+  var wclrs=['#dbeafe','#ede9fe','#dcfce7','#fef3c7','#fce7f3','#e0f2fe','#f0fdf4','#fafaf8'];
+  for(var i=0;i<256;i++){
+    var w=Math.floor(i/32);
+    var d=document.createElement('div');
+    d.className='thread-cell '+warpc[w];
+    d.title='Thread '+i+' | Warp '+w+' | Lane '+(i%32);
+    d.onclick=(function(idx,warpIdx){return function(){
+      document.querySelectorAll('.thread-cell').forEach(function(c){c.classList.remove('active')});
+      document.querySelectorAll('.thread-cell').forEach(function(c,j){
+        if(Math.floor(j/32)===warpIdx)c.classList.add('active');
+      });
+    };})(i,w);
+    grid.appendChild(d);
+  }
+  warpn.forEach(function(wn,i){
+    var s=document.createElement('span');
+    s.className='chip neutral';
+    s.style.background=wclrs[i];
+    s.style.borderColor='rgba(0,0,0,0.1)';
+    s.textContent=wn+' (32 threads)';
+    legend.appendChild(s);
+  });
+})();
+
+function setHierLevel(idx){
+  document.querySelectorAll('.hier-step').forEach(function(s,i){
+    s.classList.toggle('active-step',i===idx);
+  });
+}
+
+// Warp scheduler sim
+var warpSimRunning=false;
+function runWarpSim(){
+  var wrap=document.getElementById('warpSchedulerViz');
+  if(warpSimRunning)return;
+  warpSimRunning=true;
+  var html='<div style="display:flex;flex-direction:column;gap:10px">';
+  var warps=[{name:'Warp A',color:'#dbeafe',tc:'#1e40af'},{name:'Warp B',color:'#dcfce7',tc:'#166534'},{name:'Warp C',color:'#ede9fe',tc:'#5b21b6'},{name:'Warp D',color:'#fef3c7',tc:'#92400e'}];
+  warps.forEach(function(w,i){
+    html+='<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--mono);font-size:11px;min-width:60px;color:var(--muted)">'+w.name+'</span>';
+    html+='<div style="flex:1;height:22px;background:var(--border);border-radius:4px;overflow:hidden;position:relative"><div id="wsBar'+i+'" style="height:100%;width:0;background:'+w.color+';border-radius:4px;transition:width 0.4s;display:flex;align-items:center;padding-left:8px"><span style="font-family:var(--mono);font-size:9px;color:'+w.tc+';" id="wsLbl'+i+'"></span></div></div>';
+    html+='<span style="font-family:var(--mono);font-size:10px;min-width:80px;color:var(--muted)" id="wsStatus'+i+'">waiting</span></div>';
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+  var states=[0,0,0,0];
+  var labels=['execute','execute','execute','execute'];
+  var stalls=[0,0,0,0];
+  function step(){
+    for(var i=0;i<4;i++){
+      var r=Math.random();
+      if(stalls[i]>0){stalls[i]--;document.getElementById('wsStatus'+i).textContent='mem stall ('+stalls[i]+')';continue;}
+      states[i]+=r<0.7?Math.random()*8:0;
+      if(r>0.85){stalls[i]=3;document.getElementById('wsStatus'+i).textContent='STALL';}
+      else document.getElementById('wsStatus'+i).textContent='ACTIVE ▶';
+      states[i]=Math.min(states[i],100);
+      document.getElementById('wsBar'+i).style.width=states[i]+'%';
+      document.getElementById('wsLbl'+i).textContent=Math.round(states[i])+'%';
+    }
+    if(states.every(function(s){return s>=98}))warpSimRunning=false;
+    else setTimeout(step,300);
+  }
+  step();
+}
+function resetWarpSim(){
+  warpSimRunning=false;
+  document.getElementById('warpSchedulerViz').innerHTML='<p style="font-size:13px;color:var(--muted)">Press Simulate to watch warp scheduling in action.</p>';
+}
+resetWarpSim();
+
+// Occupancy calc
+function calcOccupancy(){
+  var threads=parseInt(document.getElementById('occThreads').value);
+  var regs=parseInt(document.getElementById('occRegs').value);
+  var smem=parseInt(document.getElementById('occSmem').value);
+  document.getElementById('occThreadsVal').textContent=threads;
+  document.getElementById('occRegsVal').textContent=regs;
+  document.getElementById('occSmemVal').textContent=smem;
+  var maxWarpsPerSM=64;
+  var warpsPerBlock=Math.ceil(threads/32);
+  var limitByRegs=Math.floor(65536/(regs*32));
+  var limitBySmem=smem>0?Math.floor(49152/smem)*warpsPerBlock:maxWarpsPerSM;
+  var limitByThreads=Math.floor(2048/threads)*warpsPerBlock;
+  var activeWarps=Math.min(maxWarpsPerSM,limitByRegs,limitBySmem,limitByThreads);
+  var occ=Math.round(activeWarps/maxWarpsPerSM*100);
+  var res=document.getElementById('occResult');
+  res.innerHTML='<span class="chip '+(occ>75?'good':occ>40?'warn':'bad')+'">Occupancy: '+occ+'%</span>'+
+    '<span class="chip info">Active warps: '+activeWarps+'/'+maxWarpsPerSM+'</span>'+
+    '<span class="chip neutral">Blocks per SM: '+Math.floor(activeWarps/warpsPerBlock)+'</span>';
+  document.getElementById('occBar').style.width=occ+'%';
+  document.getElementById('occBar').style.background=occ>75?'var(--green)':occ>40?'var(--amber)':'var(--red)';
+}
+calcOccupancy();
+
+// ═══════════════════════════════════════════════════
+// MEMORY COALESCING
+// ═══════════════════════════════════════════════════
+function setCoalesceMode(mode){
+  document.querySelectorAll('#sub-coalescing-demo .btn').forEach(b=>b.classList.remove('active-btn'));
+  event.currentTarget.classList.add('active-btn');
+  var cells=document.getElementById('memCellsGlobal');
+  var pills=document.getElementById('threadAccessPills');
+  var txbar=document.getElementById('coalesceTxBar');
+  var metrics=document.getElementById('coalesceMetrics');
+  cells.innerHTML=''; pills.innerHTML='';
+
+  var accesses=[];
+  if(mode==='perfect') for(var i=0;i<32;i++) accesses.push(i);
+  else if(mode==='stride2') for(var i=0;i<32;i++) accesses.push(i*2);
+  else if(mode==='stride4') for(var i=0;i<32;i++) accesses.push(i*4);
+  else { accesses=[]; var used={};
+    while(accesses.length<32){var r=Math.floor(Math.random()*96)+0; if(!used[r]){used[r]=1;accesses.push(r);}}
+  }
+
+  var hitCells=new Set(accesses);
+  var cacheLines=new Set(accesses.map(function(a){return Math.floor(a/8)}));
+  var txCount=cacheLines.size;
+
+  for(var i=0;i<96;i++){
+    var d=document.createElement('div');
+    d.className='mem-cell'+(hitCells.has(i)?' hit':'');
+    d.textContent=i;
+    cells.appendChild(d);
+  }
+
+  accesses.forEach(function(a,t){
+    var d=document.createElement('div');
+    d.className='mem-cell hit';
+    d.title='Thread '+t+' → addr '+a;
+    d.style.fontSize='8px';
+    d.textContent='T'+t+'→'+a;
+    d.style.width='44px';
+    pills.appendChild(d);
+  });
+
+  txbar.innerHTML='<div class="transaction-bar '+(txCount<=2?'good':'bad')+'" style="width:'+(txCount/32*100)+'%;max-width:100%">'+txCount+' transaction'+(txCount>1?'s':'')+'</div>';
+  var eff=Math.round((32/Math.max(txCount*8,32))*100);
+  metrics.innerHTML='<span class="chip '+(txCount<=1?'good':txCount<=4?'warn':'bad')+'">'+txCount+' cache line transaction'+(txCount>1?'s':'')+'</span>'+
+    '<span class="chip '+(eff>80?'good':eff>40?'warn':'bad')+'">BW efficiency: ~'+eff+'%</span>'+
+    '<span class="chip neutral">Ideal: 1 transaction</span>';
+}
+setCoalesceMode('perfect');
+
+// ═══════════════════════════════════════════════════
+// WARP DIVERGENCE
+// ═══════════════════════════════════════════════════
+function setDivMode(mode){
+  document.querySelectorAll('#sub-divergence-sim .btn').forEach(b=>b.classList.remove('active-btn'));
+  event.currentTarget.classList.add('active-btn');
+  var lanes=document.getElementById('divLanes');
+  var timeline=document.getElementById('divTimeline');
+  var metrics=document.getElementById('divMetrics');
+  lanes.innerHTML=''; timeline.innerHTML='';
+
+  var ifLanes=[], elseLanes=[];
+  if(mode==='half'){ for(var i=0;i<16;i++) ifLanes.push(i); for(var i=16;i<32;i++) elseLanes.push(i);}
+  else if(mode==='quarter'){ for(var i=0;i<8;i++) ifLanes.push(i); for(var i=8;i<32;i++) elseLanes.push(i);}
+  else if(mode==='none'){ for(var i=0;i<32;i++) ifLanes.push(i);}
+  else{ for(var i=0;i<32;i+=2) ifLanes.push(i); for(var i=1;i<32;i+=2) elseLanes.push(i);}
+
+  for(var i=0;i<32;i++){
+    var d=document.createElement('div');
+    d.className='lane '+(ifLanes.includes(i)?'if-branch':'else-branch');
+    d.textContent=i;
+    d.title='Thread '+i+(ifLanes.includes(i)?' → IF branch':' → ELSE branch');
+    lanes.appendChild(d);
+  }
+
+  var diverged=elseLanes.length>0 && ifLanes.length>0;
+  if(!diverged){
+    timeline.innerHTML='<div class="cycle-block if-block" style="min-width:120px"><span style="font-size:8px">Cycles 1–N</span><strong>ALL THREADS</strong><span style="font-size:8px">if-branch</span></div><div class="cycle-block converge" style="min-width:80px"><strong>CONVERGE</strong></div>';
+    metrics.innerHTML='<span class="chip good">No divergence — full throughput</span><span class="chip good">Efficiency: 100%</span>';
+  } else {
+    timeline.innerHTML='<div class="cycle-block if-block" style="min-width:100px"><span style="font-size:8px">Cycles 1–N</span><strong>'+ifLanes.length+' threads</strong><span style="font-size:8px">IF branch active</span></div>'+
+      '<div class="cycle-block else-block" style="min-width:100px"><span style="font-size:8px">Cycles N+1–2N</span><strong>'+elseLanes.length+' threads</strong><span style="font-size:8px">ELSE branch active</span></div>'+
+      '<div class="cycle-block converge" style="min-width:80px"><strong>CONVERGE</strong></div>';
+    var eff=Math.round(Math.max(ifLanes.length,elseLanes.length)/32*100);
+    metrics.innerHTML='<span class="chip bad">Divergent — 2 serialized passes</span><span class="chip warn">Warp efficiency: ~'+eff+'%</span><span class="chip bad">Effective throughput: ~'+eff+'%</span>';
+  }
+}
+setDivMode('half');
+
+function calcDivCost(){
+  var nd=parseInt(document.getElementById('divCount').value);
+  var ca=parseInt(document.getElementById('divCyclesA').value);
+  var cb=parseInt(document.getElementById('divCyclesB').value);
+  document.getElementById('divCountVal').textContent=nd;
+  document.getElementById('divCyclesAVal').textContent=ca;
+  document.getElementById('divCyclesBVal').textContent=cb;
+  var noBranch=Math.max(ca,cb);
+  var withDiv=nd>0&&nd<32?ca+cb:ca;
+  var overhead=Math.round((withDiv/noBranch-1)*100);
+  var eff=Math.round(noBranch/withDiv*100);
+  document.getElementById('divCostMetrics').innerHTML=
+    '<span class="chip '+(overhead===0?'good':'bad')+'">+'+overhead+'% overhead vs no divergence</span>'+
+    '<span class="chip '+(eff>80?'good':eff>50?'warn':'bad')+'">Warp efficiency: '+eff+'%</span>'+
+    '<span class="chip info">Ideal: '+noBranch+' cycles · Actual: '+withDiv+' cycles</span>';
+  var bar=document.getElementById('divCostBar');
+  var pA=Math.round(ca/withDiv*100), pB=Math.round(cb/withDiv*100);
+  bar.innerHTML='<div style="flex:'+pA+';background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:#1e40af">IF: '+ca+'c</div>'+
+    '<div style="flex:'+pB+';background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:#9d174d">ELSE: '+cb+'c</div>';
+}
+calcDivCost();
+
+// ═══════════════════════════════════════════════════
+// SYNCHRONIZATION
+// ═══════════════════════════════════════════════════
+var barrierAnimating=false;
+function runBarrierSim(){
+  if(barrierAnimating)return;
+  barrierAnimating=true;
+  resetBarrierSim();
+  var threads=8;
+  var container=document.getElementById('barrierThreads');
+  container.innerHTML='';
+  var rows=[];
+  for(var i=0;i<threads;i++){
+    var row=document.createElement('div');
+    row.className='thread-prog-row';
+    var colors=['#ff5722','#ff8c42','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
+    var speeds=[0.3,0.5,0.7,0.4,0.6,0.2,0.8,0.45];
+    row.innerHTML='<span class="prog-label" style="font-family:var(--mono);font-size:11px">Thread '+i+'</span>'+
+      '<div class="prog-track"><div class="prog-fill" id="bpf'+i+'" style="width:0;background:'+colors[i]+'">0%</div></div>';
+    container.appendChild(row);
+    rows.push({fill:document.getElementById('bpf'+i),speed:speeds[i],val:0,paused:false});
+  }
+  function tick(){
+    var allAtBarrier=true;
+    rows.forEach(function(r){
+      if(r.paused){allAtBarrier=allAtBarrier&&true;return;}
+      r.val=Math.min(r.val+r.speed*3,70);
+      r.fill.style.width=r.val+'%';
+      r.fill.textContent=Math.round(r.val)+'%';
+      if(r.val>=70) r.paused=true;
+      else allAtBarrier=false;
+    });
+    if(allAtBarrier){
+      setTimeout(function(){
+        rows.forEach(function(r){
+          r.paused=false;
+          function proceed(){
+            r.val+=r.speed*4;
+            if(r.val>=100){r.val=100;r.fill.style.width='100%';r.fill.textContent='done';return;}
+            r.fill.style.width=r.val+'%';r.fill.textContent=Math.round(r.val)+'%';
+            setTimeout(proceed,80);
+          }
+          proceed();
+        });
+        barrierAnimating=false;
+      },600);
+      return;
+    }
+    setTimeout(tick,80);
+  }
+  tick();
+}
+function resetBarrierSim(){
+  barrierAnimating=false;
+  document.getElementById('barrierThreads').innerHTML='<p style="font-size:13px;color:var(--muted)">Press Simulate to watch threads race to the barrier.</p>';
+}
+resetBarrierSim();
+
+// Reduction
+var redState=0;
+var redValues=[[3,7,1,9,2,5,8,4]];
+function stepReduction(){
+  if(redState>=3){resetReduction();return;}
+  redState++;
+  var prev=redValues[redValues.length-1];
+  var next=[];
+  for(var i=0;i<prev.length/2;i++) next.push(prev[i]+prev[i+Math.floor(prev.length/2)]);
+  redValues.push(next);
+  renderReduction();
+}
+function resetReduction(){
+  redState=0;
+  redValues=[[3,7,1,9,2,5,8,4]];
+  renderReduction();
+  document.getElementById('reductionCaption').textContent='Press Step to simulate each synchronization round.';
+}
+function renderReduction(){
+  var wrap=document.getElementById('reductionViz');
+  var html='<div style="display:flex;flex-direction:column;gap:8px">';
+  var captions=['Initial values (8 threads)','After round 1 — 4 partial sums','After round 2 — 2 partial sums','Final sum'];
+  redValues.forEach(function(arr,ri){
+    html+='<div><div class="label" style="font-size:10px;margin-bottom:4px">'+captions[Math.min(ri,3)]+(ri===redValues.length-1&&ri>0?' ← __syncthreads() here':'')+'</div>';
+    html+='<div style="display:flex;gap:6px">';
+    arr.forEach(function(v){
+      var isResult=ri===redValues.length-1&&ri>0&&arr.length===1;
+      html+='<div style="min-width:42px;height:36px;border-radius:6px;background:'+(isResult?'#dcfce7':ri===0?'#dbeafe':'#ede9fe')+';border:0.5px solid '+(isResult?'#86efac':ri===0?'#93c5fd':'#c4b5fd')+';display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;font-weight:600;color:'+(isResult?'#166534':ri===0?'#1e40af':'#5b21b6')+'">'+v+'</div>';
+    });
+    html+='</div></div>';
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+  if(redState>0)
+    document.getElementById('reductionCaption').textContent='Round '+redState+'/3 — '+redValues[redValues.length-1].length+' active thread'+(redValues[redValues.length-1].length>1?'s remain':'s remain (final result: '+redValues[redValues.length-1][0]+')');
+}
+renderReduction();
+</script>
+</body>
+</html>
