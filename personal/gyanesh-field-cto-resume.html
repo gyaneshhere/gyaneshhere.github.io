@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyaneshwer Kumar - Chief Technology Officer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #e94560;
+            --accent-light: #ff6b8a;
+            --text: #2d3436;
+            --text-light: #636e72;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fa;
+            --border: #e1e8ed;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        header {
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 30px;
+            margin-bottom: 50px;
+            animation: slideIn 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 3.5em;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 1.4em;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 0.02em;
+        }
+
+        .contact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 0.95em;
+            color: var(--text-light);
+        }
+
+        .contact a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .contact a:hover {
+            color: var(--accent);
+        }
+
+        .contact a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        .contact a:hover::after {
+            width: 100%;
+        }
+
+        /* Executive Summary */
+        .executive-summary {
+            background: linear-gradient(135deg, var(--bg-alt) 0%, rgba(233, 69, 96, 0.03) 100%);
+            padding: 35px;
+            border-left: 4px solid var(--accent);
+            margin-bottom: 50px;
+            border-radius: 2px;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .executive-summary h2 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.8em;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .executive-summary p {
+            font-size: 1.05em;
+            line-height: 1.8;
+            color: var(--text);
+        }
+
+        /* Section Headings */
+        h2 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 2em;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+            position: relative;
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        /* Experience */
+        .experience-item {
+            margin-bottom: 45px;
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .experience-item:nth-child(1) { animation-delay: 0.5s; }
+        .experience-item:nth-child(2) { animation-delay: 0.6s; }
+        .experience-item:nth-child(3) { animation-delay: 0.7s; }
+        .experience-item:nth-child(4) { animation-delay: 0.8s; }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .job-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .company {
+            font-size: 1.1em;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .date {
+            color: var(--text-light);
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .achievements {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .achievements li {
+            padding-left: 25px;
+            margin-bottom: 12px;
+            position: relative;
+            line-height: 1.7;
+        }
+
+        .achievements li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(233, 69, 96, 0.1) 0%, rgba(233, 69, 96, 0.05) 100%);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        /* Technical Stack */
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .tech-category {
+            background: var(--bg-alt);
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 3px solid var(--accent);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tech-category:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .tech-category h3 {
+            font-size: 1.1em;
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .tech-category ul {
+            list-style: none;
+            font-size: 0.95em;
+            color: var(--text-light);
+        }
+
+        .tech-category li {
+            margin-bottom: 6px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .tech-category li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        /* Education & Certifications */
+        .education-item, .cert-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--bg-alt);
+            border-left: 3px solid var(--accent);
+            border-radius: 2px;
+        }
+
+        .degree {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .institution {
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .cert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .cert-item {
+            padding: 15px;
+            font-size: 0.95em;
+            transition: transform 0.2s ease;
+        }
+
+        .cert-item:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.5em;
+            }
+            
+            .experience-item,
+            .tech-category,
+            .education-item,
+            .cert-item {
+                page-break-inside: avoid;
+            }
+            
+            a {
+                color: var(--text);
+                text-decoration: none;
+            }
+            
+            * {
+                animation: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2.5em;
+            }
+            
+            h2 {
+                font-size: 1.6em;
+            }
+            
+            .job-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .tech-stack {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gyaneshwer Kumar</h1>
+            <div class="title">Field CTO | Technology Executive</div>
+            <div class="contact">
+                <a href="https://github.com/gyaneshhere" target="_blank">🔗 GitHub</a>
+                <a href="https://www.linkedin.com/in/gyaneshhere/" target="_blank">🔗 LinkedIn</a>
+            </div>
+        </header>
+
+        <div class="executive-summary">
+            <h2>Executive Summary</h2>
+            <p>Technology executive with 15+ years driving enterprise transformation through AI/ML innovation and cloud architecture. Proven track record of building revenue-generating products from concept to $5M+ ARR while scaling engineering organizations from 5 to 50+ members. Led cross-functional teams across pre-sales and post-sales engineering, delivering transformative solutions for Fortune 500 clients in healthcare, retail, and manufacturing. Strategic leader who translates emerging technologies—Generative AI, MLOps, cloud infrastructure—into measurable business outcomes, consistently exceeding targets and pioneering COE initiatives that accelerate organizational growth 20% YOY.</p>
+        </div>
+
+        <h2>Leadership Experience</h2>
+
+         <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Field CTO</div>
+                    <div class="company">Amazon Web Services</div>
+                </div>
+                <div class="date">August 2025 – Present</div>
+            </div>
+            <ul class="achievements">
+                <li>Advised and Drove <span class="highlight">Frontier AI Early Stage Startups funded by major VC firms generating $15M ARR YTD</span> over 1-3 quarters, establishing AWS's AI strategy and competitive positioning</li>
+                <li>Drove Territory growth from <span class="highlight">$0M to $20M ARR</span> through creating thought leadership programs for Physical AI Space</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Product Architect</div>
+                    <div class="company">SnapLogic (Global, Worldwide)</div>
+                </div>
+                <div class="date">June 2023 – July 2025</div>
+            </div>
+            <ul class="achievements">
+                <li>Architected and shipped <span class="highlight">Gen AI-powered products generating $5M ARR</span> over 6-8 quarters, establishing company's AI strategy and competitive positioning</li>
+                <li>Drove company growth from <span class="highlight">$35M to $85M ARR</span> through strategic IC contributions across pre-sales and post-sales engineering over 3-year period</li>
+                <li>Won <span class="highlight">10+ new enterprise logos</span> (Manufacturing, Real Estate, Healthcare, Higher Education) totaling $5M+ in annual recurring revenue through technical leadership and solution architecture</li>
+                <li>Built and scaled <span class="highlight">Legacy Migration COE</span> for APEX install base (customers with $1M+ ARR), defining reference architectures and delivery models that accelerated enterprise adoption</li>
+                <li>Designed and deployed <span class="highlight">production MLOps infrastructure</span> using Terraform and AWS CloudFormation across multi-cloud environments (AWS, Azure, GCP), reducing deployment time from weeks to hours</li>
+                <li>Established <span class="highlight">consumption-based pricing model</span> for Gen AI features, working cross-functionally with Product Management and GTM teams on packaging strategy that drove 20% YOY revenue growth</li>
+                <li>Led evaluation and integration of <span class="highlight">LLMs and SLMs</span> (OpenAI, Llama, Mistral, Cohere) into enterprise automation platform, conducting rigorous benchmarking across latency, cost, and accuracy metrics</li>
+                <li>Pioneered <span class="highlight">prompt engineering frameworks</span> by implementing cutting-edge research from arXiv papers, reducing token usage 35% while improving output quality</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Principal Solutions Architect</div>
+                    <div class="company">Informatica LLC</div>
+                </div>
+                <div class="date">April 2019 – May 2021</div>
+            </div>
+            <ul class="achievements">
+                <li>Created <span class="highlight">Healthcare CMS Interoperability reference architecture</span> and GTM artifacts, establishing strategic positioning for Payers and Providers vertical</li>
+                <li>Designed and executed <span class="highlight">POD-to-POD migration</span> for 17+ IICS organizations at Hughes Network, rescuing $500K ACV by building custom Go-based migration utility</li>
+                <li>Led <span class="highlight">PC2IICS sales pilot program</span> with Tiger Team for strategic accounts (Staples, Nationwide, Univision), driving early adoption and gathering product feedback</li>
+                <li>Architected <span class="highlight">Cloud Lake House Accelerator</span>, defining collateral and delivery models that became foundation for major sales campaign</li>
+                <li>Co-created <span class="highlight">Patient Consent Management System POC</span> for TriZetto using FHIR standards, demonstrating thought leadership in healthcare interoperability</li>
+                <li>Built <span class="highlight">cloud-native containerized architecture</span> using Docker and Kubernetes for Nationwide, migrating legacy DIS and Process Server workloads to modern infrastructure</li>
+                <li>Developed <span class="highlight">Infrastructure as Code framework</span> using Terraform for secure GCP agent deployment at FFF, establishing repeatable patterns adopted across organization</li>
+                <li>Drove product adoption with <span class="highlight">major retail chains</span> (Kroger, Costco) serving as trusted technical advisor for Cloud Application Integration and complex migrations</li>
+                <li>Ramped up <span class="highlight">global SI partner delivery teams</span> (HCL, Cognizant, Accenture) by creating comprehensive reference architectures and enablement programs</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Senior Customer Success Architect – Adoption Services</div>
+                    <div class="company">Informatica Professional Services</div>
+                </div>
+                <div class="date">June 2016 – March 2019</div>
+            </div>
+            <ul class="achievements">
+                <li>Designed <span class="highlight">custom error handling and logging framework</span> documented in Velocity, establishing best practices adopted across professional services organization</li>
+                <li>Led <span class="highlight">large-scale IICS CB2B migration</span> for Kao Pharma with 200+ trading partners, advising customer and SI partner on complex EDI/EDIFACT integrations to SAP and JDE</li>
+                <li>Built <span class="highlight">demo environment and training program</span> for IPS team, ramping up Associates and college new hires on IICS platform</li>
+                <li>Migrated multiple enterprise customers from <span class="highlight">Oracle SOA Suite to IICS Platform</span>, demonstrating competitive advantages and accelerating time-to-value</li>
+                <li>Architected <span class="highlight">SMB-friendly Lean Reference Architecture</span> that reduced perpetual license costs, enabling reinvestment in IICS subscriptions</li>
+                <li>Drove <span class="highlight">early adoption of PC2IICS conversion</span> as pilot with legacy PowerCenter customers and SI Partners, providing critical feedback to Product Management</li>
+                <li>Designed <span class="highlight">FHIR accelerator for HL7 interoperability</span>, establishing healthcare integration patterns for rapidly growing vertical</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Cloud Solutions Architect</div>
+                    <div class="company">Informatica</div>
+                </div>
+                <div class="date">June 2014 – May 2016</div>
+            </div>
+            <ul class="achievements">
+                <li>Incubated concept of <span class="highlight">"Success Packs"</span> – fixed-scope implementation services at minimal cost that drove rapid customer adoption in competitive IPaaS market; customers later served as Gartner references</li>
+                <li>Built <span class="highlight">Cloud Academy from scratch</span> on Moodle platform (AWS-hosted), creating accessible training portal for Informatica employees, partners, and customers at no cost</li>
+                <li>Managed <span class="highlight">course content creation and certification program</span> with contractor team, keeping pace with rapidly evolving IPaaS capabilities</li>
+                <li>Led <span class="highlight">mass certification drive for Accenture and Capgemini</span> architects in London, certifying hundreds to expand EMEA footprint through strategic SI partnerships</li>
+                <li>Delivered <span class="highlight">custom connectors using SDK</span> with crowd-source development model where one prospect funded connector development benefiting hundreds of customers</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Customer Success Technologist</div>
+                    <div class="company">Informatica</div>
+                </div>
+                <div class="date">April 2014 – June 2014</div>
+            </div>
+            <ul class="achievements">
+                <li>Hired by VP of Sales to <span class="highlight">establish COE for Informatica Cloud practice</span>, building team from scratch</li>
+                <li>Built and led <span class="highlight">team of four in India</span>, establishing shared services model with Accenture and Cognizant to scale practice</li>
+                <li>Expanded <span class="highlight">Informatica Cloud business with GOSI and Channel Partners</span> in EMEA region through strategic SI partnerships</li>
+            </ul>
+        </div>
+
+        <h2>Earlier Career Progression</h2>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Senior Software Engineer</div>
+                    <div class="company">Oracle</div>
+                </div>
+                <div class="date">January 2013 – April 2014</div>
+            </div>
+            <ul class="achievements">
+                <li>Selected for Solutions Architect Team based on Salesforce expertise and strategic client relationships in Oracle SOA Suite, Siebel, and Oracle Business Suite</li>
+                <li>Delivered complex engagements as Architect and BPEL SME for Fortune 100 clients (General Motors, Cigna, P&G) working with Oracle's SI and Channel Partners</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-header">
+                <div>
+                    <div class="job-title">Java Developer → Team Lead</div>
+                    <div class="company">Hewlett Packard Enterprise Services</div>
+                </div>
+                <div class="date">January 2009 – January 2013</div>
+            </div>
+            <ul class="achievements">
+                <li>Promoted from Intern to Team Lead within one year, establishing <span class="highlight">Oracle Fusion Middleware and SOA Suite practice</span> from ground up</li>
+                <li>Built and mentored team of Java developers, responsible for hiring, training, and operational delivery while achieving ROI targets</li>
+                <li>Led multiple J2EE projects for General Motors, working on custom ERP solutions and COTS integrations</li>
+            </ul>
+        </div>
+
+        <h2>Technology Stack & Expertise</h2>
+
+        <div class="tech-stack">
+            <div class="tech-category">
+                <h3>AI/ML & LLM Platforms</h3>
+                <ul>
+                    <li>OpenAI, Azure OpenAI, AWS Bedrock</li>
+                    <li>Llama, Mistral, Cohere</li>
+                    <li>HuggingFace Transformers</li>
+                    <li>PyTorch, TensorFlow</li>
+                    <li>LangChain, Griptape</li>
+                </ul>
+            </div>
+
+            <div class="tech-category">
+                <h3>Vector & Graph Databases</h3>
+                <ul>
+                    <li>Pinecone, Weaviate, Chroma</li>
+                    <li>FAISS, OpenSearch, Elastic</li>
+                    <li>Redis, Qdrant</li>
+                    <li>Neo4j, AWS Neptune</li>
+                </ul>
+            </div>
+
+            <div class="tech-category">
+                <h3>Cloud & Infrastructure</h3>
+                <ul>
+                    <li>AWS (Bedrock, SageMaker, Lambda)</li>
+                    <li>Azure (OpenAI, AI Services)</li>
+                    <li>GCP (Vertex AI, Cloud Functions)</li>
+                    <li>Terraform, CloudFormation</li>
+                    <li>Docker, Kubernetes</li>
+                </ul>
+            </div>
+
+            <div class="tech-category">
+                <h3>Languages & Frameworks</h3>
+                <ul>
+                    <li>Python, Java, Node.js, Go</li>
+                    <li>Streamlit, FastAPI</li>
+                    <li>Apache Kafka</li>
+                    <li>REST/GraphQL APIs</li>
+                </ul>
+            </div>
+
+            <div class="tech-category">
+                <h3>AI Techniques & MLOps</h3>
+                <ul>
+                    <li>RAG, Fine-tuning, Transfer Learning</li>
+                    <li>Prompt Engineering, Few-shot Learning</li>
+                    <li>Model Evaluation (Giskard, GuardRails)</li>
+                    <li>Hyperparameter Tuning, Ensemble Learning</li>
+                    <li>RLHF, Red Teaming</li>
+                </ul>
+            </div>
+
+            <div class="tech-category">
+                <h3>Enterprise Integration</h3>
+                <ul>
+                    <li>Informatica (IICS, PowerCenter, MDM)</li>
+                    <li>Oracle SOA Suite, Weblogic</li>
+                    <li>Salesforce, SAP, JD Edwards</li>
+                    <li>EDI, EDIFACT, HL7, FHIR</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Education</h2>
+
+        <div class="education-item">
+            <div class="degree">Master of Science, Computer Science</div>
+            <div class="institution">SRM University</div>
+            <div class="date">2006 – 2009 | CGPA: 9.60/10</div>
+        </div>
+
+        <h2>Key Certifications & Training</h2>
+
+        <div class="cert-grid">
+            <div class="cert-item">LLM Applications (ChatGPT, Bedrock, Llama)</div>
+            <div class="cert-item">RAG using Vector & Graph Databases</div>
+            <div class="cert-item">LangChain Framework</div>
+            <div class="cert-item">Reinforcement Learning from Human Feedback</div>
+            <div class="cert-item">Red Teaming LLM Applications</div>
+            <div class="cert-item">AWS SageMaker & Jupyter</div>
+            <div class="cert-item">Snowflake RAG Implementation</div>
+            <div class="cert-item">Google Cloud Platform</div>
+            <div class="cert-item">Terraform & Kubernetes</div>
+            <div class="cert-item">TensorFlow Deep Learning</div>
+            <div class="cert-item">Oracle SOA Suite 11g/12c</div>
+            <div class="cert-item">Certified Java Developer</div>
+            <div class="cert-item">Informatica MDM & Data Quality</div>
+            <div class="cert-item">Cloud Customer 360 for Salesforce</div>
+        </div>
+
+        <footer>
+            <p>References and detailed project portfolio available upon request</p>
+        </footer>
+    </div>
+</body>
+</html>
