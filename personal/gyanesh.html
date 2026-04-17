@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyanesh Kumar — Field CTO · AWS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink:       #0f0f0f;
+            --ink-mid:   #3a3a3a;
+            --ink-light: #6b6b6b;
+            --rule:      #d4d0c8;
+            --bg:        #faf9f6;
+            --paper:     #ffffff;
+            --gold:      #b8963e;
+            --gold-pale: #f5efe0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            line-height: 1.65;
+            color: var(--ink);
+            background: var(--bg);
+        }
+
+        /* ── PAGE SHELL ─────────────────────────────── */
+        .page {
+            max-width: 860px;
+            margin: 0 auto;
+            background: var(--paper);
+            padding: 52px 56px 60px;
+            animation: rise .7s ease both;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── HEADER ─────────────────────────────────── */
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 20px;
+            padding-bottom: 22px;
+            border-bottom: 2px solid var(--ink);
+            margin-bottom: 32px;
+        }
+
+        .name-block h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.9em;
+            font-weight: 900;
+            letter-spacing: -0.025em;
+            line-height: 1;
+            color: var(--ink);
+        }
+
+        .name-block .headline {
+            margin-top: 7px;
+            font-size: 1em;
+            font-weight: 500;
+            color: var(--ink-mid);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .contact-block {
+            text-align: right;
+            font-size: 0.82em;
+            color: var(--ink-light);
+            line-height: 1.8;
+        }
+
+        .contact-block a {
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-block a:hover { text-decoration: underline; }
+
+        /* ── IMPACT BAR ─────────────────────────────── */
+        .impact-bar {
+            display: flex;
+            gap: 0;
+            background: var(--ink);
+            border-radius: 3px;
+            margin-bottom: 36px;
+            overflow: hidden;
+        }
+
+        .impact-stat {
+            flex: 1;
+            padding: 14px 16px;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .impact-stat:last-child { border-right: none; }
+
+        .impact-stat .num {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.55em;
+            font-weight: 700;
+            color: var(--gold);
+            display: block;
+            line-height: 1;
+        }
+
+        .impact-stat .lbl {
+            font-size: 0.72em;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* ── SUMMARY ────────────────────────────────── */
+        .summary {
+            background: var(--gold-pale);
+            border-left: 3px solid var(--gold);
+            padding: 18px 22px;
+            margin-bottom: 38px;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .summary p {
+            font-size: 0.96em;
+            line-height: 1.8;
+            color: var(--ink-mid);
+        }
+
+        /* ── SECTION HEADINGS ───────────────────────── */
+        .section-label {
+            font-size: 0.68em;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--rule);
+        }
+
+        /* ── EXPERIENCE ─────────────────────────────── */
+        .exp-section { margin-bottom: 38px; }
+
+        .exp-item {
+            margin-bottom: 30px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .exp-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .exp-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .exp-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.08em;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .exp-co {
+            font-weight: 600;
+            font-size: 0.88em;
+            color: var(--gold);
+        }
+
+        .exp-date {
+            font-size: 0.8em;
+            color: var(--ink-light);
+            font-weight: 400;
+            white-space: nowrap;
+        }
+
+        .exp-scope {
+            font-size: 0.78em;
+            color: var(--ink-light);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .achv {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .achv li {
+            padding-left: 18px;
+            position: relative;
+            margin-bottom: 8px;
+            font-size: 0.88em;
+            line-height: 1.65;
+            color: var(--ink-mid);
+        }
+
+        .achv li::before {
+            content: '›';
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 1.1em;
+            top: -1px;
+        }
+
+        .achv li strong {
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        /* ── EARLIER CAREER TABLE ───────────────────── */
+        .earlier-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .earlier-table td {
+            padding: 7px 10px;
+            vertical-align: top;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .earlier-table td:first-child {
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            padding-right: 20px;
+        }
+
+        .earlier-table td:nth-child(2) {
+            color: var(--gold);
+            font-weight: 500;
+            white-space: nowrap;
+            padding-right: 20px;
+        }
+
+        .earlier-table td:last-child {
+            color: var(--ink-light);
+            width: 100%;
+        }
+
+        /* ── TECH GRID ──────────────────────────────── */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 38px;
+        }
+
+        .tech-cell {
+            border: 1px solid var(--rule);
+            border-radius: 3px;
+            padding: 12px 14px;
+        }
+
+        .tech-cell h4 {
+            font-size: 0.72em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+
+        .tech-cell p {
+            font-size: 0.8em;
+            color: var(--ink-mid);
+            line-height: 1.6;
+        }
+
+        /* ── BOTTOM ROW ─────────────────────────────── */
+        .bottom-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 38px;
+        }
+
+        .edu-item .degree {
+            font-family: 'Playfair Display', serif;
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .edu-item .inst {
+            color: var(--gold);
+            font-weight: 500;
+            font-size: 0.88em;
+        }
+
+        .edu-item .yr {
+            font-size: 0.8em;
+            color: var(--ink-light);
+        }
+
+        .cert-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            font-size: 0.75em;
+            padding: 4px 10px;
+            background: var(--gold-pale);
+            border: 1px solid #e8d8b0;
+            border-radius: 20px;
+            color: var(--ink-mid);
+        }
+
+        /* ── FOOTER ─────────────────────────────────── */
+        footer {
+            padding-top: 20px;
+            border-top: 1px solid var(--rule);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78em;
+            color: var(--ink-light);
+        }
+
+        footer a {
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* ── PRINT ──────────────────────────────────── */
+        @media print {
+            body { background: white; }
+            .page { padding: 24px 32px; animation: none; box-shadow: none; }
+            * { animation: none !important; transition: none !important; }
+        }
+
+        @media (max-width: 700px) {
+            .page { padding: 28px 20px; }
+            header { grid-template-columns: 1fr; }
+            .contact-block { text-align: left; }
+            .impact-bar { flex-wrap: wrap; }
+            .tech-grid { grid-template-columns: 1fr 1fr; }
+            .bottom-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- HEADER -->
+    <header>
+        <div class="name-block">
+            <h1>Gyaneshwer Kumar</h1>
+            <div class="headline">Field CTO &nbsp;·&nbsp; AI &amp; Enterprise Technology Executive</div>
+        </div>
+        <div class="contact-block">
+            <a href="https://www.linkedin.com/in/gyaneshhere/" target="_blank">linkedin.com/in/gyaneshhere</a><br>
+            <a href="https://github.com/gyaneshhere" target="_blank">github.com/gyaneshhere</a><br>
+            Austin, TX &nbsp;·&nbsp; Open to Global
+        </div>
+    </header>
+
+    <!-- IMPACT BAR -->
+    <div class="impact-bar">
+        <div class="impact-stat">
+            <span class="num">$20M+</span>
+            <span class="lbl">ARR Driven at AWS YTD</span>
+        </div>
+        <div class="impact-stat">
+            <span class="num">$50M+</span>
+            <span class="lbl">ARR Contributed (Career)</span>
+        </div>
+        <div class="impact-stat">
+            <span class="num">15+</span>
+            <span class="lbl">Years Tech Leadership</span>
+        </div>
+        <div class="impact-stat">
+            <span class="num">50+</span>
+            <span class="lbl">Eng Org Scale</span>
+        </div>
+        <div class="impact-stat">
+            <span class="num">Fortune 500</span>
+            <span class="lbl">Client Portfolio</span>
+        </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="summary">
+        <p>Technology executive with 15+ years translating emerging AI/ML breakthroughs into revenue-generating products and enterprise transformation. Currently driving AWS's Physical AI startup strategy — growing territory from $0 to $20M ARR within quarters. Track record of shipping Gen AI products ($5M ARR at SnapLogic), scaling engineering organizations from 5 to 50+, and winning Fortune 500 logos across healthcare, manufacturing, and retail. Strategic leader equally at home in boardrooms and architecture reviews, known for building COE practices that deliver 20%+ YOY growth.</p>
+    </div>
+
+    <!-- EXPERIENCE -->
+    <div class="exp-section">
+        <div class="section-label">Leadership Experience</div>
+
+        <!-- AWS -->
+        <div class="exp-item">
+            <div class="exp-meta">
+                <div>
+                    <span class="exp-title">Field CTO</span>
+                    &nbsp;&nbsp;
+                    <span class="exp-co">Amazon Web Services</span>
+                </div>
+                <span class="exp-date">Aug 2025 – Present</span>
+            </div>
+            <div class="exp-scope">Executive technical advisor to frontier AI startups; Physical AI go-to-market strategy across North America</div>
+            <ul class="achv">
+                <li>Grew territory revenue from <strong>$0 to $20M ARR</strong> within three quarters by establishing AWS's thought leadership positioning in the Physical AI space — robotics, embodied AI, real-time sensor fusion.</li>
+                <li>Advised <strong>VC-backed frontier AI startups</strong> funded by top-tier firms, accelerating $15M ARR YTD by architecting production ML stacks on AWS Bedrock, SageMaker, and Inferentia.</li>
+                <li>Designed and launched <strong>executive briefing series and reference architectures</strong> for Physical AI, adopted as foundational GTM content by AWS regional teams.</li>
+            </ul>
+        </div>
+
+        <!-- SnapLogic -->
+        <div class="exp-item">
+            <div class="exp-meta">
+                <div>
+                    <span class="exp-title">Product Architect (Field CTO)</span>
+                    &nbsp;&nbsp;
+                    <span class="exp-co">SnapLogic</span>
+                </div>
+                <span class="exp-date">Jun 2023 – Jul 2025</span>
+            </div>
+            <div class="exp-scope">IC executive spanning pre-sales, post-sales, and product strategy globally; led Gen AI monetization charter</div>
+            <ul class="achv">
+                <li>Architected and shipped <strong>Gen AI-powered integration products generating $5M ARR</strong> over 6–8 quarters, establishing company's AI competitive positioning against MuleSoft and Boomi.</li>
+                <li>Contributed to company growth from <strong>$35M → $85M ARR</strong> over a 3-year period through strategic IC contributions across the full revenue lifecycle.</li>
+                <li>Won <strong>10+ net-new enterprise logos</strong> (Manufacturing, Real Estate, Healthcare, Higher Education) totaling $5M+ ACV through technical leadership in high-stakes evaluations.</li>
+                <li>Established <strong>Legacy Migration COE</strong> for $1M+ ARR install base — defined reference architectures and delivery models that directly accelerated enterprise upsell cycles.</li>
+                <li>Designed <strong>consumption-based pricing model for Gen AI features</strong>, collaborating cross-functionally with Product and GTM to drive 20% YOY revenue growth.</li>
+                <li>Led evaluation and production integration of <strong>LLMs and SLMs</strong> (OpenAI, Llama, Mistral, Cohere) — conducted rigorous benchmarking across latency, cost, and accuracy; reduced token usage 35% via novel prompt engineering frameworks informed by arXiv research.</li>
+                <li>Deployed <strong>production MLOps infrastructure</strong> across multi-cloud (AWS, Azure, GCP) using Terraform and CloudFormation, compressing deployment timelines from weeks to hours.</li>
+            </ul>
+        </div>
+
+        <!-- Informatica Principal SA -->
+        <div class="exp-item">
+            <div class="exp-meta">
+                <div>
+                    <span class="exp-title">Principal Solutions Architect</span>
+                    &nbsp;&nbsp;
+                    <span class="exp-co">Informatica LLC</span>
+                </div>
+                <span class="exp-date">Apr 2019 – May 2021</span>
+            </div>
+            <div class="exp-scope">Technical leadership for strategic accounts; healthcare vertical GTM; enterprise migration rescue</div>
+            <ul class="achv">
+                <li>Rescued <strong>$500K ACV at Hughes Network</strong> by engineering a custom Go-based migration utility for a 17+ org POD-to-POD IICS migration — delivered on time after prior team failure.</li>
+                <li>Built <strong>Healthcare CMS Interoperability reference architecture</strong> positioning Informatica for Payers and Providers vertical — became foundation for a national sales campaign.</li>
+                <li>Architected <strong>Cloud Lake House Accelerator</strong>; created reference collateral and delivery model adopted across North America field teams.</li>
+                <li>Co-built <strong>Patient Consent Management POC</strong> on FHIR standards for TriZetto, establishing Informatica as a thought leader in healthcare data interoperability.</li>
+            </ul>
+        </div>
+
+        <!-- Informatica Sr. CSA -->
+        <div class="exp-item">
+            <div class="exp-meta">
+                <div>
+                    <span class="exp-title">Senior Customer Success Architect</span>
+                    &nbsp;&nbsp;
+                    <span class="exp-co">Informatica Field Services</span>
+                </div>
+                <span class="exp-date">Mar 2019 – Mar 2021</span>
+            </div>
+            <div class="exp-scope">Enterprise delivery, cloud-native architecture, global SI enablement</div>
+            <ul class="achv">
+                <li>Built <strong>cloud-native containerized platform</strong> (Docker + Kubernetes on GCP) for Nationwide, migrating legacy DIS/Process Server workloads — first production K8s deployment in the account.</li>
+                <li>Drove adoption at <strong>major retail chains (Kroger, Costco)</strong> as trusted technical advisor for Cloud Application Integration and large-scale platform migrations.</li>
+                <li>Created <strong>global SI enablement programs</strong> for HCL, Cognizant, and Accenture — ramped hundreds of partner architects through comprehensive reference architecture training.</li>
+            </ul>
+        </div>
+
+        <!-- Informatica CSA -->
+        <div class="exp-item">
+            <div class="exp-meta">
+                <div>
+                    <span class="exp-title">Senior Customer Success Architect – Adoption Services</span>
+                    &nbsp;&nbsp;
+                    <span class="exp-co">Informatica Professional Services</span>
+                </div>
+                <span class="exp-date">Jun 2016 – Mar 2019</span>
+            </div>
+            <ul class="achv">
+                <li>Led <strong>large-scale IICS CB2B migration for Kao Pharma</strong> with 200+ trading partners — complex EDI/EDIFACT integrations to SAP and JDE; delivered on schedule.</li>
+                <li>Designed <strong>FHIR accelerator for HL7 interoperability</strong> — established reusable healthcare integration patterns adopted across the professional services organization.</li>
+                <li>Architected <strong>SMB Lean Reference Architecture</strong> that lowered perpetual license costs, enabling customers to reinvest in IICS cloud subscriptions.</li>
+            </ul>
+        </div>
+
+        <!-- Cloud Solutions Architect -->
+        <div class="exp-item">
+            <div class="exp-meta">
+                <div>
+                    <span class="exp-title">Cloud Solutions Architect</span>
+                    &nbsp;&nbsp;
+                    <span class="exp-co">Informatica</span>
+                </div>
+                <span class="exp-date">Jun 2014 – May 2016</span>
+            </div>
+            <ul class="achv">
+                <li>Incubated <strong>"Success Packs"</strong> — fixed-scope implementation services that drove rapid IPaaS adoption; customers became Gartner reference accounts.</li>
+                <li>Built <strong>Cloud Academy from scratch on AWS-hosted Moodle</strong> — created accessible training and certification portal for Informatica employees, partners, and customers at zero marginal cost.</li>
+                <li>Led <strong>mass certification drive for Accenture and Capgemini</strong> architects across London, certifying hundreds to scale Informatica's EMEA footprint.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- EARLIER CAREER -->
+    <div style="margin-bottom:38px;">
+        <div class="section-label">Earlier Career Progression</div>
+        <table class="earlier-table">
+            <tr>
+                <td>Senior Software Engineer</td>
+                <td>Oracle</td>
+                <td>Jan 2013 – Apr 2014 · Selected for Solutions Architect team; delivered SOA engagements for General Motors, Cigna, P&amp;G as BPEL SME</td>
+            </tr>
+            <tr>
+                <td>Java Developer → Team Lead</td>
+                <td>Hewlett Packard Enterprise</td>
+                <td>Jan 2009 – Jan 2013 · Promoted from Intern to Team Lead within one year; built Oracle Fusion Middleware / SOA practice from ground up; hired and mentored team of Java developers</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- TECHNOLOGY -->
+    <div style="margin-bottom:38px;">
+        <div class="section-label">Technology Leadership Stack</div>
+        <div class="tech-grid">
+            <div class="tech-cell">
+                <h4>AI / LLM Platforms</h4>
+                <p>OpenAI · Azure OpenAI · AWS Bedrock · Llama · Mistral · Cohere · HuggingFace · LangChain · Griptape</p>
+            </div>
+            <div class="tech-cell">
+                <h4>MLOps &amp; AI Techniques</h4>
+                <p>RAG · Fine-tuning · RLHF · Red Teaming · Giskard · GuardRails · Prompt Engineering · SageMaker · Vertex AI</p>
+            </div>
+            <div class="tech-cell">
+                <h4>Cloud &amp; Infrastructure</h4>
+                <p>AWS · Azure · GCP · Terraform · CloudFormation · Docker · Kubernetes · Lambda · Cloud Functions</p>
+            </div>
+            <div class="tech-cell">
+                <h4>Vector &amp; Graph Databases</h4>
+                <p>Pinecone · Weaviate · Chroma · FAISS · OpenSearch · Redis · Neo4j · AWS Neptune</p>
+            </div>
+            <div class="tech-cell">
+                <h4>Languages &amp; Frameworks</h4>
+                <p>Python · Java · Node.js · Go · Streamlit · FastAPI · Apache Kafka · REST / GraphQL</p>
+            </div>
+            <div class="tech-cell">
+                <h4>Enterprise Integration</h4>
+                <p>Informatica IICS / PowerCenter / MDM · Oracle SOA Suite · Salesforce · SAP · EDI · FHIR · HL7</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM ROW: EDUCATION + CERTIFICATIONS -->
+    <div class="bottom-row">
+        <div>
+            <div class="section-label">Education</div>
+            <div class="edu-item">
+                <div class="degree">M.S., Computer Science</div>
+                <div class="inst">SRM University</div>
+                <div class="yr">2006 – 2009 &nbsp;·&nbsp; CGPA 9.60 / 10</div>
+            </div>
+        </div>
+        <div>
+            <div class="section-label">Key Certifications</div>
+            <div class="cert-pills">
+                <span class="pill">LLM Applications</span>
+                <span class="pill">RAG (Vector + Graph)</span>
+                <span class="pill">LangChain</span>
+                <span class="pill">RLHF</span>
+                <span class="pill">Red Teaming LLMs</span>
+                <span class="pill">AWS SageMaker</span>
+                <span class="pill">Snowflake RAG</span>
+                <span class="pill">Google Cloud Platform</span>
+                <span class="pill">Terraform &amp; Kubernetes</span>
+                <span class="pill">TensorFlow Deep Learning</span>
+                <span class="pill">Oracle SOA Suite 11g/12c</span>
+                <span class="pill">Informatica MDM</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <span>Full project portfolio &amp; references available upon request</span>
+        <span>
+            <a href="https://www.linkedin.com/in/gyaneshhere/" target="_blank">linkedin.com/in/gyaneshhere</a>
+            &nbsp;·&nbsp;
+            <a href="https://github.com/gyaneshhere" target="_blank">github.com/gyaneshhere</a>
+        </span>
+    </footer>
+
+</div>
+</body>
+</html>
