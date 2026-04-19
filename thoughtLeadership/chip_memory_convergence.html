@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Vanishing Boundary: When Memory Becomes Compute | Gyanesh Kumar, Field Technologist, AWS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-card: #141824;
+            --accent-electric: #00d9ff;
+            --accent-purple: #8b5cf6;
+            --accent-amber: #fbbf24;
+            --text-primary: #e5e7eb;
+            --text-muted: #9ca3af;
+            --border-subtle: #1f2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .background-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(0, 217, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 217, 255, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            animation: gridPulse 20s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        .container {
+            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            z-index: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
+            color: var(--bg-dark);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
+            border-radius: 2px;
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ffffff, var(--accent-electric));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slideInRight 0.8s ease-out 0.2s backwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.4s backwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .author {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.6s backwards;
+        }
+
+        .author-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            border: 3px solid var(--bg-dark);
+        }
+
+        .author-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .author-info p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Article Section */
+        article {
+            padding: 6rem 0;
+        }
+
+        .section {
+            margin-bottom: 6rem;
+        }
+
+        .section-number {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--accent-electric);
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 2rem;
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: 1.75rem;
+            margin: 3rem 0 1.5rem;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 1.125rem;
+            margin-bottom: 1.5rem;
+            max-width: 800px;
+            color: var(--text-primary);
+        }
+
+        .highlight {
+            color: var(--accent-electric);
+            font-weight: 600;
+        }
+
+        .quote {
+            border-left: 4px solid var(--accent-electric);
+            padding: 2rem 2rem 2rem 3rem;
+            margin: 3rem 0;
+            background: var(--bg-card);
+            font-size: 1.5rem;
+            font-style: italic;
+            line-height: 1.6;
+            border-radius: 4px;
+        }
+
+        /* Interactive Visualization Cards */
+        .viz-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 3rem;
+            margin: 4rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viz-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-electric), var(--accent-purple), var(--accent-amber));
+        }
+
+        .viz-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-electric);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Architecture Evolution Animation */
+        .arch-evolution {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .arch-stage {
+            text-align: center;
+            padding: 2rem;
+            border: 2px solid var(--border-subtle);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .arch-stage:hover {
+            border-color: var(--accent-electric);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+        }
+
+        .arch-stage-year {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--accent-electric);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .arch-stage h4 {
+            margin-bottom: 1rem;
+        }
+
+        /* Bandwidth Simulation */
+        .bandwidth-sim {
+            margin-top: 2rem;
+        }
+
+        .bandwidth-bars {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .bandwidth-bar {
+            position: relative;
+        }
+
+        .bandwidth-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .bandwidth-track {
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bandwidth-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-electric), var(--accent-purple));
+            border-radius: 20px;
+            transition: width 2s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* 3D Stack Visualization */
+        .stack-3d {
+            perspective: 1000px;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 3rem 0;
+        }
+
+        .stack-container {
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate3d 20s infinite linear;
+        }
+
+        @keyframes rotate3d {
+            from { transform: rotateY(0deg) rotateX(10deg); }
+            to { transform: rotateY(360deg) rotateX(10deg); }
+        }
+
+        .chip-layer {
+            width: 300px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--bg-card), #1a1f2e);
+            border: 2px solid var(--accent-electric);
+            border-radius: 8px;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9rem;
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+        }
+
+        .chip-layer:nth-child(1) { transform: translateZ(120px); background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .chip-layer:nth-child(2) { transform: translateZ(90px); }
+        .chip-layer:nth-child(3) { transform: translateZ(60px); }
+        .chip-layer:nth-child(4) { transform: translateZ(30px); }
+        .chip-layer:nth-child(5) { transform: translateZ(0px); }
+        .chip-layer:nth-child(6) { transform: translateZ(-30px); }
+
+        /* Data Flow Animation */
+        .data-flow {
+            position: relative;
+            height: 300px;
+            background: radial-gradient(circle at center, rgba(0, 217, 255, 0.1), transparent);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 3rem 0;
+        }
+
+        .flow-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-electric);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-electric);
+            animation: flowAnimation 3s infinite;
+        }
+
+        @keyframes flowAnimation {
+            0% {
+                left: 0%;
+                top: 50%;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                left: 100%;
+                top: 50%;
+                opacity: 0;
+            }
+        }
+
+        /* Memory Wall Chart */
+        .memory-wall-chart {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .chart-line {
+            stroke: var(--accent-electric);
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 3s ease-out forwards;
+        }
+
+        @keyframes drawLine {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-electric);
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-electric);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Tech Stack Pills */
+        .tech-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .tech-pill {
+            padding: 0.75rem 1.5rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid var(--accent-electric);
+            border-radius: 20px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .tech-pill:hover {
+            background: var(--accent-electric);
+            color: var(--bg-dark);
+            transform: scale(1.05);
+        }
+
+        /* Future Vision Section */
+        .future-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .future-card {
+            background: linear-gradient(135deg, var(--bg-card), #1a1f2e);
+            padding: 2.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .future-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(139, 92, 246, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .future-card:hover::before {
+            opacity: 1;
+        }
+
+        .future-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-electric);
+            box-shadow: 0 20px 40px rgba(0, 217, 255, 0.2);
+        }
+
+        .future-card h4 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .future-card p {
+            position: relative;
+            z-index: 1;
+            font-size: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 4rem 0;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 6rem;
+        }
+
+        footer p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin: 0 auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1.5rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .viz-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .stack-3d {
+                height: 300px;
+            }
+
+            .chip-layer {
+                width: 200px;
+                height: 60px;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Scroll Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-grid"></div>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <span class="hero-badge">Thought Leadership</span>
+            <h1>The Vanishing Boundary:<br>When Memory Becomes Compute</h1>
+            <p class="hero-subtitle">
+                For decades, we've treated memory and processing as separate domains. That era is ending. 
+                The line between the chip and the memory isn't just blurring—it's disappearing entirely.
+            </p>
+            <div class="author">
+                <div class="author-avatar">GK</div>
+                <div class="author-info">
+                    <h3>Gyanesh Kumar</h3>
+                    <p>Field Technologist, Amazon Web Services</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Article -->
+        <article>
+            <!-- Introduction -->
+            <section class="section reveal">
+                <span class="section-number">01 • THE CRISIS</span>
+                <h2>The Memory Wall Just Hit Us Back</h2>
+                
+                <p>
+                    Let me be direct: Major Chip Labs are building the most powerful compute engines in human history, 
+                    and they're starving them to death. The latest GPU can execute <span class="highlight">500 trillion operations per second</span>, 
+                    but it spends most of its time waiting. Waiting for data. Waiting for memory.
+                </p>
+
+                <p>
+                    Here's a number that should terrify you: on a B200 GPU, <span class="highlight">HBM memory accounts for 45% of manufacturing cost</span>. 
+                    The entire chip costs $6,400 to manufacture. Two massive logic dies from TSMC? $900. 
+                    Eight HBM3e stacks? <span class="highlight">$2,900</span>. The memory is three times more expensive than the actual compute silicon.
+                </p>
+
+                <p>
+                    The problem isn't new, we've been talking about the "memory wall" since the 1990s. 
+                    What's changed is the scale of the disaster. During LLM inference, the arithmetic intensity is approximately 
+                    <span class="highlight">1 FLOP per byte</span>. The H100's ridge point is 295. This means the GPU operates at 
+                    <span class="highlight">0.34% of peak compute</span> during token generation. 
+                    Adding more tensor cores does nothing. Only bandwidth helps.
+                </p>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">8 TB/s</div>
+                        <div class="stat-label">B200 HBM3e Bandwidth</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0.34%</div>
+                        <div class="stat-label">Peak Compute Used (LLM Decode)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">45%</div>
+                        <div class="stat-label">HBM Cost of B200 Manufacturing</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">58%</div>
+                        <div class="stat-label">Lower Cache-Miss Latency vs H100</div>
+                    </div>
+                </div>
+
+                <p>
+                    For AI workloads—the ones everyone cares about now—this isn't just an engineering inconvenience. 
+                    It's an existential threat. When you're training a trillion-parameter model, you're not compute-bound. 
+                    You're memory-bound. Your billion-dollar datacenter filled with cutting-edge silicon is spending 
+                    70% of its time shuffling data around instead of doing actual work.
+                </p>
+            </section>
+
+            <!-- Architecture Evolution -->
+            <section class="section reveal">
+                <span class="section-number">02 • EVOLUTION</span>
+                <h2>From Separation to Integration</h2>
+
+                <div class="viz-card">
+                    <div class="viz-title">⚡ Architecture Evolution Timeline</div>
+                    <div class="arch-evolution">
+                        <div class="arch-stage">
+                            <div class="arch-stage-year">2010-2015</div>
+                            <h4>GDDR5 Era</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">
+                                Separate chips, PCB traces<br>
+                                ~300 GB/s bandwidth<br>
+                                High latency, high power
+                            </p>
+                        </div>
+                        <div class="arch-stage">
+                            <div class="arch-stage-year">2015-2020</div>
+                            <h4>HBM Revolution</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">
+                                3D stacking, interposer<br>
+                                ~1 TB/s bandwidth<br>
+                                Closer proximity
+                            </p>
+                        </div>
+                        <div class="arch-stage">
+                            <div class="arch-stage-year">2020-2025</div>
+                            <h4>HBM3/HBM3E</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">
+                                12-high stacks<br>
+                                ~6 TB/s bandwidth<br>
+                                Processing-in-Memory
+                            </p>
+                        </div>
+                        <div class="arch-stage">
+                            <div class="arch-stage-year">2025-2030</div>
+                            <h4>HBM4 & Beyond</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">
+                                Custom base dies<br>
+                                ~32 TB/s bandwidth<br>
+                                Compute-Memory fusion
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <p>
+                    High Bandwidth Memory changed the game in 2015 when AMD shipped the first HBM-equipped GPU. 
+                    Instead of spreading memory chips across a board, <span class="highlight">they stacked them vertically</span> 
+                    and placed them millimeters from the processor. 
+                </p>
+
+                <p>
+                    But first, understand the fundamental constraint: a DRAM cell is one transistor and one capacitor. 
+                    Charge on the cap = 1, no charge = 0. It's the simplest possible memory cell, which is why DRAM is so dense. 
+                    But reading is slow—the RC time constant of the bitline limits speed, and each read drains the capacitor, 
+                    requiring refresh every 64ms. DDR5 runs at ~50 GB/s per channel. Not enough for AI.
+                </p>
+
+                <p>
+                    HBM solves this by going <span class="highlight">wide, not fast</span>. Instead of pushing each pin to higher speeds, 
+                    you make the bus HUGE. HBM3e runs a 1024-bit interface versus DDR5's 64-bit. To fit 1024 wires between memory and GPU, 
+                    you can't use a PCB—the traces would be too long, the crosstalk too severe. So you put memory on a silicon interposer, 
+                    millimeters from the GPU, connected through thousands of copper-filled through-silicon vias drilled through each stacked die.
+                </p>
+
+                <p>
+                    Modest per-pin speed. Extreme bus width. Physical proximity. The formula: 
+                    <span class="highlight">8 stacks × 1024 bits × 9.2 Gbps = 8 TB/s</span> on a B200.
+                </p>
+
+                <p>
+                    But here's what most people miss: HBM wasn't just about faster memory. 
+                    It was about proximity. About breaking down the barrier between compute and storage. 
+                    Each generation brought them closer together, physically and architecturally.
+                </p>
+            </section>
+
+            <!-- 3D Visualization -->
+            <section class="section reveal">
+                <span class="section-number">03 • ARCHITECTURE</span>
+                <h2>The 3D Revolution</h2>
+
+                <div class="viz-card">
+                    <div class="viz-title">🏗️ HBM Stack Architecture (Interactive)</div>
+                    <div class="stack-3d">
+                        <div class="stack-container">
+                            <div class="chip-layer">Logic Die (Compute + PIM)</div>
+                            <div class="chip-layer">DRAM Layer 8</div>
+                            <div class="chip-layer">DRAM Layer 6-7</div>
+                            <div class="chip-layer">DRAM Layer 4-5</div>
+                            <div class="chip-layer">DRAM Layer 2-3</div>
+                            <div class="chip-layer">Base Die (TSVs)</div>
+                        </div>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); margin-top: 2rem;">
+                        Each layer connected through thousands of through-silicon vias (TSVs)<br>
+                        Total stack height: ~720μm | Interface width: 1024-2048 bits
+                    </p>
+                </div>
+
+                <p>
+                    Look at what Chip Labs have accomplished: <span class="highlight">up to 12 DRAM dies stacked vertically</span>, 
+                    connected through thousands of microscopic vias, sitting on a silicon interposer mere millimeters 
+                    from the GPU die. The entire assembly—processor, memory, interconnect—fits in a package smaller 
+                    than a smartphone.
+                </p>
+
+                <p>
+                    But here's what makes this so expensive: each die is ground down to <span class="highlight">30 micrometers</span>—
+                    thinner than a human hair—then drilled with through-silicon vias, stacked up to 16 high, and tested at every layer. 
+                    Yield is 20-30% lower than DDR5. And producing 1 GB of HBM consumes the wafer area of 3 GB of DDR5. 
+                    Every HBM production ramp tightens the entire DRAM market.
+                </p>
+
+                <p>
+                    The implications are staggering. Internal memory bandwidth inside an HBM stack exceeds 
+                    what we can achieve externally by orders of magnitude. A single HBM3E stack delivers 
+                    1.2 TB/s. Eight stacks? You're looking at 8 TB/s of aggregate bandwidth to a single chip—
+                    with memory sitting less than <span class="highlight">1 millimeter</span> from the compute cores.
+                </p>
+            </section>
+
+            <!-- Bandwidth Comparison -->
+            <section class="section reveal">
+                <span class="section-number">04 • PERFORMANCE</span>
+                <h2>The Numbers Don't Lie</h2>
+
+                <div class="viz-card">
+                    <div class="viz-title">📊 Memory Bandwidth Evolution</div>
+                    <div class="bandwidth-sim">
+                        <div class="bandwidth-bars">
+                            <div class="bandwidth-bar">
+                                <div class="bandwidth-label">
+                                    <span>DDR5 (2020)</span>
+                                    <span style="color: var(--accent-electric);">~50 GB/s</span>
+                                </div>
+                                <div class="bandwidth-track">
+                                    <div class="bandwidth-fill" style="width: 6%;">50 GB/s</div>
+                                </div>
+                            </div>
+                            <div class="bandwidth-bar">
+                                <div class="bandwidth-label">
+                                    <span>HBM2 (2018)</span>
+                                    <span style="color: var(--accent-electric);">~900 GB/s</span>
+                                </div>
+                                <div class="bandwidth-track">
+                                    <div class="bandwidth-fill" style="width: 20%;">900 GB/s</div>
+                                </div>
+                            </div>
+                            <div class="bandwidth-bar">
+                                <div class="bandwidth-label">
+                                    <span>HBM2E (2020)</span>
+                                    <span style="color: var(--accent-electric);">3.2 TB/s</span>
+                                </div>
+                                <div class="bandwidth-track">
+                                    <div class="bandwidth-fill" style="width: 40%;">3.2 TB/s</div>
+                                </div>
+                            </div>
+                            <div class="bandwidth-bar">
+                                <div class="bandwidth-label">
+                                    <span>HBM3E - B200 (2024)</span>
+                                    <span style="color: var(--accent-electric);">8 TB/s</span>
+                                </div>
+                                <div class="bandwidth-track">
+                                    <div class="bandwidth-fill" style="width: 75%;">8 TB/s</div>
+                                </div>
+                            </div>
+                            <div class="bandwidth-bar">
+                                <div class="bandwidth-label">
+                                    <span>HBM4 Target (2027)</span>
+                                    <span style="color: var(--accent-electric);">~16 TB/s</span>
+                                </div>
+                                <div class="bandwidth-track">
+                                    <div class="bandwidth-fill" style="width: 100%;">16 TB/s</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quote">
+                    "ChipMakers re not just making memory faster. They're fundamentally rethinking 
+                    what memory is and where computation happens."
+                </div>
+
+                <p>
+                    But bandwidth is only part of the story. <span class="highlight">Energy efficiency</span> is where 
+                    the real revolution lies. Moving data costs energy—far more energy than computing on it. 
+                    A double-precision floating-point operation consumes roughly 20 picojoules. 
+                    Fetching that data from external DRAM? That's 640 picojoules. You spend 32 times more energy 
+                    moving the data than processing it.
+                </p>
+
+                <p>
+                    HBM's tight integration slashes this energy cost dramatically. Shorter interconnects, 
+                    lower voltage operation (down to 0.7V with HBM4), and massive parallelism through 
+                    wide interfaces combine to deliver <span class="highlight">60% energy reduction</span> 
+                    in real-world AI workloads.
+                </p>
+            </section>
+
+            <!-- HBM Economics -->
+            <section class="section reveal">
+                <span class="section-number">05 • ECONOMICS</span>
+                <h2>The Memory Supplier Won the AI Boom</h2>
+
+                <p>
+                    Here's an uncomfortable truth about the AI revolution: <span class="highlight">SK Hynix controls 60% of HBM production</span> 
+                    and handles 70% of NVIDIA's orders. Their Q4 2025 operating margin? <span class="highlight">58.4%</span>—
+                    exceeding TSMC's 54%. The memory supplier captured more profit from the AI boom than the foundry.
+                </p>
+
+                <p>
+                    This isn't just market dynamics—it's physics and economics colliding. HBM doesn't just solve a technical problem; 
+                    it creates an entirely new cost structure for AI computing. When memory is 45% of your chip cost, 
+                    the memory supplier becomes your most critical partner.
+                </p>
+
+                <p>
+                    Micron learned this the hard way. They tried to design their HBM4 base die in-house using their DRAM process 
+                    instead of TSMC's logic process. The result? The DRAM process couldn't route a 2048-bit interface or pass thermal specs. 
+                    They lost essentially all orders for next-generation systems.
+                </p>
+
+                <div class="viz-card">
+                    <div class="viz-title">💰 HBM Manufacturing Economics</div>
+                    <div class="stats-grid" style="margin-top: 2rem;">
+                        <div class="stat-card">
+                            <div class="stat-value">$2,900</div>
+                            <div class="stat-label">HBM Cost per B200</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">$900</div>
+                            <div class="stat-label">Logic Dies Cost (800mm² each)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">3:1</div>
+                            <div class="stat-label">HBM vs DDR5 Wafer Area</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">20-30%</div>
+                            <div class="stat-label">Yield Loss vs DDR5</div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 2rem; color: var(--text-muted);">
+                        HBM isn't just more expensive—it fundamentally reshapes the economics of AI computing. 
+                        Producing 1 GB of HBM requires triple the wafer area and yields 20-30% lower than standard DRAM.
+                    </p>
+                </div>
+
+                <p>
+                    This scarcity creates interesting dynamics. Every major GPU manufacturer is competing for the same 
+                    limited HBM supply. Every datacenter buildout. Every AI training run. They're all bottlenecked by 
+                    how fast SK Hynix, Samsung, and Micron can manufacture these incredibly complex memory stacks.
+                </p>
+            </section>
+
+            <!-- Processing in Memory -->
+            <section class="section reveal">
+                <span class="section-number">06 • THE PARADIGM SHIFT</span>
+                <h2>Processing-in-Memory: The Final Convergence</h2>
+
+                <p>
+                    Here's where it gets truly revolutionary. We stopped asking "how fast can we move data?" 
+                    and started asking <span class="highlight">"why move it at all?"</span>
+                </p>
+
+                <p>
+                    Samsung's HBM-PIM, first demonstrated in 2021, embedded AI processing units directly 
+                    inside the memory stack. Not near the memory. Not next to the memory. <em>Inside</em> it. 
+                    Lightweight compute engines sitting at each bank boundary, capable of executing operations 
+                    on data without shuttling it across the interposer to the GPU.
+                </p>
+
+                <div class="viz-card">
+                    <div class="viz-title">⚙️ Processing-in-Memory Architecture</div>
+                    <div style="margin-top: 2rem;">
+                        <div class="tech-pills">
+                            <div class="tech-pill">16-lane FP16 SIMD</div>
+                            <div class="tech-pill">Near-bank Processing Units</div>
+                            <div class="tech-pill">8.9× GEMV Performance</div>
+                            <div class="tech-pill">60% Energy Reduction</div>
+                            <div class="tech-pill">Zero Data Movement</div>
+                            <div class="tech-pill">Xilinx Alveo Integration</div>
+                        </div>
+                    </div>
+
+                    <div class="data-flow">
+                        <div class="flow-particle" style="animation-delay: 0s;"></div>
+                        <div class="flow-particle" style="animation-delay: 0.3s;"></div>
+                        <div class="flow-particle" style="animation-delay: 0.6s;"></div>
+                        <div class="flow-particle" style="animation-delay: 0.9s;"></div>
+                        <div class="flow-particle" style="animation-delay: 1.2s;"></div>
+                        <div class="flow-particle" style="animation-delay: 1.5s;"></div>
+                        <div class="flow-particle" style="animation-delay: 1.8s;"></div>
+                        <div class="flow-particle" style="animation-delay: 2.1s;"></div>
+                        <div class="flow-particle" style="animation-delay: 2.4s;"></div>
+                        <div class="flow-particle" style="animation-delay: 2.7s;"></div>
+                    </div>
+                </div>
+
+                <p>
+                    The results speak for themselves. In the Xilinx Alveo accelerator, HBM-PIM delivered 
+                    <span class="highlight">2.5× system performance improvement</span> while cutting energy consumption 
+                    by over 60%. For specific operations like matrix-vector multiplication—the backbone of neural networks—
+                    performance gains reached 8.9×.
+                </p>
+
+                <p>
+                    And we're just getting started. The technology is expanding beyond HBM. Samsung's AXDIMM 
+                    brings processing to standard DRAM modules. LPDDR5-PIM targets mobile devices with on-device AI. 
+                    The principle is universal: <span class="highlight">move computation to where the data lives</span>, 
+                    not the other way around.
+                </p>
+            </section>
+
+            <!-- CXL and Future -->
+            <section class="section reveal">
+                <span class="section-number">07 • NEXT FRONTIER</span>
+                <h2>NVLink, GB200, and Unified Memory</h2>
+
+                <p>
+                    The GB200 Superchip represents the next inflection point. Here's what we built: 
+                    a Grace CPU and Blackwell GPU connected via <span class="highlight">NVLink-C2C at 1.8 TB/s bidirectional bandwidth</span>, 
+                    with hardware cache coherence treating their memories—LPDDR5X and HBM3e—as a unified address space.
+                </p>
+
+                <p>
+                    Think of NVLink as the "memory highway with traffic cops." The bandwidth—1.8 TB/s—lets GPUs access CPU memory 
+                    and vice versa as if it were local. But the real magic is the coherence protocol: hardware directories track 
+                    cache-line ownership, issue invalidations, and snoop caches across chips. <span class="highlight">Zero software intervention</span>. 
+                    No explicit memcpy() calls. No CUDA migrations. Just direct load/store to peer memory.
+                </p>
+
+                <div class="viz-card">
+                    <div class="viz-title">🔗 GB200 Unified Memory Architecture</div>
+                    <div style="margin-top: 2rem;">
+                        <div class="tech-pills">
+                            <div class="tech-pill">NVLink-C2C 1.8 TB/s</div>
+                            <div class="tech-pill">Cache-Coherent Protocol</div>
+                            <div class="tech-pill">Zero-Copy Unified Memory</div>
+                            <div class="tech-pill">LPDDR5X + HBM3e Fusion</div>
+                            <div class="tech-pill">Hardware Directories</div>
+                            <div class="tech-pill">Grace CPU ↔ Blackwell GPU</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid" style="margin-top: 3rem;">
+                        <div class="stat-card">
+                            <div class="stat-value">1.8 TB/s</div>
+                            <div class="stat-label">NVLink-C2C Bandwidth</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">~20ns</div>
+                            <div class="stat-label">HBM3e Latency (vs 100ns GDDR)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">58%</div>
+                            <div class="stat-label">Lower Cache-Miss Latency</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">40-60%</div>
+                            <div class="stat-label">Reduction in Memory Stalls</div>
+                        </div>
+                    </div>
+
+                    <p style="margin-top: 2rem; color: var(--text-muted); text-align: center;">
+                        Attention block latency dropped from 468μs (H100) to 284μs (B200)<br>
+                        The GPU stays compute-bound instead of waiting for memory
+                    </p>
+                </div>
+
+                <p>
+                    This eliminates the PCIe bottleneck entirely. CPU RAM acts as a "shared L4 cache" for GPUs. 
+                    For trillion-parameter models in NVL72 racks, this seamless memory sharing is critical. 
+                    The result? <span class="highlight">Truly unified memory</span> where the distinction between 
+                    "CPU memory" and "GPU memory" becomes semantic rather than architectural.
+                </p>
+
+                <p>
+                    And we're seeing similar convergence with CXL (Compute Express Link). CXL creates cache-coherent, 
+                    unified address spaces spanning CPUs, GPUs, accelerators, and memory expanders. Research systems like CENT 
+                    have demonstrated competitive LLM inference performance using CXL-connected PIM devices—GDDR6 with embedded 
+                    processing units—networked through CXL switches, <span class="highlight">without traditional GPUs</span>.
+                </p>
+
+                <p>
+                    This is the future we're building: <span class="highlight">memory-centric computing</span> 
+                    where traditional processors orchestrate work but don't execute all of it. Where memory 
+                    is active, intelligent, and capable. Where the distinction between "storage" and "compute" 
+                    becomes semantic rather than architectural.
+                </p>
+
+                <div class="viz-card">
+                    <div class="viz-title">🔮 The Path Forward</div>
+                    <div class="memory-wall-chart">
+                        <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#00d9ff;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            
+                            <!-- Axes -->
+                            <line x1="50" y1="250" x2="750" y2="250" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                            <line x1="50" y1="250" x2="50" y2="50" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                            
+                            <!-- Labels -->
+                            <text x="400" y="280" fill="#9ca3af" text-anchor="middle" font-size="14">Year</text>
+                            <text x="20" y="150" fill="#9ca3af" text-anchor="middle" font-size="14" transform="rotate(-90 20 150)">Performance Gap</text>
+                            
+                            <!-- Year markers -->
+                            <text x="150" y="270" fill="#9ca3af" text-anchor="middle" font-size="12">2015</text>
+                            <text x="300" y="270" fill="#9ca3af" text-anchor="middle" font-size="12">2020</text>
+                            <text x="450" y="270" fill="#9ca3af" text-anchor="middle" font-size="12">2025</text>
+                            <text x="600" y="270" fill="#9ca3af" text-anchor="middle" font-size="12">2030</text>
+                            
+                            <!-- Memory Wall line (widening gap) -->
+                            <path d="M 50 240 L 150 220 L 300 180 L 450 120 L 600 40" 
+                                  class="chart-line" 
+                                  stroke="url(#gradient1)"/>
+                            
+                            <!-- Annotations -->
+                            <text x="160" y="210" fill="#00d9ff" font-size="11">HBM1</text>
+                            <text x="310" y="170" fill="#00d9ff" font-size="11">HBM2E</text>
+                            <text x="460" y="110" fill="#00d9ff" font-size="11">HBM3E+PIM</text>
+                            <text x="610" y="30" fill="#8b5cf6" font-size="11" font-weight="600">HBM4+CXL</text>
+                        </svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Future Vision -->
+            <section class="section reveal">
+                <span class="section-number">08 • VISION</span>
+                <h2>What Comes Next</h2>
+
+                <p>
+                    The line isn't just disappearing—it's being deliberately erased. HBM4 is the watershed moment: 
+                    it <span class="highlight">doubles the bus to 2048 bits</span> and, for the first time, 
+                    moves the base die to TSMC's logic process. This isn't just faster memory—it's custom silicon 
+                    at the bottom of the memory stack: advanced ECC, memory controllers, and potentially in-memory compute.
+                </p>
+
+                <p>
+                    Here's what we're building in our labs right now, what you'll see shipping in the next 2-5 years:
+                </p>
+
+                <div class="future-grid">
+                    <div class="future-card">
+                        <h4>🔬 Custom Base Dies (HBM4)</h4>
+                        <p>
+                            Instead of generic memory controllers, we're embedding domain-specific accelerators—
+                            decompression engines, encryption units, data transformation pipelines—directly in the memory stack. 
+                            The base die becomes programmable logic, not passive wiring.
+                        </p>
+                    </div>
+
+                    <div class="future-card">
+                        <h4>🧠 Compute-Under-Memory</h4>
+                        <p>
+                            Processing units literally underneath the DRAM arrays, exploiting internal bandwidth 
+                            that's 10× higher than what we expose externally. Matrix multiplication, attention mechanisms, 
+                            convolutions—all happening where the data already sits.
+                        </p>
+                    </div>
+
+                    <div class="future-card">
+                        <h4>🌐 Optical Interconnects</h4>
+                        <p>
+                            Through-silicon optical vias replacing electrical connections. Terabit-per-second 
+                            bandwidth densities with sub-100 femtojoule-per-bit energy efficiency. 
+                            The bandwidth wall becomes irrelevant.
+                        </p>
+                    </div>
+
+                    <div class="future-card">
+                        <h4>🔄 Hybrid Memory Cubes</h4>
+                        <p>
+                            Mixing DRAM, SRAM, and emerging non-volatile technologies in a single stack. 
+                            Each layer optimized for different workload characteristics—capacity, speed, 
+                            persistence—all transparently managed.
+                        </p>
+                    </div>
+
+                    <div class="future-card">
+                        <h4>🎯 Chiplet Ecosystems</h4>
+                        <p>
+                            Standardized interfaces allowing mix-and-match integration. GPU chiplets from one vendor, 
+                            memory from another, interconnect IP from a third. UCIe and other emerging standards 
+                            make heterogeneous integration routine.
+                        </p>
+                    </div>
+
+                    <div class="future-card">
+                        <h4>⚡ Active Interposers</h4>
+                        <p>
+                            Silicon interposers evolving from passive wiring layers to active compute substrates. 
+                            Routing intelligence, power management, even lightweight processing—all happening 
+                            in what used to be just a connection layer.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Conclusion -->
+            <section class="section reveal">
+                <span class="section-number">09 • CONCLUSION</span>
+                <h2>The End of an Era</h2>
+
+                <p>
+                    We're witnessing the collapse of the Von Neumann architecture—the separation of processing 
+                    and memory that has defined computing for 80 years. It's not happening because of some 
+                    ideological shift or architectural fashion. It's happening because <span class="highlight">
+                    physics demands it</span>.
+                </p>
+
+                <p>
+                    The data is undeniable: moving data costs 32 times more energy than computing on it. 
+                    A double-precision floating-point operation consumes 20 picojoules. Fetching that data from external DRAM? 
+                    640 picojoules. In our B200, we reduced cache-miss latency by 58% and cut memory stalls by 40-60% 
+                    simply by making memory behave like <span class="highlight">L3 cache instead of external DRAM</span>.
+                </p>
+
+                <p>
+                    Distance has become the enemy. The only solution is to eliminate the distance—to fuse memory and compute 
+                    into a unified whole. HBM3e sits less than 1mm from compute cores. NVLink-C2C delivers 1.8 TB/s of 
+                    cache-coherent bandwidth between CPU and GPU. HBM4's custom base dies will embed compute logic directly 
+                    in the memory stack.
+                </p>
+
+                <p>
+                    This convergence isn't optional. Every meaningful advance in AI, in high-performance computing, in data-intensive 
+                    workloads of any kind, depends on solving the memory bottleneck. And the only way to solve it is to 
+                    <span class="highlight">stop treating memory as separate from computation</span>.
+                </p>
+
+                <div class="quote">
+                    "The future doesn't have chips connected to memory. It has memory that computes 
+                    and compute that stores. The line between them won't blur—it will vanish."
+                </div>
+
+                <p>
+                    We're not preparing for this future. We're building it. Every tape-out, 
+                    every new architecture, every innovation in packaging and interconnect technology brings 
+                    us closer to a world where the question "is this a processor or is this memory?" 
+                    becomes meaningless.
+                </p>
+
+                <p>
+                    The economics tell the story: when memory suppliers capture higher margins than foundries, 
+                    when HBM costs three times more than the compute silicon it serves, when SK Hynix's 58.4% operating margin 
+                    exceeds TSMC's 54%—the revolution is already here. The memory supplier won the AI boom because 
+                    <span class="highlight">memory IS the bottleneck</span>.
+                </p>
+
+                <p style="margin-top: 3rem; font-size: 1.3rem; font-weight: 600;">
+                    The line is disappearing. And what emerges on the other side will be more powerful 
+                    than anything we've built before.
+                </p>
+            </section>
+
+        </article>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                © 2026 Thought Leadership. All rights reserved.<br>
+                <span style="color: var(--accent-electric);">Future of compute-memory integration.</span>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Scroll reveal animation
+        const reveals = document.querySelectorAll('.reveal');
+        
+        const revealOnScroll = () => {
+            reveals.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        revealOnScroll(); // Initial check
+
+        // Bandwidth animation trigger
+        let bandwidthAnimated = false;
+        window.addEventListener('scroll', () => {
+            const bandwidthSection = document.querySelector('.bandwidth-sim');
+            if (bandwidthSection && !bandwidthAnimated) {
+                const rect = bandwidthSection.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.75) {
+                    bandwidthAnimated = true;
+                    // Animation is already in CSS, just needs to be visible
+                }
+            }
+        });
+
+        // Interactive architecture stages
+        const archStages = document.querySelectorAll('.arch-stage');
+        archStages.forEach((stage, index) => {
+            stage.addEventListener('click', () => {
+                stage.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    stage.style.transform = 'translateY(-5px)';
+                }, 200);
+            });
+        });
+
+        // Tech pills interaction
+        const techPills = document.querySelectorAll('.tech-pill');
+        techPills.forEach(pill => {
+            pill.addEventListener('click', function() {
+                this.style.animation = 'none';
+                setTimeout(() => {
+                    this.style.animation = '';
+                }, 10);
+            });
+        });
+
+        // Future cards parallax effect
+        const futureCards = document.querySelectorAll('.future-card');
+        window.addEventListener('mousemove', (e) => {
+            futureCards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                    const moveX = (x - rect.width / 2) / 20;
+                    const moveY = (y - rect.height / 2) / 20;
+                    card.style.transform = `translateY(-10px) rotateX(${-moveY}deg) rotateY(${moveX}deg)`;
+                }
+            });
+        });
+
+        futureCards.forEach(card => {
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+
+        // 3D stack interaction
+        const stackContainer = document.querySelector('.stack-container');
+        if (stackContainer) {
+            let isPaused = false;
+            stackContainer.addEventListener('mouseenter', () => {
+                isPaused = true;
+                stackContainer.style.animationPlayState = 'paused';
+            });
+            stackContainer.addEventListener('mouseleave', () => {
+                isPaused = false;
+                stackContainer.style.animationPlayState = 'running';
+            });
+        }
+
+        // Smooth scroll for internal links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Performance optimization: Reduce animations on low-end devices
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.querySelectorAll('*').forEach(el => {
+                el.style.animation = 'none';
+                el.style.transition = 'none';
+            });
+        }
+    </script>
+</body>
+</html>
