@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGLang in Action — Interactive Simulations</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#060810;--surface:#0d1117;--surface2:#141b24;--border:#1e2a38;
+  --accent:#00d4ff;--accent2:#7c3aed;--accent3:#10b981;--accent4:#f59e0b;
+  --red:#ef4444;--text:#e2e8f0;--muted:#64748b;--code:#94a3b8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;line-height:1.6}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:rgba(6,8,16,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(30,42,56,0.5)}
+.nav-logo{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);letter-spacing:.08em;font-weight:700}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-decoration:none;letter-spacing:.05em;transition:color .2s;text-transform:uppercase}
+.nav-links a:hover{color:var(--accent)}
+@media(max-width:640px){.nav-links{display:none}}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:90px 24px 60px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.12),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 120%,rgba(124,58,237,.1),transparent 55%);pointer-events:none}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.04) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,black,transparent)}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);border-radius:100px;padding:6px 16px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:28px;animation:fadeUp .6s ease both}
+.badge-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+h1{font-size:clamp(2.8rem,7vw,5.8rem);font-weight:800;line-height:1.05;letter-spacing:-.03em;animation:fadeUp .6s .1s ease both;max-width:900px}
+h1 .hl{color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text}
+.hero-sub{margin-top:20px;font-size:1.1rem;color:var(--muted);max-width:640px;line-height:1.7;animation:fadeUp .6s .2s ease both}
+.stat-row{display:flex;gap:40px;margin-top:50px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .3s ease both}
+.stat-num{font-size:2.2rem;font-weight:800;color:var(--accent);letter-spacing:-.04em;font-family:'Space Mono',monospace}
+.stat-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'Space Mono',monospace;margin-top:2px}
+.scroll-hint{margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.1em;animation:fadeUp .6s .5s ease both}
+.scroll-arrow{width:18px;height:18px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);animation:scrollBounce 1.5s infinite}
+@keyframes scrollBounce{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(6px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTIONS */
+section{max-width:1100px;margin:0 auto;padding:80px 24px}
+.section-label{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+h2{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:14px}
+.section-desc{color:var(--muted);font-size:.95rem;max-width:620px;margin-bottom:44px;line-height:1.7}
+hr.divider{border:none;border-top:1px solid var(--border);margin:0 24px}
+
+/* SIM CARD */
+.sim-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:28px}
+.sim-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.sim-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.05em}
+.sim-dots{display:flex;gap:6px}
+.sim-dot{width:10px;height:10px;border-radius:50%}
+.sim-dot.r{background:#ff5f57}.sim-dot.y{background:#febc2e}.sim-dot.g{background:#28c840}
+.sim-body{padding:20px}
+
+/* BUTTONS */
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.btn{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.04em;padding:7px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.4);color:var(--accent)}
+.btn.primary:hover{background:rgba(0,212,255,.2)}
+.btn.danger{border-color:rgba(239,68,68,.4);color:var(--red)}
+.btn.danger:hover{background:rgba(239,68,68,.1)}
+.btn.green{border-color:rgba(16,185,129,.4);color:var(--accent3)}
+.btn.green:hover{background:rgba(16,185,129,.1)}
+
+/* LOG PANEL */
+.log-panel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--code);height:90px;overflow-y:auto;line-height:1.9}
+.log-panel .hit{color:var(--accent3)}.log-panel .miss{color:var(--accent4)}.log-panel .ev{color:var(--red)}.log-panel .ins{color:var(--accent)}
+
+/* CODE BLOCK */
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px 20px;font-family:'Space Mono',monospace;font-size:11.5px;line-height:1.9;color:var(--code);overflow-x:auto;margin-bottom:14px;white-space:pre}
+.code-block .kw{color:#c792ea}.code-block .fn{color:#82aaff}.code-block .str{color:#c3e88d}.code-block .cm{color:#546e7a;font-style:italic}.code-block .num{color:#f78c6c}
+.code-block .hl{background:rgba(0,212,255,.07);display:block;margin:0 -20px;padding:0 20px;border-left:3px solid var(--accent)}
+
+/* LAYOUTS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:700px){.three-col{grid-template-columns:repeat(2,1fr)}}
+
+/* METRIC CARDS */
+.metric-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.metric-val{font-size:1.7rem;font-weight:800;font-family:'Space Mono',monospace;color:var(--accent);letter-spacing:-.04em}
+.metric-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-family:'Space Mono',monospace}
+
+/* MEMORY GRID */
+.memory-grid{display:grid;grid-template-columns:repeat(32,1fr);gap:2.5px;padding:14px;background:var(--bg);border-radius:10px;margin-bottom:14px}
+.mem-block{aspect-ratio:1;border-radius:2px;background:var(--surface2);transition:all .3s ease;position:relative}
+.mem-block.cached{background:var(--accent3);opacity:.65}
+.mem-block.active{background:var(--accent);opacity:1;box-shadow:0 0 5px rgba(0,212,255,.5)}
+.mem-block.new{background:var(--accent4);opacity:.9}
+.mem-block.ev{background:var(--red);opacity:.5;animation:flash .5s ease}
+@keyframes flash{0%{opacity:1;transform:scale(1.15)}100%{opacity:.5;transform:scale(1)}}
+
+.mem-legend{display:flex;gap:18px;flex-wrap:wrap;font-family:'Space Mono',monospace;font-size:10px}
+.mem-li{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.mem-sw{width:11px;height:11px;border-radius:2px}
+
+/* SCHEDULER */
+.sched-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+@media(max-width:700px){.sched-wrap{grid-template-columns:1fr}}
+.queue-col{background:var(--bg);border-radius:10px;padding:14px;min-height:200px}
+.queue-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.req-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-bottom:5px;font-family:'Space Mono',monospace;font-size:10px;display:flex;align-items:center;gap:8px;transition:all .4s ease;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.req-item.high{border-left:3px solid var(--accent3)}.req-item.med{border-left:3px solid var(--accent4)}.req-item.low{border-left:3px solid var(--red)}
+.req-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--code)}
+.req-match{color:var(--accent3);font-size:9px}
+
+/* GPU TIMELINE */
+.gpu-timeline{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px}
+.gpu-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;height:26px}
+.gpu-label{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);width:45px;text-align:right;flex-shrink:0}
+.gpu-track{flex:1;height:100%;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden}
+.gpu-fill{position:absolute;top:0;left:0;bottom:0;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--bg);transition:width .6s ease;white-space:nowrap;overflow:hidden}
+
+/* SPECULATIVE */
+.token-seq{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px;min-height:42px;align-items:center}
+.token{padding:3px 9px;border-radius:6px;font-family:'Space Mono',monospace;font-size:11px;border:1px solid transparent;transition:all .3s ease}
+.token.verified{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:var(--accent3)}
+.token.draft{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:var(--accent4);animation:tokPulse 1s infinite}
+.token.rejected{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:var(--red)}
+.token.base{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);color:var(--muted)}
+@keyframes tokPulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+.spec-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+@media(max-width:700px){.spec-stats{grid-template-columns:repeat(2,1fr)}}
+.spec-stat{text-align:center;background:var(--surface2);border-radius:8px;padding:12px}
+.spec-val{font-size:1.35rem;font-weight:800;font-family:'Space Mono',monospace}
+.spec-val.g{color:var(--accent3)}.spec-val.y{color:var(--accent4)}.spec-val.b{color:var(--accent)}.spec-val.p{color:#a78bfa}
+.spec-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'Space Mono',monospace;margin-top:4px}
+
+/* THROUGHPUT CHART */
+.chart-wrap{background:var(--bg);border-radius:10px;padding:16px;margin-bottom:14px}
+.bars-container{display:flex;align-items:flex-end;gap:3px;height:150px;margin-bottom:6px}
+.bar-group{display:flex;gap:2px;align-items:flex-end;flex:1}
+.bar{flex:1;border-radius:3px 3px 0 0;transition:height .4s ease;min-height:4px}
+.bar.sg{background:linear-gradient(to top,var(--accent2),var(--accent))}
+.bar.vl{background:linear-gradient(to top,#374151,#6b7280)}
+.bar-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:4px}
+.legend{display:flex;gap:18px;margin-top:8px}
+.leg{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)}
+.leg-sw{width:12px;height:12px;border-radius:2px}
+
+/* FEATURE GRID */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:36px}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color .3s}
+.feature-card:hover{border-color:rgba(0,212,255,.3)}
+.feat-icon{font-size:22px;margin-bottom:10px}
+.feat-title{font-weight:700;font-size:.9rem;margin-bottom:5px}
+.feat-desc{font-size:.8rem;color:var(--muted);line-height:1.6}
+
+/* SLIDER */
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--surface2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer}
+.slider-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.slider-lbl{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);width:180px;flex-shrink:0}
+.slider-val{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);width:50px;text-align:right;flex-shrink:0}
+
+/* PROGRESS */
+.prog-wrap{background:var(--surface2);border-radius:4px;height:5px;margin-bottom:6px;overflow:hidden}
+.prog-bar{height:100%;border-radius:4px;transition:width .4s ease}
+
+.status{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;min-height:18px}
+.status .ok{color:var(--accent3)}.status .warn{color:var(--accent4)}
+
+footer{text-align:center;padding:36px 24px;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.05em;border-top:1px solid var(--border)}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">⚡ SGLang</div>
+  <ul class="nav-links">
+    <li><a href="#radix">Radix Tree</a></li>
+    <li><a href="#throughput">Throughput</a></li>
+    <li><a href="#memory">KV Memory</a></li>
+    <li><a href="#scheduler">Scheduler</a></li>
+    <li><a href="#speculative">Speculative</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="badge"><span class="badge-dot"></span>Interactive Simulations — SGLang v0.4</div>
+  <h1>SGLang <span class="hl">in Action</span></h1>
+  <p class="hero-sub">
+    How a 1968 data structure — the radix tree — makes LLM inference up to <strong style="color:var(--accent)">6× faster</strong>.
+    Explore RadixAttention, prefix caching, speculative decoding, and zero-overhead scheduling — all live in your browser.
+  </p>
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num">5–6×</div><div class="stat-label">Faster Inference</div></div>
+    <div class="stat"><div class="stat-num">50–99%</div><div class="stat-label">Cache Hit Rate</div></div>
+    <div class="stat"><div class="stat-num">400K+</div><div class="stat-label">GPUs Worldwide</div></div>
+    <div class="stat"><div class="stat-num">~0ms</div><div class="stat-label">CPU Overhead</div></div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SIM 1: RADIX TREE -->
+<section id="radix">
+  <div class="section-label">// simulation 01 — core mechanism</div>
+  <h2>RadixAttention &amp; <span style="color:var(--accent)">Prefix Caching</span></h2>
+  <p class="section-desc">
+    Traditional engines discard KV caches after each request — even when prompts share identical prefixes. SGLang's radix tree retains and reuses them. Every cache hit saves prefill computation proportional to the shared prefix length.
+  </p>
+
+  <div class="sim-card">
+    <div class="sim-header">
+      <span class="sim-title">RADIX_TREE_KV_CACHE.py — live simulation</span>
+      <div class="sim-dots"><div class="sim-dot r"></div><div class="sim-dot y"></div><div class="sim-dot g"></div></div>
+    </div>
+    <div class="sim-body">
+      <div class="controls">
+        <button class="btn primary" onclick="addRequest()">➕ New Request</button>
+        <button class="btn" onclick="addSimilar()">🔁 Shared Prefix</button>
+        <button class="btn" onclick="addFewShot()">📚 Few-Shot Batch</button>
+        <button class="btn danger" onclick="resetTree()">⟳ Reset</button>
+        <button class="btn green" id="auto-btn" onclick="toggleAuto()">▶ Auto-Play</button>
+      </div>
+      <canvas id="radix-canvas" width="1060" height="380" style="width:100%;background:var(--bg);border-radius:10px;display:block;margin-bottom:12px"></canvas>
+      <div class="three-col" style="margin-bottom:14px">
+        <div class="metric-card"><div class="metric-val" id="r-hits">0</div><div class="metric-label">Cache Hits</div></div>
+        <div class="metric-card"><div class="metric-val" id="r-misses" style="color:var(--accent4)">0</div><div class="metric-label">Cache Misses</div></div>
+        <div class="metric-card"><div class="metric-val" id="r-saved" style="color:var(--accent3)">0%</div><div class="metric-label">Compute Saved</div></div>
+      </div>
+      <div class="log-panel" id="tree-log"></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="code-block"><span class="cm"># SGLang RadixAttention — auto KV reuse</span>
+<span class="kw">import</span> sglang <span class="kw">as</span> sgl
+
+<span class="cm"># All 3 requests share the same system prompt.</span>
+<span class="cm"># SGLang prefills it ONCE, reuses on req 2 & 3.</span>
+<span class="kw">@sgl</span>.<span class="fn">function</span>
+<span class="kw">def</span> <span class="fn">ask</span>(s, question):
+<span class="hl">    s += sgl.<span class="fn">system</span>(<span class="str">"You are a helpful assistant."</span>)</span>
+<span class="hl">    s += sgl.<span class="fn">user</span>(question)   <span class="cm"># only new tokens</span></span>
+    s += sgl.<span class="fn">assistant</span>(sgl.<span class="fn">gen</span>(<span class="str">"answer"</span>))
+
+<span class="cm"># Batch: prefix matched, cache reused ✓</span>
+states = <span class="fn">ask</span>.run_batch([
+    {<span class="str">"question"</span>: <span class="str">"What is ML?"</span>},
+    {<span class="str">"question"</span>: <span class="str">"Explain backprop."</span>},
+    {<span class="str">"question"</span>: <span class="str">"What is a GPU?"</span>},
+])</div>
+    <div>
+      <p style="color:var(--muted);font-size:.85rem;line-height:1.7;margin-bottom:16px">
+        The radix tree stores KV tensors at every node. When a new request arrives, SGLang performs a <strong style="color:var(--text)">longest-prefix match</strong>. If found, only the <em>new</em> suffix tokens need prefilling — skipping potentially thousands of GPU operations.
+      </p>
+      <p style="color:var(--muted);font-size:.85rem;line-height:1.7;margin-bottom:16px">
+        Memory is managed with an <strong style="color:var(--text)">LRU eviction policy</strong> — leaves are evicted first, preserving shared ancestor nodes as long as possible. This is the key insight: ancestors are worth more because they're shared by many requests.
+      </p>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);margin-bottom:8px">BENCHMARK RESULTS</div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);line-height:2">
+          MMLU 5-shot:    <span style="color:var(--accent3)">cache hit = 100%</span><br>
+          ReAct agent:    <span style="color:var(--accent3)">cache hit = ~90%</span><br>
+          Chat serving:   <span style="color:var(--accent3)">cache hit = 50-99%</span><br>
+          Multi-image:    <span style="color:var(--accent3)">cache hit = ~85%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- SIM 2: THROUGHPUT -->
+<section id="throughput">
+  <div class="section-label">// simulation 02 — performance comparison</div>
+  <h2>Throughput vs. <span style="color:var(--accent)">vLLM</span></h2>
+  <p class="section-desc">
+    Adjust workload parameters and watch how SGLang's cache-aware scheduling outperforms baseline approaches, especially as prefix sharing increases.
+  </p>
+
+  <div class="sim-card">
+    <div class="sim-header">
+      <span class="sim-title">THROUGHPUT_BENCHMARK.py — parametric simulation</span>
+      <div class="sim-dots"><div class="sim-dot r"></div><div class="sim-dot y"></div><div class="sim-dot g"></div></div>
+    </div>
+    <div class="sim-body">
+      <div class="slider-row">
+        <span class="slider-lbl">Prefix sharing ratio</span>
+        <input type="range" min="0" max="100" value="60" id="s-sharing" oninput="updateThroughput()">
+        <span class="slider-val" id="sv-sharing">60%</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Concurrent requests</span>
+        <input type="range" min="4" max="64" value="16" id="s-conc" oninput="updateThroughput()">
+        <span class="slider-val" id="sv-conc">16</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Average prompt length</span>
+        <input type="range" min="64" max="2048" step="64" value="512" id="s-len" oninput="updateThroughput()">
+        <span class="slider-val" id="sv-len">512</span>
+      </div>
+
+      <div class="chart-wrap">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px">tokens/sec (relative) — 20 concurrent batches</div>
+        <div class="bars-container" id="throughput-bars"></div>
+        <div id="throughput-labels" style="display:flex;gap:3px"></div>
+        <div class="legend">
+          <div class="leg"><div class="leg-sw" style="background:linear-gradient(to top,var(--accent2),var(--accent))"></div>SGLang + RadixAttn</div>
+          <div class="leg"><div class="leg-sw" style="background:#4b5563"></div>vLLM (baseline)</div>
+        </div>
+      </div>
+
+      <div class="three-col">
+        <div class="metric-card"><div class="metric-val" id="t-sg">—</div><div class="metric-label">SGLang tok/s</div></div>
+        <div class="metric-card"><div class="metric-val" id="t-vl" style="color:var(--muted)">—</div><div class="metric-label">vLLM tok/s</div></div>
+        <div class="metric-card"><div class="metric-val" id="t-ratio" style="color:var(--accent3)">—</div><div class="metric-label">Speedup</div></div>
+      </div>
+      <div class="status" id="t-status"></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- SIM 3: KV MEMORY -->
+<section id="memory">
+  <div class="section-label">// simulation 03 — memory management</div>
+  <h2>KV Cache <span style="color:var(--accent)">Memory Map</span></h2>
+  <p class="section-desc">
+    GPU HBM is precious. Watch how SGLang packs KV cache pages using paged attention, reuses cached blocks (green), allocates new ones (cyan), and LRU-evicts when under pressure (red).
+  </p>
+
+  <div class="sim-card">
+    <div class="sim-header">
+      <span class="sim-title">KV_CACHE_MEMORY_MAP.py — HBM page simulation</span>
+      <div class="sim-dots"><div class="sim-dot r"></div><div class="sim-dot y"></div><div class="sim-dot g"></div></div>
+    </div>
+    <div class="sim-body">
+      <div class="controls">
+        <button class="btn primary" onclick="memRequest()">📥 Serve Request</button>
+        <button class="btn" onclick="memPressure()">🔥 Memory Pressure</button>
+        <button class="btn danger" onclick="memReset()">⟳ Reset</button>
+        <button class="btn green" id="mem-auto-btn" onclick="toggleMemAuto()">▶ Auto-Play</button>
+      </div>
+      <div class="memory-grid" id="mem-grid"></div>
+      <div style="margin-bottom:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between">
+          <span>GPU HBM Utilization</span>
+          <span id="mem-pct" style="color:var(--accent)">0%</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar" id="mem-bar" style="background:linear-gradient(to right,var(--accent2),var(--accent));width:0%"></div></div>
+      </div>
+      <div class="mem-legend">
+        <div class="mem-li"><div class="mem-sw" style="background:var(--accent3);opacity:.7"></div>Cached (reusable)</div>
+        <div class="mem-li"><div class="mem-sw" style="background:var(--accent)"></div>Active (current batch)</div>
+        <div class="mem-li"><div class="mem-sw" style="background:var(--accent4);opacity:.9"></div>New allocation</div>
+        <div class="mem-li"><div class="mem-sw" style="background:var(--red);opacity:.6"></div>Evicted (LRU)</div>
+        <div class="mem-li"><div class="mem-sw" style="background:var(--surface2)"></div>Free</div>
+      </div>
+      <div class="status" id="mem-status"></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- SIM 4: SCHEDULER -->
+<section id="scheduler">
+  <div class="section-label">// simulation 04 — zero-overhead scheduling</div>
+  <h2>Cache-Aware <span style="color:var(--accent)">Batch Scheduler</span></h2>
+  <p class="section-desc">
+    Not all requests are equal. SGLang's scheduler prioritizes requests with <em>longer shared prefixes</em> to maximize cache hit rates — rather than naive FIFO. Watch how the queue reorders in real-time.
+  </p>
+
+  <div class="sim-card">
+    <div class="sim-header">
+      <span class="sim-title">BATCH_SCHEDULER.py — cache-aware priority queue</span>
+      <div class="sim-dots"><div class="sim-dot r"></div><div class="sim-dot y"></div><div class="sim-dot g"></div></div>
+    </div>
+    <div class="sim-body">
+      <div class="controls">
+        <button class="btn primary" onclick="schedAddRequests()">➕ Incoming Batch</button>
+        <button class="btn green" onclick="schedStep()">⏩ Schedule Step</button>
+        <button class="btn danger" onclick="schedReset()">⟳ Reset</button>
+        <button class="btn" id="sched-auto-btn" onclick="toggleSchedAuto()">▶ Auto-Play</button>
+      </div>
+      <div class="sched-wrap">
+        <div class="queue-col">
+          <div class="queue-label">📥 FIFO Queue (naive baseline)</div>
+          <div id="fifo-queue"></div>
+        </div>
+        <div class="queue-col">
+          <div class="queue-label">⚡ Cache-Aware Queue (SGLang)</div>
+          <div id="smart-queue"></div>
+        </div>
+      </div>
+      <div class="gpu-timeline" id="gpu-timeline">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px">GPU Utilization — prefill phase</div>
+      </div>
+      <div class="status" id="sched-status"></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- SIM 5: SPECULATIVE DECODING -->
+<section id="speculative">
+  <div class="section-label">// simulation 05 — speculative decoding</div>
+  <h2>Speculative <span style="color:var(--accent)">Decoding</span></h2>
+  <p class="section-desc">
+    A small draft model generates multiple candidate tokens per step. The large target model verifies them in parallel — accepting correct drafts and rejecting the first wrong one. Each accepted draft token is effectively "free".
+  </p>
+
+  <div class="sim-card">
+    <div class="sim-header">
+      <span class="sim-title">SPECULATIVE_DECODE.py — draft → verify → accept</span>
+      <div class="sim-dots"><div class="sim-dot r"></div><div class="sim-dot y"></div><div class="sim-dot g"></div></div>
+    </div>
+    <div class="sim-body">
+      <div class="slider-row" style="margin-bottom:16px">
+        <span class="slider-lbl">Draft tokens per step</span>
+        <input type="range" min="1" max="8" value="4" id="s-draft" oninput="updateSpecDraft()">
+        <span class="slider-val" id="sv-draft">4</span>
+      </div>
+
+      <div style="background:var(--bg);border-radius:10px;padding:18px;margin-bottom:14px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px">GENERATION STREAM — step <span id="spec-step">0</span></div>
+        <div class="token-seq" id="spec-tokens"></div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-top:10px">
+          <span style="color:var(--accent4)">■ draft</span> &nbsp;
+          <span style="color:var(--accent3)">■ verified</span> &nbsp;
+          <span style="color:var(--red)">■ rejected</span> &nbsp;
+          <span style="color:#64748b">■ base prompt</span>
+        </div>
+      </div>
+
+      <div class="controls" style="margin-bottom:14px">
+        <button class="btn primary" onclick="specStep()">⏩ Next Step</button>
+        <button class="btn green" onclick="specRun()">▶ Run Demo</button>
+        <button class="btn danger" onclick="specReset()">⟳ Reset</button>
+      </div>
+
+      <div class="spec-stats">
+        <div class="spec-stat"><div class="spec-val g" id="ss-accepted">0</div><div class="spec-label">Accepted</div></div>
+        <div class="spec-stat"><div class="spec-val y" id="ss-rejected">0</div><div class="spec-label">Rejected</div></div>
+        <div class="spec-stat"><div class="spec-val b" id="ss-speedup">1.0×</div><div class="spec-label">Speedup</div></div>
+        <div class="spec-stat"><div class="spec-val p" id="ss-rate">0%</div><div class="spec-label">Accept Rate</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:20px">
+    <div class="code-block"><span class="cm"># Enable speculative decoding in SGLang</span>
+python -m sglang.launch_server \
+    --model <span class="str">meta-llama/Llama-3.1-70B</span> \
+    --speculative-algo <span class="str">EAGLE</span> \
+<span class="hl">    --speculative-draft <span class="str">lmzheng/sglang-EAGLE-LLaMA3.1-70B</span> \</span>
+<span class="hl">    --speculative-num-draft-tokens <span class="num">4</span> \</span>
+    --port <span class="num">8000</span>
+
+<span class="cm"># EAGLE-2 adaptive speculative decoding</span>
+python -m sglang.launch_server \
+    --model <span class="str">meta-llama/Llama-3.1-8B</span> \
+    --speculative-algo <span class="str">EAGLE2</span> \
+    --speculative-num-steps <span class="num">3</span></div>
+    <div>
+      <p style="color:var(--muted);font-size:.85rem;line-height:1.7;margin-bottom:14px">
+        SGLang supports <strong style="color:var(--text)">EAGLE</strong> and <strong style="color:var(--text)">EAGLE-2</strong> speculative decoding, plus a <strong style="color:var(--text)">Medusa</strong>-style variant. The draft model runs in the same CUDA stream and batch as the main model, minimizing latency overhead.
+      </p>
+      <p style="color:var(--muted);font-size:.85rem;line-height:1.7">
+        Adaptive speculative decoding (EAGLE-2) dynamically adjusts the number of draft tokens based on observed acceptance rates — maximizing throughput without sacrificing quality on harder tokens.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">// all optimizations</div>
+  <h2>The Full <span style="color:var(--accent)">Optimization Stack</span></h2>
+  <p class="section-desc">SGLang combines every major LLM inference technique into a single coherent runtime.</p>
+  <div class="feature-grid">
+    <div class="feature-card"><div class="feat-icon">🌳</div><div class="feat-title">RadixAttention</div><div class="feat-desc">Radix-tree KV cache with LRU eviction for automatic cross-request prefix sharing. The founding innovation of SGLang.</div></div>
+    <div class="feature-card"><div class="feat-icon">⚡</div><div class="feat-title">Zero-Overhead Scheduler</div><div class="feat-desc">CPU scheduler runs in a tight loop with ~0ms overhead. Cache-aware priority queuing ensures maximum cache hit rates.</div></div>
+    <div class="feature-card"><div class="feat-icon">🔍</div><div class="feat-title">Speculative Decoding</div><div class="feat-desc">EAGLE and EAGLE-2 draft models speculatively generate tokens, verified in parallel by the target model.</div></div>
+    <div class="feature-card"><div class="feat-icon">📄</div><div class="feat-title">Structured Outputs</div><div class="feat-desc">Compressed finite state machines constrain generation to JSON, regex, or custom grammars with near-zero overhead.</div></div>
+    <div class="feature-card"><div class="feat-icon">✂️</div><div class="feat-title">Chunked Prefill</div><div class="feat-desc">Long prompts are split into chunks that interleave with decode steps — eliminating prefill-decode interference.</div></div>
+    <div class="feature-card"><div class="feat-icon">🔀</div><div class="feat-title">PD Disaggregation</div><div class="feat-desc">Prefill and decode phases run on separate GPU pools for optimal resource utilization in large deployments.</div></div>
+    <div class="feature-card"><div class="feat-icon">🧮</div><div class="feat-title">Quantization</div><div class="feat-desc">FP4, FP8, INT4, AWQ, and GPTQ quantization. Quantized KV cache cuts memory bandwidth by up to 4×.</div></div>
+    <div class="feature-card"><div class="feat-icon">🔗</div><div class="feat-title">Multi-LoRA Batching</div><div class="feat-desc">Serve hundreds of LoRA adapters simultaneously in a single batch without adapter switching overhead.</div></div>
+    <div class="feature-card"><div class="feat-icon">📡</div><div class="feat-title">OpenAI-Compatible API</div><div class="feat-desc">Drop-in replacement for OpenAI API. Works with any existing OpenAI SDK client without code changes.</div></div>
+  </div>
+</section>
+
+<footer>
+  <div style="margin-bottom:10px">
+    <a href="https://github.com/sgl-project/sglang">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://sgl-project.github.io/">Docs</a> &nbsp;·&nbsp;
+    <a href="https://arxiv.org/abs/2312.07104">Paper (arXiv)</a> &nbsp;·&nbsp;
+    <a href="https://www.lmsys.org/blog/2024-01-17-sglang/">LMSYS Blog</a>
+  </div>
+  SGLang — UC Berkeley / LMSYS &nbsp;·&nbsp; Simulations built for educational purposes &nbsp;·&nbsp; <span style="color:var(--accent)">⚡ Peak FLOPS</span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SIM 1: RADIX TREE
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('radix-canvas');
+const ctx = canvas.getContext('2d');
+
+// Scale canvas for retina
+function scaleCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 380 * dpr;
+  ctx.scale(dpr, dpr);
+  canvas.style.height = '380px';
+}
+scaleCanvas();
+window.addEventListener('resize', () => { scaleCanvas(); drawTree(); });
+
+const PROMPTS = [
+  ["You are a helpful assistant.", "What is machine learning?"],
+  ["You are a helpful assistant.", "Explain gradient descent."],
+  ["You are a helpful assistant.", "What is a transformer model?"],
+  ["You are a coding expert.", "Write a bubble sort in Python."],
+  ["You are a coding expert.", "Explain recursion with an example."],
+  ["You are a helpful assistant.", "What is backpropagation?"],
+  ["System: Answer concisely.", "What is the capital of France?"],
+  ["System: Answer concisely.", "Who wrote Hamlet?"],
+  ["You are a helpful assistant.", "What is CUDA?", "How does it relate to GPUs?"],
+  ["You are a coding expert.", "Explain Python decorators."],
+];
+
+// Tree node: { text, children:{}, kv:bool, depth, x,y, parent, id, lastUsed }
+let treeRoot = { text: '[ROOT]', children: {}, kv: false, depth: 0, x: 0, y: 0, id: 0, lastUsed: 0 };
+let nodeCount = 1;
+let reqCount = 0;
+let hits = 0, misses = 0, totalTokens = 0, savedTokens = 0;
+let autoTimer = null;
+let highlightPath = [];
+let highlightType = '';
+
+function resetTree() {
+  treeRoot = { text: '[ROOT]', children: {}, kv: false, depth: 0, id: 0, lastUsed: 0 };
+  nodeCount = 1; reqCount = 0; hits = 0; misses = 0; totalTokens = 0; savedTokens = 0;
+  highlightPath = [];
+  document.getElementById('tree-log').innerHTML = '';
+  updateTreeMetrics();
+  drawTree();
+}
+
+function insertPath(segments) {
+  let node = treeRoot;
+  let hitLen = 0;
+  let isHit = false;
+  let newNodes = [];
+
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (node.children[seg]) {
+      node = node.children[seg];
+      node.lastUsed = Date.now();
+      hitLen += seg.split(' ').length;
+      isHit = true;
+    } else {
+      const child = {
+        text: seg, children: {}, kv: true, depth: node.depth + 1,
+        id: nodeCount++, lastUsed: Date.now(), x: 0, y: 0
+      };
+      node.children[seg] = child;
+      node = child;
+      newNodes.push(child.id);
+    }
+  }
+  return { hitLen, isHit: isHit && newNodes.length === 0, newNodes, node };
+}
+
+function addRequest() {
+  const segs = PROMPTS[reqCount % PROMPTS.length];
+  reqCount++;
+  const { hitLen, isHit, newNodes } = insertPath(segs);
+  const total = segs.reduce((a, s) => a + s.split(' ').length, 0);
+  totalTokens += total;
+
+  if (isHit) {
+    hits++;
+    savedTokens += total;
+    log(`<span class="hit">✓ HIT</span>  req #${reqCount}: "${segs[0].slice(0,24)}…" — skipped ${total} prefill tokens`, 'hit');
+    highlightPath = segs; highlightType = 'hit';
+  } else if (hitLen > 0) {
+    hits++;
+    savedTokens += hitLen;
+    log(`<span class="hit">~ PARTIAL HIT</span>  req #${reqCount}: matched ${hitLen} tokens, computed ${total - hitLen} new`, 'partial');
+    highlightPath = segs; highlightType = 'partial';
+  } else {
+    misses++;
+    log(`<span class="miss">✗ MISS</span>  req #${reqCount}: full prefill for ${total} tokens (cached for future)`, 'miss');
+    highlightPath = segs; highlightType = 'miss';
+  }
+
+  updateTreeMetrics();
+  drawTree();
+}
+
+function addSimilar() {
+  const segs = [PROMPTS[reqCount % 4][0], "A brand new unique question " + reqCount];
+  reqCount++;
+  const { hitLen } = insertPath(segs);
+  const total = segs.reduce((a, s) => a + s.split(' ').length, 0);
+  totalTokens += total;
+  if (hitLen > 0) {
+    hits++; savedTokens += hitLen;
+    log(`<span class="hit">~ PARTIAL HIT</span>  req #${reqCount}: shared system prompt, new question — saved ${hitLen} tokens`, 'partial');
+  } else {
+    misses++;
+    log(`<span class="miss">✗ MISS</span>  req #${reqCount}: no match — full prefill`, 'miss');
+  }
+  highlightPath = segs; highlightType = 'partial';
+  updateTreeMetrics();
+  drawTree();
+}
+
+function addFewShot() {
+  const fewShot = "System: Solve the task step by step.";
+  const questions = ["Translate to French: Hello world.", "Summarize this paragraph.", "What is 17 × 23?"];
+  questions.forEach((q, i) => {
+    setTimeout(() => {
+      reqCount++;
+      const segs = [fewShot, q];
+      const { hitLen } = insertPath(segs);
+      const total = segs.reduce((a, s) => a + s.split(' ').length, 0);
+      totalTokens += total;
+      if (hitLen > 0) { hits++; savedTokens += hitLen; }
+      else misses++;
+      log(`<span class="ins">⟳ FEW-SHOT</span>  req #${reqCount}: batch item ${i+1}/3 — system prefix cached`, 'ins');
+      highlightPath = segs; highlightType = i === 0 ? 'miss' : 'hit';
+      updateTreeMetrics();
+      drawTree();
+    }, i * 400);
+  });
+}
+
+function updateTreeMetrics() {
+  document.getElementById('r-hits').textContent = hits;
+  document.getElementById('r-misses').textContent = misses;
+  const pct = totalTokens > 0 ? Math.round(savedTokens / totalTokens * 100) : 0;
+  document.getElementById('r-saved').textContent = pct + '%';
+}
+
+function log(msg, type) {
+  const el = document.getElementById('tree-log');
+  el.innerHTML += `<div>${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function drawTree() {
+  const W = canvas.getBoundingClientRect().width;
+  const H = 380;
+  ctx.clearRect(0, 0, W, H);
+
+  // Layout tree
+  let allNodes = [];
+  function layout(node, depth, xMin, xMax) {
+    node.depth = depth;
+    const children = Object.values(node.children);
+    if (children.length === 0) {
+      node.x = (xMin + xMax) / 2;
+    } else {
+      const slot = (xMax - xMin) / children.length;
+      children.forEach((c, i) => layout(c, depth + 1, xMin + i * slot, xMin + (i + 1) * slot));
+      node.x = children.reduce((a, c) => a + c.x, 0) / children.length;
+    }
+    node.y = 40 + depth * 72;
+    allNodes.push(node);
+  }
+  allNodes = [];
+  layout(treeRoot, 0, 20, W - 20);
+
+  // Determine max depth for gradient
+  const maxDepth = Math.max(...allNodes.map(n => n.depth), 1);
+
+  // Draw edges
+  function drawEdges(node) {
+    Object.values(node.children).forEach(child => {
+      const isHighlit = highlightPath.includes(child.text);
+      ctx.beginPath();
+      ctx.moveTo(node.x, node.y);
+      ctx.lineTo(child.x, child.y);
+      if (isHighlit && highlightType === 'hit') {
+        ctx.strokeStyle = 'rgba(16,185,129,0.6)'; ctx.lineWidth = 2.5;
+      } else if (isHighlit && highlightType === 'partial') {
+        ctx.strokeStyle = 'rgba(245,158,11,0.5)'; ctx.lineWidth = 2;
+      } else {
+        ctx.strokeStyle = 'rgba(30,42,56,0.9)'; ctx.lineWidth = 1.5;
+      }
+      ctx.stroke();
+      drawEdges(child);
+    });
+  }
+  drawEdges(treeRoot);
+
+  // Draw nodes
+  function drawNodes(node) {
+    const r = node === treeRoot ? 18 : 14;
+    const isHighlit = highlightPath.includes(node.text) || node === treeRoot;
+    const age = (Date.now() - (node.lastUsed || 0)) / 1000;
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+    if (node === treeRoot) {
+      ctx.fillStyle = 'rgba(0,212,255,0.15)';
+      ctx.strokeStyle = 'rgba(0,212,255,0.8)';
+    } else if (isHighlit && highlightType === 'hit') {
+      ctx.fillStyle = 'rgba(16,185,129,0.2)';
+      ctx.strokeStyle = 'rgba(16,185,129,0.9)';
+    } else if (isHighlit && highlightType === 'partial') {
+      ctx.fillStyle = 'rgba(245,158,11,0.15)';
+      ctx.strokeStyle = 'rgba(245,158,11,0.7)';
+    } else if (isHighlit && highlightType === 'miss') {
+      ctx.fillStyle = 'rgba(239,68,68,0.15)';
+      ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+    } else {
+      const t = node.depth / Math.max(maxDepth, 1);
+      ctx.fillStyle = `rgba(20,27,36,0.9)`;
+      ctx.strokeStyle = `rgba(${Math.round(30 + t * 94)},${Math.round(42 + t * 58)},${Math.round(56 + t * 200)},0.7)`;
+    }
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+
+    // KV cache indicator dot
+    if (node.kv) {
+      ctx.beginPath();
+      ctx.arc(node.x + r - 4, node.y - r + 4, 4, 0, Math.PI * 2);
+      ctx.fillStyle = isHighlit && highlightType === 'hit' ? '#10b981' : '#7c3aed';
+      ctx.fill();
+    }
+
+    // Label
+    const label = node === treeRoot ? 'ROOT' : node.text.slice(0, 12) + (node.text.length > 12 ? '…' : '');
+    ctx.font = node === treeRoot ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
+    ctx.fillStyle = isHighlit ? '#e2e8f0' : '#64748b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, node.x, node.y);
+
+    Object.values(node.children).forEach(drawNodes);
+  }
+  drawNodes(treeRoot);
+}
+
+drawTree();
+
+let autoPlaying = false;
+function toggleAuto() {
+  autoPlaying = !autoPlaying;
+  document.getElementById('auto-btn').textContent = autoPlaying ? '⏸ Pause' : '▶ Auto-Play';
+  if (autoPlaying) autoStep();
+}
+function autoStep() {
+  if (!autoPlaying) return;
+  addRequest();
+  setTimeout(autoStep, 1200);
+}
+
+
+// ═══════════════════════════════════════════════════════
+// SIM 2: THROUGHPUT
+// ═══════════════════════════════════════════════════════
+const BASE_THROUGHPUT = 2800;
+const BATCH_COUNT = 20;
+
+function updateThroughput() {
+  const sharing = +document.getElementById('s-sharing').value;
+  const conc = +document.getElementById('s-conc').value;
+  const len = +document.getElementById('s-len').value;
+
+  document.getElementById('sv-sharing').textContent = sharing + '%';
+  document.getElementById('sv-conc').textContent = conc;
+  document.getElementById('sv-len').textContent = len;
+
+  // Model throughput: SGLang benefits more from sharing
+  const cacheFactor = 1 + (sharing / 100) * 4.2;
+  const concFactor = Math.min(Math.sqrt(conc / 8), 3.5);
+  const lenFactor = Math.min(len / 256, 3.2);
+
+  const sgBase = BASE_THROUGHPUT * concFactor * (1 + lenFactor * 0.3);
+  const vlBase = BASE_THROUGHPUT * concFactor * 0.85;
+
+  // Generate noisy batch data
+  const barsEl = document.getElementById('throughput-bars');
+  const labelsEl = document.getElementById('throughput-labels');
+  barsEl.innerHTML = '';
+  labelsEl.innerHTML = '';
+
+  const maxVal = sgBase * cacheFactor * 1.1;
+  let totalSG = 0, totalVL = 0;
+
+  for (let i = 0; i < BATCH_COUNT; i++) {
+    const noise = 0.85 + Math.random() * 0.3;
+    const sharedNoise = 0.7 + Math.random() * 0.6;
+    const sg = sgBase * cacheFactor * noise;
+    const vl = vlBase * sharedNoise;
+    totalSG += sg; totalVL += vl;
+
+    const sgH = Math.round((sg / maxVal) * 140);
+    const vlH = Math.round((vl / maxVal) * 140);
+
+    const grp = document.createElement('div');
+    grp.className = 'bar-group';
+    grp.innerHTML = `<div class="bar sg" style="height:${sgH}px"></div><div class="bar vl" style="height:${vlH}px"></div>`;
+    barsEl.appendChild(grp);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'bar-label';
+    lbl.style.flex = '1';
+    lbl.textContent = i % 5 === 0 ? (i + 1) : '';
+    labelsEl.appendChild(lbl);
+  }
+
+  const avgSG = Math.round(totalSG / BATCH_COUNT);
+  const avgVL = Math.round(totalVL / BATCH_COUNT);
+  const ratio = (avgSG / avgVL).toFixed(1);
+
+  document.getElementById('t-sg').textContent = (avgSG / 1000).toFixed(1) + 'K';
+  document.getElementById('t-vl').textContent = (avgVL / 1000).toFixed(1) + 'K';
+  document.getElementById('t-ratio').textContent = ratio + '×';
+
+  const status = document.getElementById('t-status');
+  if (+ratio >= 4) {
+    status.innerHTML = `<span class="ok">✓ ${ratio}× speedup — high prefix sharing (${sharing}%) driving massive cache reuse</span>`;
+  } else if (+ratio >= 2) {
+    status.innerHTML = `<span class="warn">⚡ ${ratio}× speedup — moderate sharing, increase prefix ratio for more gains</span>`;
+  } else {
+    status.innerHTML = `Minimal sharing (${sharing}%) — SGLang still faster due to zero-overhead scheduling`;
+  }
+}
+updateThroughput();
+
+
+// ═══════════════════════════════════════════════════════
+// SIM 3: KV CACHE MEMORY
+// ═══════════════════════════════════════════════════════
+const MEM_BLOCKS = 128; // 32 × 4
+let memState = new Array(MEM_BLOCKS).fill('free');
+let memAutoTimer = null;
+let memAutoOn = false;
+
+function initMemGrid() {
+  const grid = document.getElementById('mem-grid');
+  grid.innerHTML = '';
+  memState.forEach((_, i) => {
+    const b = document.createElement('div');
+    b.className = 'mem-block';
+    b.id = 'mb-' + i;
+    b.title = `Page ${i}`;
+    grid.appendChild(b);
+  });
+  updateMemBar();
+}
+
+function renderMem() {
+  memState.forEach((s, i) => {
+    const el = document.getElementById('mb-' + i);
+    if (!el) return;
+    el.className = 'mem-block' + (s !== 'free' ? ' ' + s : '');
+  });
+  updateMemBar();
+}
+
+function updateMemBar() {
+  const used = memState.filter(s => s !== 'free').length;
+  const pct = Math.round(used / MEM_BLOCKS * 100);
+  document.getElementById('mem-bar').style.width = pct + '%';
+  document.getElementById('mem-pct').textContent = pct + '%';
+  if (pct >= 85) {
+    document.getElementById('mem-bar').style.background = 'linear-gradient(to right,var(--red),var(--accent4))';
+  } else {
+    document.getElementById('mem-bar').style.background = 'linear-gradient(to right,var(--accent2),var(--accent))';
+  }
+}
+
+function memRequest() {
+  // Transition active → cached
+  memState = memState.map(s => s === 'active' ? 'cached' : s === 'new' ? 'cached' : s);
+
+  // Allocate some new pages
+  const free = memState.map((s, i) => s === 'free' ? i : -1).filter(i => i >= 0);
+  const count = Math.min(Math.floor(Math.random() * 8) + 4, free.length);
+  const newPages = free.sort(() => Math.random() - 0.5).slice(0, count);
+
+  // Some cached pages reused (hit)
+  const cached = memState.map((s, i) => s === 'cached' ? i : -1).filter(i => i >= 0);
+  const hitCount = Math.min(Math.floor(Math.random() * 6) + 2, cached.length);
+  const hitPages = cached.sort(() => Math.random() - 0.5).slice(0, hitCount);
+
+  hitPages.forEach(i => memState[i] = 'active');
+  newPages.forEach(i => memState[i] = 'new');
+
+  renderMem();
+  const used = memState.filter(s => s !== 'free').length;
+  document.getElementById('mem-status').innerHTML =
+    `<span class="ok">✓ Allocated ${count} new pages, reused ${hitCount} cached — ${used}/${MEM_BLOCKS} pages in use</span>`;
+
+  // After short delay, turn 'new' → 'active'
+  setTimeout(() => {
+    memState = memState.map(s => s === 'new' ? 'active' : s);
+    renderMem();
+  }, 300);
+}
+
+function memPressure() {
+  // LRU evict some cached pages
+  const cached = memState.map((s, i) => s === 'cached' ? i : -1).filter(i => i >= 0);
+  const evictCount = Math.min(Math.floor(Math.random() * 10) + 5, cached.length);
+  const evict = cached.sort(() => Math.random() - 0.5).slice(0, evictCount);
+  evict.forEach(i => memState[i] = 'ev');
+  renderMem();
+  document.getElementById('mem-status').innerHTML =
+    `<span style="color:var(--red)">⚠ Memory pressure! LRU-evicting ${evictCount} cached pages (leaves first)</span>`;
+  setTimeout(() => {
+    evict.forEach(i => memState[i] = 'free');
+    renderMem();
+    document.getElementById('mem-status').innerHTML = `<span class="warn">✓ Eviction complete — ${evictCount} pages freed</span>`;
+  }, 800);
+}
+
+function memReset() {
+  memState = new Array(MEM_BLOCKS).fill('free');
+  renderMem();
+  document.getElementById('mem-status').textContent = '';
+}
+
+function toggleMemAuto() {
+  memAutoOn = !memAutoOn;
+  document.getElementById('mem-auto-btn').textContent = memAutoOn ? '⏸ Pause' : '▶ Auto-Play';
+  if (memAutoOn) memAutoStep();
+}
+function memAutoStep() {
+  if (!memAutoOn) return;
+  const used = memState.filter(s => s !== 'free').length;
+  if (used > MEM_BLOCKS * 0.85) memPressure();
+  else memRequest();
+  setTimeout(memAutoStep, 900);
+}
+
+initMemGrid();
+
+
+// ═══════════════════════════════════════════════════════
+// SIM 4: SCHEDULER
+// ═══════════════════════════════════════════════════════
+const SCHED_REQUESTS = [
+  { name: 'ChatReq-A', prefix: 'You are a helpful assistant.', newTokens: 12 },
+  { name: 'ChatReq-B', prefix: 'You are a helpful assistant.', newTokens: 8 },
+  { name: 'CodeReq-A', prefix: 'You are a coding expert.', newTokens: 15 },
+  { name: 'NewUser-1', prefix: 'Brand new unrelated prompt about cooking.', newTokens: 45 },
+  { name: 'ChatReq-C', prefix: 'You are a helpful assistant.', newTokens: 6 },
+  { name: 'CodeReq-B', prefix: 'You are a coding expert.', newTokens: 11 },
+  { name: 'RandomReq', prefix: 'Completely unique system context XYZ.', newTokens: 52 },
+  { name: 'ChatReq-D', prefix: 'You are a helpful assistant.', newTokens: 9 },
+];
+
+const PREFIX_MATCH = {
+  'You are a helpful assistant.': 85,
+  'You are a coding expert.': 72,
+};
+
+let fifoQueue = [];
+let smartQueue = [];
+let schedAutoOn = false;
+let schedStep_count = 0;
+let gpuData = [];
+
+function schedAddRequests() {
+  const batch = SCHED_REQUESTS.slice(schedStep_count % SCHED_REQUESTS.length, (schedStep_count % SCHED_REQUESTS.length) + 3);
+  batch.forEach(r => {
+    fifoQueue.push({ ...r });
+    smartQueue.push({ ...r });
+  });
+
+  // Smart queue: sort by prefix match length (descending)
+  smartQueue.sort((a, b) => {
+    const ma = PREFIX_MATCH[a.prefix] || 0;
+    const mb = PREFIX_MATCH[b.prefix] || 0;
+    return mb - ma;
+  });
+
+  schedStep_count += 3;
+  renderQueues();
+}
+
+function schedStep() {
+  if (fifoQueue.length === 0) { schedAddRequests(); return; }
+
+  const fifoReq = fifoQueue.shift();
+  const smartReq = smartQueue.shift();
+
+  const fifoTokens = fifoReq.newTokens + (PREFIX_MATCH[fifoReq.prefix] ? 0 : 50);
+  const smartTokens = smartReq.newTokens + (PREFIX_MATCH[smartReq.prefix] ? 5 : 50);
+
+  gpuData.push({ fifo: fifoTokens, smart: smartTokens, name: fifoReq.name });
+  renderQueues();
+  renderGPU();
+
+  document.getElementById('sched-status').innerHTML =
+    `<span class="ok">Processed: FIFO=${fifoReq.name} (${fifoTokens}ms), Smart=${smartReq.name} (<span style="color:var(--accent3)">${smartTokens}ms</span>)</span>`;
+}
+
+function renderQueues() {
+  const fifoEl = document.getElementById('fifo-queue');
+  const smartEl = document.getElementById('smart-queue');
+  fifoEl.innerHTML = '';
+  smartEl.innerHTML = '';
+
+  fifoQueue.slice(0, 5).forEach(r => {
+    const matchPct = PREFIX_MATCH[r.prefix] || 0;
+    const cls = matchPct > 70 ? 'high' : matchPct > 40 ? 'med' : 'low';
+    fifoEl.innerHTML += `<div class="req-item ${cls}"><span class="req-name">${r.name}</span><span class="req-match">${matchPct ? matchPct + '% cached' : 'no cache'}</span></div>`;
+  });
+  if (fifoQueue.length === 0) fifoEl.innerHTML = '<div style="font-family:Space Mono,monospace;font-size:10px;color:var(--muted);padding:10px">Queue empty</div>';
+
+  smartQueue.slice(0, 5).forEach(r => {
+    const matchPct = PREFIX_MATCH[r.prefix] || 0;
+    const cls = matchPct > 70 ? 'high' : matchPct > 40 ? 'med' : 'low';
+    smartEl.innerHTML += `<div class="req-item ${cls}"><span class="req-name">${r.name}</span><span class="req-match">${matchPct ? '⚡ ' + matchPct + '% hit' : '✗ miss'}</span></div>`;
+  });
+  if (smartQueue.length === 0) smartEl.innerHTML = '<div style="font-family:Space Mono,monospace;font-size:10px;color:var(--muted);padding:10px">Queue empty</div>';
+}
+
+function renderGPU() {
+  const tl = document.getElementById('gpu-timeline');
+  const maxVal = Math.max(...gpuData.map(d => Math.max(d.fifo, d.smart)), 100);
+  let html = '<div style="font-family:Space Mono,monospace;font-size:10px;color:var(--muted);margin-bottom:10px">GPU Utilization — prefill time per request</div>';
+  const last5 = gpuData.slice(-4);
+  last5.forEach(d => {
+    const fp = Math.round(d.fifo / maxVal * 100);
+    const sp = Math.round(d.smart / maxVal * 100);
+    html += `<div class="gpu-row"><div class="gpu-label">FIFO</div><div class="gpu-track"><div class="gpu-fill" style="width:${fp}%;background:linear-gradient(to right,#374151,#6b7280)">${fp}%</div></div></div>`;
+    html += `<div class="gpu-row"><div class="gpu-label" style="color:var(--accent)">Smart</div><div class="gpu-track"><div class="gpu-fill" style="width:${sp}%;background:linear-gradient(to right,var(--accent2),var(--accent))">${sp}%</div></div></div>`;
+  });
+  tl.innerHTML = html;
+}
+
+function schedReset() {
+  fifoQueue = []; smartQueue = []; gpuData = [];
+  renderQueues();
+  document.getElementById('gpu-timeline').innerHTML = '<div style="font-family:Space Mono,monospace;font-size:10px;color:var(--muted);margin-bottom:10px">GPU Utilization — prefill phase</div>';
+  document.getElementById('sched-status').textContent = '';
+}
+
+function toggleSchedAuto() {
+  schedAutoOn = !schedAutoOn;
+  document.getElementById('sched-auto-btn').textContent = schedAutoOn ? '⏸ Pause' : '▶ Auto-Play';
+  if (schedAutoOn) schedAutoRun();
+}
+function schedAutoRun() {
+  if (!schedAutoOn) return;
+  if (fifoQueue.length === 0) schedAddRequests();
+  schedStep();
+  setTimeout(schedAutoRun, 1000);
+}
+
+schedAddRequests();
+
+
+// ═══════════════════════════════════════════════════════
+// SIM 5: SPECULATIVE DECODING
+// ═══════════════════════════════════════════════════════
+const EXAMPLE_TOKENS = [
+  'The', 'quick', 'brown', 'fox', 'jumps', 'over', 'the', 'lazy', 'dog', '.',
+  'Machine', 'learning', 'is', 'a', 'subset', 'of', 'artificial', 'intelligence',
+  'that', 'enables', 'computers', 'to', 'learn', 'from', 'data', 'automatically', '.'
+];
+
+// Accept probabilities per token (some harder than others)
+const ACCEPT_PROBS = [
+  0.95, 0.90, 0.85, 0.92, 0.88, 0.95, 0.97, 0.80, 0.92, 0.99,
+  0.93, 0.88, 0.97, 0.98, 0.75, 0.95, 0.70, 0.85, 0.95, 0.88,
+  0.92, 0.95, 0.90, 0.96, 0.85, 0.72, 0.99
+];
+
+let specTokens = [];
+let specStepNum = 0;
+let specAccepted = 0;
+let specRejected = 0;
+let specTotal = 0;
+let specRunTimer = null;
+
+function getDraftCount() { return +document.getElementById('s-draft').value; }
+function updateSpecDraft() {
+  document.getElementById('sv-draft').textContent = getDraftCount();
+}
+
+function specReset() {
+  clearTimeout(specRunTimer);
+  specTokens = [];
+  specStepNum = 0; specAccepted = 0; specRejected = 0; specTotal = 0;
+  renderSpec();
+}
+
+function specStep() {
+  const draftCount = getDraftCount();
+  const baseIdx = specTokens.filter(t => t.type !== 'base').length;
+
+  if (baseIdx >= EXAMPLE_TOKENS.length) return;
+
+  // Generate draft tokens
+  let stepAccepted = 0;
+  let rejected = false;
+  for (let i = 0; i < draftCount; i++) {
+    const tIdx = baseIdx + i;
+    if (tIdx >= EXAMPLE_TOKENS.length) break;
+    specTotal++;
+    const prob = ACCEPT_PROBS[tIdx % ACCEPT_PROBS.length];
+    const accept = Math.random() < prob;
+    if (accept && !rejected) {
+      specTokens.push({ text: EXAMPLE_TOKENS[tIdx], type: 'draft' });
+      specAccepted++;
+      stepAccepted++;
+    } else {
+      specTokens.push({ text: EXAMPLE_TOKENS[tIdx], type: 'rejected' });
+      specRejected++;
+      rejected = true;
+      break;
+    }
+  }
+
+  specStepNum++;
+
+  // After a tick, verify and mark accepted
+  setTimeout(() => {
+    specTokens = specTokens.map(t => t.type === 'draft' ? { ...t, type: 'verified' } : t);
+    renderSpec();
+  }, 400);
+
+  renderSpec();
+}
+
+function renderSpec() {
+  const el = document.getElementById('spec-tokens');
+  el.innerHTML = '';
+
+  // Show first 6 base tokens
+  const prefixCount = Math.min(specStepNum > 0 ? 4 : 0, 4);
+  for (let i = 0; i < prefixCount; i++) {
+    const d = document.createElement('div');
+    d.className = 'token base';
+    d.textContent = EXAMPLE_TOKENS[i];
+    el.appendChild(d);
+  }
+
+  specTokens.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'token ' + t.type;
+    d.textContent = t.text;
+    el.appendChild(d);
+  });
+
+  if (specStepNum === 0) {
+    el.innerHTML = '<span style="font-family:Space Mono,monospace;font-size:11px;color:var(--muted)">Press "Next Step" to start generating...</span>';
+  }
+
+  document.getElementById('spec-step').textContent = specStepNum;
+  document.getElementById('ss-accepted').textContent = specAccepted;
+  document.getElementById('ss-rejected').textContent = specRejected;
+
+  const rate = specTotal > 0 ? Math.round(specAccepted / specTotal * 100) : 0;
+  document.getElementById('ss-rate').textContent = rate + '%';
+
+  const speedup = specTotal > 0 ? (1 + specAccepted / Math.max(specStepNum, 1) * getDraftCount() * 0.6).toFixed(1) : '1.0';
+  document.getElementById('ss-speedup').textContent = speedup + '×';
+}
+
+function specRun() {
+  clearTimeout(specRunTimer);
+  function step() {
+    if (specTokens.filter(t => t.type === 'verified').length >= 20) return;
+    specStep();
+    specRunTimer = setTimeout(step, 700);
+  }
+  step();
+}
+
+specReset();
+</script>
+</body>
+</html>
