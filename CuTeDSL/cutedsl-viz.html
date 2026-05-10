@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CuTe DSL — Visual Learning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* ─── Reset & Variables ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #16161f;
+    --surface: #1c1c28;
+    --surface2: #23233a;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #e8e8f0;
+    --text-muted: #7a7a9a;
+    --text-dim: #4a4a6a;
+    --accent: #76c442;
+    --accent2: #5aa830;
+    --accent-glow: rgba(118,196,66,0.18);
+    --green: #76c442;
+    --yellow: #f5c842;
+    --red: #f55842;
+    --blue: #42a5f5;
+    --purple: #b042f5;
+    --nav-w: 220px;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.7;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ─── Sidebar Nav ─── */
+  nav#sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--nav-w);
+    height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    padding: 0 24px 28px;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .nav-logo span { color: var(--text); font-weight: 700; }
+  nav#sidebar a {
+    display: block;
+    padding: 10px 24px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    border-left: 2px solid transparent;
+    transition: all 0.18s;
+  }
+  nav#sidebar a:hover, nav#sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(118,196,66,0.06);
+  }
+  .nav-section {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 18px 24px 6px;
+  }
+
+  /* ─── Main Content ─── */
+  main {
+    margin-left: var(--nav-w);
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  /* ─── Chapter Sections ─── */
+  .chapter {
+    min-height: 100vh;
+    padding: 80px 64px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chapter:nth-child(even) { background: var(--bg2); }
+
+  .chapter-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h1.chapter-title {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 4vw, 56px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .chapter-intro {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin-bottom: 48px;
+    line-height: 1.8;
+  }
+
+  /* ─── Tab System ─── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    margin-bottom: -1px;
+    transition: all 0.18s;
+    letter-spacing: 0.02em;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── Cards & Grids ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+  }
+  .card p { font-size: 14px; color: var(--text-muted); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* ─── Code Blocks ─── */
+  pre, code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  pre.code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    color: #c9d1d9;
+    line-height: 1.65;
+    margin: 16px 0;
+  }
+  .kw { color: #ff7b72; }
+  .fn { color: #d2a8ff; }
+  .str { color: #a5d6ff; }
+  .cm { color: #5a6a7a; font-style: italic; }
+  .num { color: #79c0ff; }
+  .dec { color: var(--accent); }
+
+  /* ─── Badges / Tags ─── */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .badge-green { background: rgba(118,196,66,0.15); color: var(--green); border: 1px solid rgba(118,196,66,0.25); }
+  .badge-yellow { background: rgba(245,200,66,0.15); color: var(--yellow); border: 1px solid rgba(245,200,66,0.25); }
+  .badge-blue { background: rgba(66,165,245,0.15); color: var(--blue); border: 1px solid rgba(66,165,245,0.25); }
+  .badge-purple { background: rgba(176,66,245,0.15); color: var(--purple); border: 1px solid rgba(176,66,245,0.25); }
+
+  /* ─── Info Boxes ─── */
+  .info-box {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .info-box strong { color: var(--text); }
+
+  /* ─── Hero Section ─── */
+  #hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 80px 64px;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  #hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(118,196,66,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 6vw, 90px);
+    font-weight: 800;
+    line-height: 0.98;
+    letter-spacing: -3px;
+    color: var(--text);
+    margin-bottom: 28px;
+  }
+  .hero-title em { color: var(--accent); font-style: normal; }
+  .hero-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 520px;
+    margin-bottom: 44px;
+    line-height: 1.75;
+  }
+  .hero-pills {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 56px;
+  }
+  .pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .pill-accent { border-color: rgba(118,196,66,0.3); color: var(--accent); background: rgba(118,196,66,0.06); }
+  .scroll-hint {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-dim); font-weight: 500;
+  }
+  .scroll-arrow { animation: bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+  /* ─── Architecture Stack Visual ─── */
+  .stack-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 500px;
+    margin: 24px 0;
+  }
+  .stack-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .stack-row:hover {
+    border-color: var(--accent);
+    background: rgba(118,196,66,0.06);
+    transform: translateX(4px);
+  }
+  .stack-row .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .stack-row .arrow { margin-left: auto; color: var(--text-dim); font-size: 12px; }
+  .stack-top { background: rgba(118,196,66,0.08); border-color: rgba(118,196,66,0.25); }
+  .stack-mid { background: var(--surface); }
+  .stack-bot { background: var(--bg3); }
+
+  /* ─── Layout Tiles Visual ─── */
+  .layout-demo {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+  .tile {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    cursor: pointer;
+    color: transparent;
+    font-size: 9px;
+  }
+  .tile:hover { transform: scale(1.15); color: white; }
+  .tile-a { background: rgba(118,196,66,0.6); }
+  .tile-b { background: rgba(66,165,245,0.6); }
+  .tile-c { background: rgba(245,200,66,0.6); }
+  .tile-d { background: rgba(176,66,245,0.6); }
+  .tile-empty { background: var(--surface2); }
+
+  /* ─── JIT Compilation Flow ─── */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 28px 0;
+  }
+  .flow-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-node.highlight {
+    border-color: rgba(118,196,66,0.4);
+    background: rgba(118,196,66,0.08);
+    color: var(--accent);
+  }
+  .flow-arrow {
+    color: var(--text-dim);
+    font-size: 20px;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  /* ─── MMA Tensor Core Viz ─── */
+  .tensor-core-demo {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    margin: 28px 0;
+  }
+  .matrix-grid {
+    display: grid;
+    gap: 3px;
+  }
+  .matrix-grid.size-4 { grid-template-columns: repeat(4, 1fr); }
+  .matrix-grid.size-8 { grid-template-columns: repeat(8, 1fr); }
+  .mcel {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    animation: pulse-cell 2s ease-in-out infinite;
+  }
+  @keyframes pulse-cell {
+    0%,100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+  .mcel-a { background: rgba(118,196,66,0.5); animation-delay: var(--d, 0s); }
+  .mcel-b { background: rgba(66,165,245,0.5); animation-delay: var(--d, 0s); }
+  .mcel-c { background: rgba(245,200,66,0.7); animation-delay: var(--d, 0s); }
+  .matrix-label {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+  .op-symbol {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-muted);
+  }
+
+  /* ─── Pipeline Animation ─── */
+  .pipeline-viz {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 28px 0;
+  }
+  .pipeline-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .pipeline-stages {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+  .stage {
+    flex: 1;
+    padding: 12px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    transition: all 0.3s;
+    border-right: none;
+  }
+  .stage:first-child { border-radius: 8px 0 0 8px; }
+  .stage:last-child { border-radius: 0 8px 8px 0; border-right: 1px solid var(--border); }
+  .stage.active-load { background: rgba(66,165,245,0.2); border-color: rgba(66,165,245,0.4); color: var(--blue); }
+  .stage.active-compute { background: rgba(118,196,66,0.2); border-color: rgba(118,196,66,0.4); color: var(--green); }
+  .stage.active-store { background: rgba(245,200,66,0.2); border-color: rgba(245,200,66,0.4); color: var(--yellow); }
+  .stage.active-wait { background: rgba(245,88,66,0.15); border-color: rgba(245,88,66,0.3); color: var(--red); }
+  .pipeline-controls { display: flex; gap: 12px; align-items: center; }
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: all 0.18s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(118,196,66,0.06); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a1a00;
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #0a1a00; }
+  .pipeline-status {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  /* ─── Tiling Explorer ─── */
+  .tiling-explorer {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 28px 0;
+  }
+  .tile-grid-container {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .tile-grid-wrap {
+    flex: 1;
+    min-width: 220px;
+  }
+  .tile-grid-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+  }
+  .tile-matrix {
+    display: grid;
+    grid-template-columns: repeat(8, 28px);
+    gap: 2px;
+  }
+  .tm-cell {
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+  .tm-cell.highlighted { border-color: transparent; transform: scale(1.05); }
+  .tm-cell.t0 { background: rgba(118,196,66,0.7); }
+  .tm-cell.t1 { background: rgba(66,165,245,0.7); }
+  .tm-cell.t2 { background: rgba(245,200,66,0.7); }
+  .tm-cell.t3 { background: rgba(176,66,245,0.7); }
+  .tiling-info {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 13px;
+    min-width: 220px;
+  }
+  .tiling-info h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .tiling-info p { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 6px; }
+
+  /* ─── Features List ─── */
+  .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 24px 0;
+  }
+  .feature-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .feature-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .feature-text h4 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .feature-text p { font-size: 13px; color: var(--text-muted); }
+
+  /* ─── Stat Cards ─── */
+  .stat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin: 28px 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .stat-card:hover { border-color: rgba(118,196,66,0.3); background: rgba(118,196,66,0.04); }
+  .stat-val {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-lbl { font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.03em; }
+
+  /* ─── Arch Support Table ─── */
+  .arch-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+    margin: 20px 0;
+  }
+  .arch-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 8px 16px;
+  }
+  .arch-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .arch-table td:first-child {
+    font-weight: 700;
+    color: var(--text);
+    border-left: 1px solid var(--border);
+    border-radius: 8px 0 0 8px;
+  }
+  .arch-table td:last-child {
+    border-right: 1px solid var(--border);
+    border-radius: 0 8px 8px 0;
+  }
+
+  /* ─── Comparison ─── */
+  .compare-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 24px 0;
+  }
+  .compare-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .compare-card.old { border-top: 3px solid var(--red); }
+  .compare-card.new { border-top: 3px solid var(--accent); }
+  .compare-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+  .compare-card.old h4 { color: var(--red); }
+  .compare-card.new h4 { color: var(--accent); }
+
+  /* ─── Progress Bars ─── */
+  .perf-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+  .perf-bar-label { min-width: 120px; color: var(--text-muted); font-weight: 600; }
+  .perf-bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .perf-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: var(--accent);
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .perf-bar-val { min-width: 40px; text-align: right; color: var(--text-muted); font-family: var(--font-mono); font-size: 12px; }
+
+  /* ─── Author Footer ─── */
+  #about {
+    padding: 80px 64px;
+    background: var(--bg2);
+  }
+  .author-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+    max-width: 640px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .author-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    color: #0a1a00;
+    flex-shrink: 0;
+  }
+  .author-body h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .author-body .role { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+  .author-body p { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 900px) {
+    nav#sidebar { display: none; }
+    main { margin-left: 0; }
+    .chapter, #hero, #about { padding: 48px 28px; }
+    .grid-2, .grid-3, .compare-wrap { grid-template-columns: 1fr; }
+    .tensor-core-demo { grid-template-columns: 1fr; }
+    .flow-diagram { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ─── Animations ─── */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fade-up 0.6s ease forwards; }
+  .delay-1 { animation-delay: 0.1s; opacity: 0; }
+  .delay-2 { animation-delay: 0.2s; opacity: 0; }
+  .delay-3 { animation-delay: 0.3s; opacity: 0; }
+  .delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+  /* ─── Tooltip ─── */
+  [data-tip] { position: relative; cursor: help; }
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 999;
+  }
+  [data-tip]:hover::after { opacity: 1; }
+
+  /* ─── Section Divider ─── */
+  h3.section-h {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 36px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  h4.sub-h {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 24px 0 8px;
+  }
+  p.body-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.8;
+    margin: 10px 0;
+    max-width: 680px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── Sidebar Navigation ─── -->
+<nav id="sidebar">
+  <div class="nav-logo">CuTe<span>DSL</span></div>
+  <div class="nav-section">Chapters</div>
+  <a href="#hero" class="active">Overview</a>
+  <a href="#ch1">01 · What is CuTe DSL?</a>
+  <a href="#ch2">02 · Layouts & Tensors</a>
+  <a href="#ch3">03 · JIT Compilation</a>
+  <a href="#ch4">04 · GEMM / MMA</a>
+  <a href="#ch5">05 · Pipelining</a>
+  <div class="nav-section">Reference</div>
+  <a href="#ch6">Arch Support</a>
+  <a href="#about">About</a>
+</nav>
+
+<main>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <div class="hero-eyebrow">NVIDIA CUTLASS · Python DSL · Visual Guide</div>
+  <h1 class="hero-title animate-in">
+    CuTe<em>DSL</em><br>Explained
+  </h1>
+  <p class="hero-sub animate-in delay-1">
+    Write GPU kernels in Python that compile to native CUDA machine code — with the full expressiveness of CuTe's layout algebra and tensor core intrinsics.
+  </p>
+  <div class="hero-pills animate-in delay-2">
+    <span class="pill pill-accent">Python 3.12</span>
+    <span class="pill">CUDA 12.9+</span>
+    <span class="pill">Ampere · Hopper · Blackwell</span>
+    <span class="pill">JIT / AOT</span>
+    <span class="pill">GEMM / MMA</span>
+  </div>
+  <div class="scroll-hint animate-in delay-3">
+    <span class="scroll-arrow">↓</span>
+    Scroll to explore each concept
+  </div>
+</section>
+
+<!-- ─── CHAPTER 1: What is CuTe DSL? ─── -->
+<section class="chapter" id="ch1">
+  <div class="chapter-label">Chapter 01</div>
+  <h1 class="chapter-title">What is<br>CuTe DSL?</h1>
+  <p class="chapter-intro">CuTe DSL is a Python-embedded domain-specific language that lets you write GPU kernels using the same powerful CuTe abstractions as CUTLASS C++ — but from Python, with JIT compilation to CUDA PTX/SASS.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'overview')">Overview</button>
+    <button class="tab-btn" onclick="switchTab(this,'stack')">Architecture Stack</button>
+    <button class="tab-btn" onclick="switchTab(this,'why')">Why It Matters</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-overview">
+    <div class="grid-2">
+      <div>
+        <div class="feature-list">
+          <div class="feature-row">
+            <div class="feature-icon">🐍</div>
+            <div class="feature-text">
+              <h4>Python-First Authoring</h4>
+              <p>Write kernel logic in pure Python. No CUDA C++ required. Decorators drive code generation.</p>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-text">
+              <h4>JIT & AOT Compilation</h4>
+              <p>Kernels compile Just-In-Time on first call, or Ahead-Of-Time for deployment.</p>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon">🔷</div>
+            <div class="feature-text">
+              <h4>CuTe Layout Algebra</h4>
+              <p>First-class Layouts and Tensors describe hierarchical data mappings with compile-time shapes.</p>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon">🧩</div>
+            <div class="feature-text">
+              <h4>Tensor Core Intrinsics</h4>
+              <p>Direct access to MMA (matrix multiply-accumulate) instructions on Ampere, Hopper, Blackwell.</p>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon">🔁</div>
+            <div class="feature-text">
+              <h4>Pipeline Primitives</h4>
+              <p>Built-in async copy and software pipelining utilities to overlap data movement with compute.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <pre class="code-block"><span class="cm"># A minimal CuTe DSL kernel</span>
+<span class="kw">import</span> cute
+
+<span class="dec">@cute.jit</span>
+<span class="kw">def</span> <span class="fn">scale_kernel</span>(tensor, alpha):
+    <span class="cm"># Each thread handles one element</span>
+    tid = cute.thread_idx().x
+    tensor[tid] = tensor[tid] * alpha
+
+<span class="cm"># Launch it from Python — compiles on first call</span>
+scale_kernel[<span class="num">128</span>, <span class="num">256</span>](my_tensor, <span class="num">2.0</span>)</pre>
+        <div class="info-box">
+          <strong>Key insight:</strong> The <code>@cute.jit</code> decorator traces your Python function and emits MLIR/LLVM IR that maps directly to GPU PTX. Your Python code is a <em>specification</em>, not runtime logic.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-stack">
+    <p class="body-text">CuTe DSL sits at the top of the CUTLASS software stack, providing the highest-level entry point while remaining fully composable with lower layers.</p>
+    <div class="stack-visual">
+      <div class="stack-row stack-top">
+        <div class="dot" style="background:var(--accent)"></div>
+        <span>CuTe DSL (Python)</span>
+        <span style="color:var(--text-dim);font-size:12px;font-weight:400">You are here</span>
+        <span class="arrow">←</span>
+      </div>
+      <div style="text-align:center;color:var(--text-dim);font-size:18px;margin:2px 0">↓</div>
+      <div class="stack-row stack-mid">
+        <div class="dot" style="background:var(--blue)"></div>
+        <span>MLIR / LLVM IR</span>
+        <span style="color:var(--text-dim);font-size:12px;font-weight:400">generated</span>
+      </div>
+      <div style="text-align:center;color:var(--text-dim);font-size:18px;margin:2px 0">↓</div>
+      <div class="stack-row stack-mid">
+        <div class="dot" style="background:var(--yellow)"></div>
+        <span>CUDA PTX</span>
+        <span style="color:var(--text-dim);font-size:12px;font-weight:400">virtual ISA</span>
+      </div>
+      <div style="text-align:center;color:var(--text-dim);font-size:18px;margin:2px 0">↓</div>
+      <div class="stack-row stack-bot">
+        <div class="dot" style="background:var(--red)"></div>
+        <span>SASS / GPU Hardware</span>
+        <span style="color:var(--text-dim);font-size:12px;font-weight:400">Hopper · Blackwell</span>
+      </div>
+    </div>
+    <p class="body-text">The compilation pipeline uses NVIDIA's MLIR dialect (built into CuTe DSL) to lower Python kernel abstractions through multiple IR levels before generating native GPU instructions.</p>
+  </div>
+
+  <div class="tab-panel" id="panel-why">
+    <div class="compare-wrap">
+      <div class="compare-card old">
+        <h4>❌ Without CuTe DSL (CUDA C++)</h4>
+        <pre class="code-block" style="font-size:12px"><span class="cm">// Manual tiling, index math, MMA calls</span>
+<span class="kw">__global__ void</span> gemm_kernel(
+  <span class="kw">half</span>* A, <span class="kw">half</span>* B, <span class="kw">float</span>* C,
+  <span class="kw">int</span> M, <span class="kw">int</span> N, <span class="kw">int</span> K) {
+  <span class="cm">// ~200 lines of layout math,</span>
+  <span class="cm">// shared memory management,</span>
+  <span class="cm">// PTX MMA intrinsics...</span>
+}</pre>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:10px">Requires deep CUDA expertise. Brittle to hardware changes. Hard to experiment with tiling strategies.</p>
+      </div>
+      <div class="compare-card new">
+        <h4>✅ With CuTe DSL (Python)</h4>
+        <pre class="code-block" style="font-size:12px"><span class="cm"># Expressive, composable abstractions</span>
+<span class="dec">@cute.jit</span>
+<span class="kw">def</span> <span class="fn">gemm</span>(A, B, C):
+  mma = cute.MMA(
+    shape=(<span class="num">16</span>,<span class="num">8</span>,<span class="num">16</span>),
+    dtype=<span class="str">"fp16"</span>
+  )
+  <span class="cm"># Tiling, pipelining, MMA —</span>
+  <span class="cm"># all in readable Python</span>
+  cute.gemm(mma, A, B, C)</pre>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:10px">Readable and hackable. Same performance as hand-tuned C++. Rapidly experiment with different tile sizes and data types.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CHAPTER 2: Layouts & Tensors ─── -->
+<section class="chapter" id="ch2">
+  <div class="chapter-label">Chapter 02</div>
+  <h1 class="chapter-title">Layouts &<br>Tensors</h1>
+  <p class="chapter-intro">The core abstraction in CuTe is the Layout — a function from a logical coordinate space to a linear memory offset. Pair a Layout with a data pointer and you get a Tensor.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'layout-intro')">Layouts</button>
+    <button class="tab-btn" onclick="switchTab(this,'tiling')">Tiling Explorer</button>
+    <button class="tab-btn" onclick="switchTab(this,'tensor-code')">Code Examples</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-layout-intro">
+    <div class="grid-2">
+      <div>
+        <h3 class="section-h">What is a Layout?</h3>
+        <p class="body-text">A Layout encodes both the <strong style="color:var(--text)">shape</strong> of a tensor (how many elements in each dimension) and the <strong style="color:var(--text)">stride</strong> (how many elements to skip in memory to advance one step in each dimension).</p>
+        <pre class="code-block"><span class="cm"># Layout(Shape, Stride)</span>
+<span class="cm"># A 4×8 matrix, row-major:</span>
+layout = cute.Layout((<span class="num">4</span>,<span class="num">8</span>), (<span class="num">8</span>,<span class="num">1</span>))
+<span class="cm">#  coord (2,3) → offset 2*8 + 3*1 = 19</span>
+
+<span class="cm"># Column-major (Fortran order):</span>
+layout_col = cute.Layout((<span class="num">4</span>,<span class="num">8</span>), (<span class="num">1</span>,<span class="num">4</span>))
+<span class="cm">#  coord (2,3) → offset 2*1 + 3*4 = 14</span></pre>
+        <div class="info-box">
+          <strong>Power of layouts:</strong> Transposing a matrix is just swapping strides — no data movement. The hardware sees different access patterns from the same memory.
+        </div>
+      </div>
+      <div>
+        <h3 class="section-h">Layout Visualization</h3>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:var(--font-mono)">4×8 matrix — colors show logical rows mapping to linear memory</p>
+        <div class="layout-demo" id="layout-demo">
+          <!-- filled by JS -->
+        </div>
+        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" onclick="setLayout('row')">Row-major</button>
+          <button class="btn" onclick="setLayout('col')">Col-major</button>
+          <button class="btn" onclick="setLayout('swizzle')">Swizzled</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:10px" id="layout-desc">Row-major: stride = (8, 1) — rows are contiguous in memory</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-tiling">
+    <p class="body-text">Tiling divides a large matrix into smaller blocks (tiles) that fit in shared memory or registers. CuTe makes tiling composable: a tile is just a sub-Layout of the original.</p>
+    <div class="tiling-explorer">
+      <div class="pipeline-label">TILING EXPLORER — 8×8 MATRIX DIVIDED INTO 2×2 TILES</div>
+      <div class="tile-grid-container">
+        <div class="tile-grid-wrap">
+          <div class="tile-grid-label">Global Matrix (8×8)</div>
+          <div class="tile-matrix" id="tile-matrix"></div>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:10px">Hover a tile to inspect it →</p>
+        </div>
+        <div class="tiling-info" id="tile-info">
+          <h4>Hover a colored tile</h4>
+          <p>Each color represents a distinct 2×2 tile. In CuTe, you partition the layout into sub-layouts for each CTA (thread block).</p>
+          <p style="margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--accent)">cute.local_tile(tensor, tile_shape, tile_coord)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-tensor-code">
+    <h4 class="sub-h">Creating Tensors</h4>
+    <pre class="code-block"><span class="cm"># Make a tensor from a pointer + layout</span>
+A_tensor = cute.make_tensor(A_ptr, 
+  cute.Layout((<span class="num">M</span>, <span class="num">K</span>), (<span class="num">K</span>, <span class="num">1</span>)))  <span class="cm"># row-major MxK</span>
+
+<span class="cm"># Partition across a thread block</span>
+tA = cute.local_partition(A_tensor, 
+  thr_layout, cute.thread_idx())</pre>
+
+    <h4 class="sub-h">Composing Layouts</h4>
+    <pre class="code-block"><span class="cm"># Hierarchical layout: describes how a CTA tile</span>
+<span class="cm"># is subdivided across warps → threads → regs</span>
+atom_layout = cute.Layout(
+  ((<span class="num">2</span>,<span class="num">2</span>), (<span class="num">4</span>,<span class="num">8</span>)),   <span class="cm"># shape: warps × threads</span>
+  ((<span class="num">16</span>,<span class="num">1</span>), (<span class="num">4</span>,<span class="num">32</span>))  <span class="cm"># strides into shared memory</span>
+)
+
+<span class="cm"># CuTe evaluates the composed offset at compile time</span>
+offset = atom_layout[warp_id, thread_id]</pre>
+    <div class="info-box">
+      <strong>Compile-time vs runtime:</strong> When layout dimensions are known at compile time (Python integers), CuTe emits specialized PTX with no index math overhead. Runtime shapes still work — they just emit more general code.
+    </div>
+  </div>
+</section>
+
+<!-- ─── CHAPTER 3: JIT Compilation ─── -->
+<section class="chapter" id="ch3">
+  <div class="chapter-label">Chapter 03</div>
+  <h1 class="chapter-title">JIT<br>Compilation</h1>
+  <p class="chapter-intro">When you call a <code>@cute.jit</code> kernel for the first time, Python traces through your function, emitting MLIR that is then lowered to CUDA PTX and compiled by nvcc. Subsequent calls reuse the cached binary.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'jit-flow')">Compilation Flow</button>
+    <button class="tab-btn" onclick="switchTab(this,'jit-cache')">Caching</button>
+    <button class="tab-btn" onclick="switchTab(this,'aot')">AOT Mode</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-jit-flow">
+    <p class="body-text">The JIT pipeline transforms your Python kernel specification through several IR levels before reaching the GPU.</p>
+    <div class="flow-diagram">
+      <div class="flow-node highlight">Python<br><small>@cute.jit fn</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Tracer<br><small>IR capture</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">MLIR<br><small>CuTe dialect</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">LLVM IR<br><small>lowering</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">PTX<br><small>virtual ISA</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">SASS<br><small>GPU native</small></div>
+    </div>
+    <div class="grid-2" style="margin-top:24px">
+      <div class="card">
+        <div class="card-title">🎯 Specialization</div>
+        <p>Each unique combination of tensor types, shapes, and kernel configs produces a distinct compiled binary — maximizing hardware utilization with zero runtime dispatch overhead.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">⚙️ JIT Arguments</div>
+        <p>Use <code>cute.Constexpr</code> to mark arguments that should be specialized at compile time, enabling shape-specific code generation for tiling and loop unrolling.</p>
+      </div>
+    </div>
+    <pre class="code-block" style="margin-top:20px"><span class="cm"># Constexpr arguments → compile-time specialization</span>
+<span class="dec">@cute.jit</span>
+<span class="kw">def</span> <span class="fn">tiled_copy</span>(
+    src: cute.Tensor,
+    dst: cute.Tensor,
+    tile_m: cute.Constexpr,   <span class="cm"># ← baked into PTX</span>
+    tile_n: cute.Constexpr    <span class="cm"># ← baked into PTX</span>
+):
+    <span class="cm"># Tile sizes are compile-time constants here</span>
+    tile = cute.make_shape(tile_m, tile_n)
+    ...</pre>
+  </div>
+
+  <div class="tab-panel" id="panel-jit-cache">
+    <p class="body-text">CuTe DSL caches compiled kernels to disk so re-running a script doesn't recompile. The cache key includes the function source, argument types, compile options, and GPU arch.</p>
+    <div class="feature-list">
+      <div class="feature-row">
+        <div class="feature-icon">📦</div>
+        <div class="feature-text">
+          <h4>Persistent Disk Cache</h4>
+          <p>Compiled .cubin / PTX is stored under <code>~/.cache/cutlass_dsl/</code> keyed by a hash of the kernel signature and options.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-icon">🔑</div>
+        <div class="feature-text">
+          <h4>Cache Invalidation</h4>
+          <p>Any change to the kernel source, input dtype, tile size, or CUDA arch automatically invalidates the cache and triggers recompilation.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-icon">🚀</div>
+        <div class="feature-text">
+          <h4>Warm Startup</h4>
+          <p>Production deployments hit the cache on every run. First-time compilation is typically 2–10 seconds; cached runs add <1ms overhead.</p>
+        </div>
+      </div>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-val">&lt;1ms</div><div class="stat-lbl">Cache hit overhead</div></div>
+      <div class="stat-card"><div class="stat-val">2–10s</div><div class="stat-lbl">First JIT compile</div></div>
+      <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Runtime dispatch cost</div></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-aot">
+    <p class="body-text">Ahead-Of-Time (AOT) compilation pre-compiles kernels into shared libraries (.so) that can be loaded without Python or CUDA toolkit at runtime. Ideal for production serving.</p>
+    <pre class="code-block"><span class="cm"># AOT: compile once, ship a .so</span>
+<span class="kw">from</span> cute.aot <span class="kw">import</span> compile_to_library
+
+compile_to_library(
+    kernel_fn=my_gemm_kernel,
+    args_signature=[
+        cute.TensorType(dtype=<span class="str">"fp16"</span>, rank=<span class="num">2</span>),
+        cute.TensorType(dtype=<span class="str">"fp16"</span>, rank=<span class="num">2</span>),
+        cute.TensorType(dtype=<span class="str">"fp32"</span>, rank=<span class="num">2</span>),
+    ],
+    output_path=<span class="str">"./libmy_gemm.so"</span>,
+    arch=<span class="str">"sm_90"</span>  <span class="cm"># Hopper</span>
+)</pre>
+    <div class="info-box">
+      <strong>TVM FFI integration:</strong> CuTe DSL can also emit compiled kernels as TVM PackedFunc objects, enabling seamless integration into TVM-based runtimes and model compilers like Apache TVM or MLC-LLM.
+    </div>
+  </div>
+</section>
+
+<!-- ─── CHAPTER 4: GEMM / MMA ─── -->
+<section class="chapter" id="ch4">
+  <div class="chapter-label">Chapter 04</div>
+  <h1 class="chapter-title">GEMM &<br>Tensor Cores</h1>
+  <p class="chapter-intro">Matrix Multiply-Accumulate (MMA) operations are the workhorses of modern AI. CuTe DSL exposes tensor core MMA atoms with a clean Python API that maps 1:1 to hardware instructions.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'mma-viz')">MMA Visualizer</button>
+    <button class="tab-btn" onclick="switchTab(this,'mma-code')">Code Pattern</button>
+    <button class="tab-btn" onclick="switchTab(this,'perf')">Performance</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-mma-viz">
+    <p class="body-text">A single MMA atom computes <strong style="color:var(--text)">D = A × B + C</strong> using tensor cores. On Hopper (SM90), the warp-group MMA operates on 64×8×16 tiles per instruction.</p>
+    <div class="tensor-core-demo">
+      <div>
+        <div class="matrix-grid size-4" id="matA">
+          <!-- JS fills -->
+        </div>
+        <div class="matrix-label">A (M×K)</div>
+      </div>
+      <div class="op-symbol">×</div>
+      <div>
+        <div class="matrix-grid size-4" id="matB">
+          <!-- JS fills -->
+        </div>
+        <div class="matrix-label">B (K×N)</div>
+      </div>
+      <div class="op-symbol">+</div>
+      <div>
+        <div class="matrix-grid size-4" id="matC">
+          <!-- JS fills -->
+        </div>
+        <div class="matrix-label">C → D (M×N)</div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono)">Each cell represents a tile of values. Animation shows tensor core accumulation.</p>
+    <div class="grid-3" style="margin-top:28px">
+      <div class="card">
+        <div class="card-title"><span class="badge badge-green">Ampere SM80</span></div>
+        <p>16×8×16 MMA atoms for FP16/BF16. Uses <code>m16n8k16</code> WMMA instruction family.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-blue">Hopper SM90</span></div>
+        <p>Warpgroup-level 64×8×16 atoms. Adds FP8 support. Uses new <code>wgmma</code> async instruction family.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-purple">Blackwell SM100</span></div>
+        <p>tcgen05 MMA family. Adds TF32, I8, E4M3/E5M2 FP8 variants. Cluster-aware scheduling.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-mma-code">
+    <h4 class="sub-h">Selecting an MMA Atom</h4>
+    <pre class="code-block"><span class="kw">import</span> cute
+<span class="kw">from</span> cute.nvgpu.warpgroup <span class="kw">import</span> MMA_Atom
+
+<span class="cm"># Select a Hopper wgmma atom: FP16 in, FP32 accumulate</span>
+mma_atom = MMA_Atom(
+    opclass=cute.OpClassTensorOp,
+    arch=cute.SM90,
+    shape=(cute.m64, cute.n8, cute.k16),
+    dtype_AB=cute.float16,
+    dtype_C=cute.float32,
+)</pre>
+
+    <h4 class="sub-h">Tiled MMA & Main Loop</h4>
+    <pre class="code-block"><span class="cm"># Scale the atom across a CTA tile</span>
+tiled_mma = cute.TiledMMA(
+    mma_atom,
+    atom_layout=cute.Layout((<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>)),  <span class="cm"># warp layout</span>
+    perm=cute.Layout((<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>))
+)
+
+<span class="cm"># Partition A and B across threads</span>
+thr_mma = tiled_mma.get_thread_slice(cute.thread_idx())
+tCrA = thr_mma.partition_A(sA)  <span class="cm"># registers for A</span>
+tCrB = thr_mma.partition_B(sB)  <span class="cm"># registers for B</span>
+tCrD = thr_mma.partition_C(gC)  <span class="cm"># accumulator regs</span>
+
+<span class="cm"># Main K-loop: accumulate MMA results</span>
+<span class="kw">for</span> k <span class="kw">in</span> cute.range(K_tiles):
+    cute.gemm(tiled_mma, tCrD, tCrA[k], tCrB[k], tCrD)</pre>
+  </div>
+
+  <div class="tab-panel" id="panel-perf">
+    <p class="body-text">CuTe DSL-generated kernels can match hand-tuned CUTLASS performance because the abstractions have zero runtime overhead — all tiling and layout math resolves at compile time.</p>
+    <h4 class="sub-h">Relative Throughput (FP16 GEMM, H100)</h4>
+    <div style="margin:16px 0">
+      <div class="perf-bar">
+        <span class="perf-bar-label">CUTLASS C++</span>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:97%;background:var(--accent)"></div></div>
+        <span class="perf-bar-val">97%</span>
+      </div>
+      <div class="perf-bar">
+        <span class="perf-bar-label">CuTe DSL</span>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:95%;background:var(--blue)"></div></div>
+        <span class="perf-bar-val">95%</span>
+      </div>
+      <div class="perf-bar">
+        <span class="perf-bar-label">Triton</span>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:82%;background:var(--yellow)"></div></div>
+        <span class="perf-bar-val">82%</span>
+      </div>
+      <div class="perf-bar">
+        <span class="perf-bar-label">PyTorch (cuBLAS)</span>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:100%;background:var(--purple)"></div></div>
+        <span class="perf-bar-val">100%</span>
+      </div>
+      <div class="perf-bar">
+        <span class="perf-bar-label">Naive CUDA</span>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:30%;background:var(--red)"></div></div>
+        <span class="perf-bar-val">30%</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:8px">Illustrative comparison. Actual results vary by problem size, data type, and tuning.</p>
+  </div>
+</section>
+
+<!-- ─── CHAPTER 5: Pipelining ─── -->
+<section class="chapter" id="ch5">
+  <div class="chapter-label">Chapter 05</div>
+  <h1 class="chapter-title">Software<br>Pipelining</h1>
+  <p class="chapter-intro">The key to peak GPU utilization is hiding memory latency by overlapping async data loads with tensor core computation. CuTe DSL provides pipeline primitives that make this pattern concise and correct.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'pipe-viz')">Pipeline Visualizer</button>
+    <button class="tab-btn" onclick="switchTab(this,'pipe-code')">Code Pattern</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-pipe-viz">
+    <p class="body-text">A 2-stage pipeline keeps one tile computing while the next tile is loading from global memory — doubling effective bandwidth utilization.</p>
+    <div class="pipeline-viz">
+      <div class="pipeline-label">SOFTWARE PIPELINE — 2 STAGES, 4 ITERATIONS</div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;font-family:var(--font-mono)">LOAD stage (TMA async copy: Global → Shared)</div>
+        <div class="pipeline-stages" id="load-stages">
+          <div class="stage" data-iter="0">Tile 0</div>
+          <div class="stage" data-iter="1">Tile 1</div>
+          <div class="stage" data-iter="2">Tile 2</div>
+          <div class="stage" data-iter="3">Tile 3</div>
+          <div class="stage" data-iter="4">Tile 4</div>
+          <div class="stage" data-iter="5">Tile 5</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;font-family:var(--font-mono)">COMPUTE stage (wgmma: Shared → Registers → Accumulators)</div>
+        <div class="pipeline-stages" id="compute-stages">
+          <div class="stage" data-iter="0">Tile 0</div>
+          <div class="stage" data-iter="1">Tile 1</div>
+          <div class="stage" data-iter="2">Tile 2</div>
+          <div class="stage" data-iter="3">Tile 3</div>
+          <div class="stage" data-iter="4">Tile 4</div>
+          <div class="stage" data-iter="5">Tile 5</div>
+        </div>
+      </div>
+      <div class="pipeline-controls">
+        <button class="btn btn-primary" id="pipe-btn" onclick="runPipeline()">▶ Animate</button>
+        <button class="btn" onclick="resetPipeline()">↺ Reset</button>
+        <span class="pipeline-status" id="pipe-status">Click Animate to see the pipeline</span>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>TMA (Tensor Memory Accelerator):</strong> On Hopper and Blackwell, TMA hardware can move entire tiles between global and shared memory autonomously — freeing all threads to stay in the compute stage.
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-pipe-code">
+    <pre class="code-block"><span class="kw">from</span> cute <span class="kw">import</span> pipeline
+
+<span class="cm"># Create a 2-stage async pipeline (Hopper TMA)</span>
+pipe = pipeline.PipelineTmaAsync(num_stages=<span class="num">2</span>)
+
+<span class="cm"># Prologue: prefetch first tile</span>
+pipe.producer_acquire(<span class="num">0</span>)
+cute.cp_async_tma(tma_load, sA[<span class="num">0</span>], gA[<span class="num">0</span>])
+pipe.producer_commit(<span class="num">0</span>)
+
+<span class="cm"># Main loop: overlap load[k+1] with compute[k]</span>
+<span class="kw">for</span> k <span class="kw">in</span> cute.range(K_tiles):
+    stage = k % <span class="num">2</span>
+    next_stage = (k + <span class="num">1</span>) % <span class="num">2</span>
+
+    <span class="cm"># Issue next async load (producer)</span>
+    <span class="kw">if</span> k + <span class="num">1</span> < K_tiles:
+        pipe.producer_acquire(next_stage)
+        cute.cp_async_tma(tma_load, sA[next_stage], gA[k+<span class="num">1</span>])
+        pipe.producer_commit(next_stage)
+
+    <span class="cm"># Wait for current tile, then compute (consumer)</span>
+    pipe.consumer_wait(stage)
+    cute.gemm(tiled_mma, acc, tCrA[stage], tCrB[stage], acc)
+    pipe.consumer_release(stage)
+
+<span class="cm"># Epilogue: write accumulators to global C</span>
+cute.copy(tCrD, gC)</pre>
+  </div>
+</section>
+
+<!-- ─── CHAPTER 6: Arch Support ─── -->
+<section class="chapter" id="ch6">
+  <div class="chapter-label">Chapter 06</div>
+  <h1 class="chapter-title">Architecture<br>Support</h1>
+  <p class="chapter-intro">CuTe DSL 4.0 targets three NVIDIA GPU generations, each adding new MMA data types and hardware features that map directly to Python API additions.</p>
+
+  <table class="arch-table">
+    <thead>
+      <tr>
+        <th>Architecture</th>
+        <th>Compute Cap.</th>
+        <th>MMA Dtypes</th>
+        <th>Key Features</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>NVIDIA Ampere</td>
+        <td>SM80</td>
+        <td><span class="badge badge-blue">FP16</span> <span class="badge badge-blue">BF16</span></td>
+        <td>Async copy, 3rd-gen tensor cores</td>
+        <td><span class="badge badge-green">Supported</span></td>
+      </tr>
+      <tr>
+        <td>NVIDIA Hopper</td>
+        <td>SM90</td>
+        <td><span class="badge badge-blue">FP16</span> <span class="badge badge-blue">BF16</span> <span class="badge badge-yellow">FP8</span></td>
+        <td>TMA, wgmma, distributed shared mem</td>
+        <td><span class="badge badge-green">Supported</span></td>
+      </tr>
+      <tr>
+        <td>NVIDIA Blackwell</td>
+        <td>SM100</td>
+        <td><span class="badge badge-blue">FP16</span> <span class="badge badge-blue">BF16</span> <span class="badge badge-yellow">TF32</span> <span class="badge badge-purple">I8</span> <span class="badge badge-yellow">F8</span></td>
+        <td>tcgen05, cluster launch ctrl, 5th-gen TC</td>
+        <td><span class="badge badge-green">Supported</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="section-h">Platform Requirements</h3>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Python Version</div>
+      <p>Python <strong style="color:var(--accent)">3.12 only</strong>. The DSL uses new typing features and metaclass behavior from 3.12.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">CUDA Driver</div>
+      <p>Driver version <strong style="color:var(--accent)">575.51.03 or later</strong> required (matches CUDA Toolkit 12.9).</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Platform</div>
+      <p>Currently <strong style="color:var(--accent)">Linux x86_64 only</strong>. Windows and ARM support planned for future releases.</p>
+    </div>
+  </div>
+
+  <h3 class="section-h">Quick Install</h3>
+  <pre class="code-block"><span class="cm"># Install from NVIDIA's package index</span>
+pip install nvidia-cutlass-dsl
+
+<span class="cm"># Verify install and GPU detection</span>
+python -c <span class="str">"import cute; print(cute.version(), cute.gpu_info())"</span>
+
+<span class="cm"># Run the quickstart notebook</span>
+jupyter notebook examples/quickstart_gemm.ipynb</pre>
+
+  <h3 class="section-h">Framework Integration</h3>
+  <p class="body-text">CuTe DSL kernels can be called directly from PyTorch, JAX, or any framework that provides raw CUDA tensor pointers.</p>
+  <pre class="code-block"><span class="cm"># PyTorch integration — pass tensors directly</span>
+<span class="kw">import</span> torch
+
+A = torch.randn(<span class="num">1024</span>, <span class="num">1024</span>, dtype=torch.float16, device=<span class="str">'cuda'</span>)
+B = torch.randn(<span class="num">1024</span>, <span class="num">1024</span>, dtype=torch.float16, device=<span class="str">'cuda'</span>)
+C = torch.zeros(<span class="num">1024</span>, <span class="num">1024</span>, dtype=torch.float32, device=<span class="str">'cuda'</span>)
+
+<span class="cm"># CuTe DSL accepts torch tensors natively</span>
+my_gemm_kernel[grid, block](A, B, C)</pre>
+</section>
+
+<!-- ─── ABOUT ─── -->
+<section id="about">
+  <div class="chapter-label" style="margin-bottom:24px">About This Guide</div>
+  <div class="author-card">
+    <div class="author-avatar">GK</div>
+    <div class="author-body">
+      <h3>Gyanesh Kumar</h3>
+      <div class="role">Senior AI/ML Solutions Architect · AWS San Francisco</div>
+      <p>This visual guide explains CuTe DSL — NVIDIA's Python-embedded GPU kernel DSL — with animations and interactive demos so you understand the abstractions deeply, not just the syntax. Built as a companion to the <a href="https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/overview.html" style="color:var(--accent);text-decoration:none">official CUTLASS documentation</a>.</p>
+    </div>
+  </div>
+  <div style="margin-top:40px;display:flex;gap:16px;flex-wrap:wrap">
+    <a href="https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/quick_start.html" style="text-decoration:none">
+      <button class="btn btn-primary">Official Quick Start →</button>
+    </a>
+    <a href="https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/functionality.html" style="text-decoration:none">
+      <button class="btn">Functionality Docs →</button>
+    </a>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ─── Tab System ───
+function switchTab(btn, panelId) {
+  const chapter = btn.closest('.chapter, section');
+  chapter.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  chapter.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById('panel-' + panelId);
+  if (panel) panel.classList.add('active');
+}
+
+// ─── Sidebar Active State ───
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav#sidebar a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 160) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.remove('active');
+    if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+}, { passive: true });
+
+// ─── Layout Demo ───
+function renderLayoutDemo(mode) {
+  const demo = document.getElementById('layout-demo');
+  if (!demo) return;
+  const cols = 8, rows = 4;
+  const rowColors = ['var(--accent)', 'var(--blue)', 'var(--yellow)', 'var(--purple)'];
+  demo.innerHTML = '';
+  const descs = {
+    row: 'Row-major: stride = (8, 1) — rows are contiguous in memory',
+    col: 'Col-major: stride = (1, 4) — columns are contiguous in memory',
+    swizzle: 'Swizzled: XOR-based mapping — reduces shared memory bank conflicts'
+  };
+  document.getElementById('layout-desc').textContent = descs[mode] || '';
+
+  for (let linear = 0; linear < rows * cols; linear++) {
+    let row, col;
+    if (mode === 'row') {
+      row = Math.floor(linear / cols);
+      col = linear % cols;
+    } else if (mode === 'col') {
+      col = Math.floor(linear / rows);
+      row = linear % rows;
+    } else {
+      // swizzle: XOR row and col bits
+      row = Math.floor(linear / cols);
+      col = (linear % cols) ^ (row % 4);
+    }
+    const idx = row * cols + col;
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    const c = rowColors[row % rowColors.length];
+    tile.style.background = c;
+    tile.style.opacity = '0.5';
+    tile.setAttribute('data-tip', `[${row},${col}] → ${idx}`);
+    tile.addEventListener('mouseover', () => { tile.style.opacity = '1'; });
+    tile.addEventListener('mouseout', () => { tile.style.opacity = '0.5'; });
+    demo.appendChild(tile);
+  }
+}
+renderLayoutDemo('row');
+function setLayout(mode) { renderLayoutDemo(mode); }
+
+// ─── Tile Matrix Explorer ───
+function renderTileMatrix() {
+  const mat = document.getElementById('tile-matrix');
+  if (!mat) return;
+  const tileColors = ['t0','t1','t2','t3','t1','t0','t3','t2','t2','t3','t0','t1','t3','t2','t1','t0'];
+  const info = document.getElementById('tile-info');
+  const tileInfo = {
+    t0: { title: 'Tile (0,0)', coord: '(0,0)', desc: 'Top-left 2×2 tile. Thread block 0 owns this. Layout: make_layout((2,2),(1,8)).' },
+    t1: { title: 'Tile (0,1)', coord: '(0,1)', desc: 'Top-right region. Thread block 1. Offset in global memory: 2*stride_N.' },
+    t2: { title: 'Tile (1,0)', coord: '(1,0)', desc: 'Bottom-left region. Thread block 2. Row offset: 2*stride_M.' },
+    t3: { title: 'Tile (1,1)', coord: '(1,1)', desc: 'Bottom-right region. Thread block 3. Both offsets applied.' }
+  };
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const tileIdx = Math.floor(r/2)*4 + Math.floor(c/2);
+      const tKey = tileColors[tileIdx % tileColors.length];
+      const cell = document.createElement('div');
+      cell.className = 'tm-cell highlighted ' + tKey;
+      cell.style.opacity = '0.6';
+      const key = tKey;
+      cell.addEventListener('mouseover', () => {
+        mat.querySelectorAll('.' + key).forEach(el => { el.style.opacity = '1'; el.style.transform = 'scale(1.1)'; });
+        const ti = tileInfo[key];
+        if (ti && info) {
+          info.innerHTML = `<h4>${ti.title}</h4><p><strong style="color:var(--text)">Coord:</strong> ${ti.coord}</p><p style="margin-top:8px">${ti.desc}</p><p style="margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--accent)">cute.local_tile(tensor, (2,2), ${ti.coord})</p>`;
+        }
+      });
+      cell.addEventListener('mouseout', () => {
+        mat.querySelectorAll('.' + key).forEach(el => { el.style.opacity = '0.6'; el.style.transform = ''; });
+      });
+      mat.appendChild(cell);
+    }
+  }
+}
+renderTileMatrix();
+
+// ─── MMA Matrix Animation ───
+function fillMMAMatrix(id, colorClass, size) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  for (let i = 0; i < size * size; i++) {
+    const c = document.createElement('div');
+    c.className = 'mcel ' + colorClass;
+    c.style.setProperty('--d', (i * 0.06) + 's');
+    el.appendChild(c);
+  }
+}
+fillMMAMatrix('matA', 'mcel-a', 4);
+fillMMAMatrix('matB', 'mcel-b', 4);
+fillMMAMatrix('matC', 'mcel-c', 4);
+
+// ─── Pipeline Animator ───
+let pipeAnim = null;
+let pipeRunning = false;
+function runPipeline() {
+  if (pipeRunning) return;
+  pipeRunning = true;
+  document.getElementById('pipe-btn').textContent = '⏸ Running…';
+  const loadStages = document.querySelectorAll('#load-stages .stage');
+  const computeStages = document.querySelectorAll('#compute-stages .stage');
+  const status = document.getElementById('pipe-status');
+  let step = 0;
+  const steps = [
+    { load: 0, compute: -1, msg: 'Prologue: prefetch Tile 0 via TMA async' },
+    { load: 1, compute: 0, msg: 'Tile 0 computing ↔ Tile 1 loading' },
+    { load: 2, compute: 1, msg: 'Tile 1 computing ↔ Tile 2 loading' },
+    { load: 3, compute: 2, msg: 'Tile 2 computing ↔ Tile 3 loading' },
+    { load: 4, compute: 3, msg: 'Tile 3 computing ↔ Tile 4 loading' },
+    { load: 5, compute: 4, msg: 'Tile 4 computing ↔ Tile 5 loading' },
+    { load: -1, compute: 5, msg: 'Epilogue: compute last tile, write accumulators' },
+  ];
+
+  function runStep() {
+    if (step >= steps.length) {
+      pipeRunning = false;
+      document.getElementById('pipe-btn').textContent = '▶ Animate';
+      status.textContent = '✅ Pipeline complete — max compute utilization achieved';
+      return;
+    }
+    const s = steps[step];
+    loadStages.forEach((el, i) => {
+      el.className = 'stage';
+      if (i === s.load) el.classList.add('active-load');
+    });
+    computeStages.forEach((el, i) => {
+      el.className = 'stage';
+      if (i === s.compute) el.classList.add('active-compute');
+    });
+    status.textContent = `Step ${step + 1}/${steps.length}: ${s.msg}`;
+    step++;
+    pipeAnim = setTimeout(runStep, 900);
+  }
+  runStep();
+}
+function resetPipeline() {
+  if (pipeAnim) clearTimeout(pipeAnim);
+  pipeRunning = false;
+  document.getElementById('pipe-btn').textContent = '▶ Animate';
+  document.querySelectorAll('#load-stages .stage, #compute-stages .stage').forEach(el => { el.className = 'stage'; });
+  document.getElementById('pipe-status').textContent = 'Click Animate to see the pipeline';
+}
+</script>
+</body>
+</html>
